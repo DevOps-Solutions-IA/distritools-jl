@@ -1,0 +1,58 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1600" height="900" fill="#0E0E0E"/>
+  <rect x="0" y="0" width="1600" height="360" fill="url(#panel)"/>
+  <image href="/brand/distritools-logo-horizontal-dark.svg" x="180" y="72" width="1180" height="200"/>
+  <text x="510" y="300" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="38" font-style="italic" letter-spacing="4">HERRAMIENTAS QUE CONSTRUYEN RESULTADOS</text>
+
+  <rect x="0" y="360" width="545" height="210" fill="#F5F5F5"/>
+  <image href="/brand/distritools-logo-horizontal-clean.svg" x="48" y="414" width="460" height="110"/>
+  <text x="206" y="540" fill="#404040" font-family="Arial, Helvetica, sans-serif" font-size="30">VERSIÓN PRINCIPAL</text>
+
+  <rect x="545" y="360" width="545" height="210" fill="#0E0E0E"/>
+  <image href="/brand/distritools-logo-horizontal-dark.svg" x="588" y="414" width="460" height="110"/>
+  <text x="700" y="540" fill="#B9B9B9" font-family="Arial, Helvetica, sans-serif" font-size="30">VERSIÓN SOBRE FONDO OSCURO</text>
+
+  <rect x="1090" y="360" width="260" height="210" fill="#0E0E0E"/>
+  <image href="/brand/distritools-logo-mark.svg" x="1135" y="398" width="170" height="150"/>
+  <text x="1185" y="540" fill="#D3D3D3" font-family="Arial, Helvetica, sans-serif" font-size="30">ISOTIPO</text>
+
+  <rect x="1350" y="360" width="250" height="210" fill="#0E0E0E"/>
+  <image href="/brand/distritools-logo-mark-simple.svg" x="1395" y="400" width="160" height="148"/>
+  <text x="1418" y="540" fill="#D3D3D3" font-family="Arial, Helvetica, sans-serif" font-size="30">ISOTIPO SIMPLE</text>
+
+  <rect x="1150" y="570" width="450" height="250" fill="#151515"/>
+  <text x="1180" y="612" fill="#E8E8E8" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">PALETA DE COLORES</text>
+  <rect x="1180" y="650" width="95" height="95" fill="#F5B700"/><text x="1189" y="772" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18">#F5B700</text>
+  <rect x="1300" y="650" width="95" height="95" fill="#111111" stroke="#F5F5F5" stroke-opacity="0.15"/><text x="1310" y="772" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18">#111111</text>
+  <rect x="1420" y="650" width="95" height="95" fill="#6E6E6E"/><text x="1430" y="772" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18">#6E6E6E</text>
+  <rect x="1180" y="790" width="95" height="95" fill="#F5F5F5"/><text x="1189" y="912" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18">#F5F5F5</text>
+  <rect x="1300" y="790" width="95" height="95" fill="#1F6FEB"/><text x="1310" y="912" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18">#1F6FEB</text>
+
+  <rect x="0" y="570" width="560" height="250" fill="#171717"/>
+  <image href="/brand/distritools-logo-horizontal-dark.svg" x="56" y="632" width="430" height="110"/>
+  <text x="76" y="778" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">APLICACIÓN CORPORATIVA</text>
+
+  <rect x="560" y="570" width="590" height="250" fill="#1B1B1B"/>
+  <text x="600" y="612" fill="#E8E8E8" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700">APLICACIONES</text>
+  <circle cx="720" cy="735" r="62" fill="#0E0E0E" stroke="#2B2B2B"/>
+  <image href="/brand/distritools-logo-mark.svg" x="660" y="675" width="120" height="120"/>
+  <rect x="812" y="648" width="150" height="120" rx="8" fill="#F5B700"/>
+  <rect x="828" y="670" width="118" height="86" rx="6" fill="#151515"/>
+  <image href="/brand/distritools-logo-horizontal-dark.svg" x="838" y="696" width="98" height="34"/>
+  <rect x="1000" y="642" width="102" height="150" rx="18" fill="#0E0E0E" stroke="#333"/>
+  <image href="/brand/distritools-logo-horizontal-dark.svg" x="1012" y="680" width="76" height="26"/>
+
+  <rect x="0" y="820" width="1600" height="80" fill="#0F0F0F"/>
+  <text x="70" y="870" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">CALIDAD</text>
+  <text x="220" y="870" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">CONFIANZA</text>
+  <text x="430" y="870" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">ENTREGA RÁPIDA</text>
+  <text x="720" y="870" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">ASESORÍA EXPERTA</text>
+  <text x="1060" y="870" fill="#F5F5F5" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700">GARANTÍA</text>
+
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1600" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#090909"/>
+      <stop offset="1" stop-color="#111316"/>
+    </linearGradient>
+  </defs>
+</svg>

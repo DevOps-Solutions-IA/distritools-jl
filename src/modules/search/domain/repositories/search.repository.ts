@@ -1,0 +1,49 @@
+export interface SearchResultRecord {
+  id: string;
+  documentType: 'variant' | 'content';
+  title: string;
+  subtitle: string | null;
+  sku: string | null;
+  brandName: string | null;
+  brandSlug?: string | null;
+  categoryName: string | null;
+  categorySlug?: string | null;
+  placementKey: string | null;
+  availability: number;
+  priority: number;
+}
+
+export interface VariantIndexSource {
+  id: string;
+  sku: string;
+  name: string;
+  productName: string | null;
+  brandName: string | null;
+  brandSlug: string | null;
+  categoryName: string | null;
+  categorySlug: string | null;
+  description: string | null;
+  isActive: boolean;
+  availability: number;
+}
+
+export interface ContentIndexSource {
+  id: string;
+  title: string;
+  placementKey: string;
+  isPublished: boolean;
+  priority: number;
+  bodyText: string;
+}
+
+export interface SearchRepository {
+  search(
+    query: string,
+    options?: { limit?: number; brandSlug?: string; categorySlug?: string },
+  ): Promise<SearchResultRecord[]>;
+  autocomplete(query: string, limit?: number): Promise<string[]>;
+  upsertVariantDocuments(documents: VariantIndexSource[]): Promise<void>;
+  upsertContentDocuments(documents: ContentIndexSource[]): Promise<void>;
+}
+
+export const SEARCH_REPOSITORY = Symbol('SEARCH_REPOSITORY');

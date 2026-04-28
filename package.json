@@ -1,0 +1,63 @@
+{
+  "name": "distritoolsjl",
+  "version": "1.0.0",
+  "description": "Este directorio contiene la base documental para que IA Codes construya el ecosistema completo de DistriTools JL.",
+  "main": "dist/main.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "lint": "node scripts/backend-lint.js",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "NODE_PATH=dist node dist/src/main.js",
+    "start:dev": "NODE_PATH=. tsx watch src/main.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "seed:taxonomy": "NODE_PATH=. tsx scripts/seed-taxonomy.ts",
+    "test": "npm run build",
+    "test:critical": "NODE_PATH=. tsx --test tests/critical/**/*.test.ts",
+    "test:critical:sequential": "NODE_PATH=. tsx --test --test-concurrency=1 tests/critical/auth-rbac.e2e.test.ts tests/critical/inventory-orders-payments.e2e.test.ts tests/critical/concurrency-stress.e2e.test.ts",
+    "test:e2e:all": "NODE_PATH=. tsx --test --test-concurrency=1 tests/critical/auth-rbac.e2e.test.ts tests/critical/inventory-orders-payments.e2e.test.ts tests/critical/concurrency-stress.e2e.test.ts tests/critical/platform-closure.e2e.test.ts tests/critical/catalog.e2e.test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@nestjs/bullmq": "^11.0.4",
+    "@nestjs/common": "^11.1.19",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.19",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.1.19",
+    "@nestjs/swagger": "^11.4.1",
+    "@prisma/client": "^6.19.0",
+    "bcrypt": "^6.0.0",
+    "bullmq": "^5.76.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "ioredis": "^5.10.1",
+    "otplib": "^13.4.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "prisma": "^6.19.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^11.1.19",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^7.2.0",
+    "supertest": "^7.2.2",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3"
+  }
+}

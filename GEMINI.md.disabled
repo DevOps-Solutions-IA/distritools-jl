@@ -1,0 +1,96 @@
+# GEMINI — DistriTools JL Project Context
+
+This document provides essential context for an AI assistant to understand and work with the `distritoolsjl` repository. It is based on the project's technical documentation and source code analysis.
+
+## 1. Project Overview
+
+**DistriTools JL** is a comprehensive, enterprise-grade e-commerce platform. The system is designed with a "backend-first" philosophy, featuring a decoupled frontend and a robust, modular backend.
+
+The primary business goal is to create an industrial e-commerce platform with a deep product catalog, a streamlined guest checkout process (no customer login required), and a powerful administrative dashboard for managing operations.
+
+### Core Technologies
+
+*   **Backend:**
+    *   **Framework:** NestJS (v11.x) with TypeScript.
+    *   **Database:** PostgreSQL (v16) managed via Prisma ORM (v6.x).
+    *   **Asynchronous Tasks:** Redis (v7) and BullMQ for background jobs and queues.
+    *   **Authentication:** Secure JWT-based system for internal admin users, including 2FA support.
+    *   **API:** Documented and specified using OpenAPI (Swagger).
+
+*   **Frontend:**
+    *   **Framework:** Next.js (v15.x) with React (v19.x) and TypeScript.
+    *   **Styling:** Tailwind CSS.
+    *   **State Management:** Local state, with no cross-device cart synchronization in the current phase.
+
+*   **Infrastructure:**
+    *   **Containerization:** Docker and Docker Compose for orchestrating local development services (Postgres, Redis).
+    *   **CI/CD:** Placeholder for future implementation.
+
+### Architecture
+
+The backend follows a **Modular Monolith** architecture, with clear separation of concerns inspired by Hexagonal Architecture (Ports and Adapters).
+
+*   **Domain Layer:** Contains business logic, entities, and repository interfaces.
+*   **Application Layer:** Implements use cases that orchestrate the domain logic.
+*   **Infrastructure Layer:** Provides concrete implementations for databases (Prisma), external services, and exposes functionality via controllers (HTTP) and event subscribers.
+
+The system is highly event-driven internally, using domain events to decouple modules (e.g., `order.created` event triggering notifications and search index updates).
+
+## 2. Building and Running
+
+### Environment Setup
+
+1.  **Services:** The project requires PostgreSQL and Redis. Start them using Docker:
+    ```bash
+    # Explain: Starts the PostgreSQL and Redis containers defined in docker-compose.yml in detached mode.
+    docker-compose up -d
+    ```
+2.  **Environment Variables:** Copy the example environment file and fill in any necessary secrets (though defaults work for local development).
+    ```bash
+    cp .env.example .env
+    ```
+3.  **Dependencies:** Install dependencies for both backend and frontend.
+    ```bash
+    # Install backend dependencies
+    npm install
+
+    # Install frontend dependencies
+    cd frontend && npm install && cd ..
+    ```
+4.  **Database Migration:** Apply database schema changes.
+    ```bash
+    # Explain: Applies all pending Prisma migrations to the database.
+    npm run prisma:migrate:deploy
+    ```
+
+### Key Scripts
+
+#### Backend (`/`)
+
+*   **Run (Development):** `npm run start:dev` - Starts the backend with hot-reloading.
+*   **Build:** `npm run build` - Compiles the TypeScript code.
+*   **Lint:** `npm run lint` - Checks for code style issues.
+*   **Type Check:** `npm run typecheck` - Validates TypeScript types without emitting files.
+*   **Test:** `npm run test:critical` - Runs the critical end-to-end test suite.
+*   **Seed Data:** `npm run seed:taxonomy` - Populates the database with initial brand/category data.
+
+#### Frontend (`/frontend`)
+
+*   **Run (Development):** `npm run dev` - Starts the Next.js frontend development server (defaults to port 3001).
+*   **Build:** `npm run build` - Builds the frontend for production.
+*   **Lint:** `npm run lint` - Checks for code style issues.
+*   **Type Check:** `npm run typecheck` - Validates TypeScript types.
+
+## 3. Development Conventions
+
+*   **Backend-First:** The backend is the source of truth. Logic, validation, and business rules reside here. The frontend is a consumer of the backend API.
+*   **Idempotency:** Critical operations, especially webhooks and payment processing, must be idempotent to prevent duplicate data or actions.
+*   **Transactional Integrity:** Operations involving multiple entities (e.g., creating an order, reserving stock, and creating a payment intent) must be atomic. The project uses Prisma's transaction capabilities for this.
+*   **No Customer Login:** The e-commerce flow is designed for guest checkout only. Customer identity is tied to an order, not a persistent user account.
+*   **Configuration as Code:** The project's architecture and rules are heavily documented in Markdown files (`00_*` to `10_*`). **These must be consulted before making changes.**
+*   **Testing:** The project has a structure for unit, integration, and e2e tests. New features or changes should be accompanied by tests.
+*   **Error Handling:** The API uses a standardized error format with defined codes (e.g., `business_rule_violation`, `not_found`).
+*   **Security:**
+    *   Admin access is protected by JWT and RBAC.
+    *   Webhooks must be validated via signatures.
+    *   All inputs are strictly validated using DTOs.

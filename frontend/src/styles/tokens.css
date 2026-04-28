@@ -1,0 +1,36 @@
+:root {
+  --color-graphite-black: #f5f5f5;
+  --color-deep-charcoal: #171717;
+  --color-industrial-yellow: #f5b700;
+  --color-industrial-orange: var(--color-industrial-yellow);
+  --color-brand-primary: var(--color-industrial-yellow);
+  --color-amber-highlight: #f5b700;
+  --color-steel-gray: #6e6e6e;
+  --color-technical-gray: #6e6e6e;
+  --color-light-steel: #d9d9d9;
+  --color-off-white: #f5f5f5;
+  --color-success-green: #16a34a;
+  --color-error-red: #dc2626;
+  --color-info-blue: #1f6feb;
+
+  --color-background: #050505;
+  --color-surface: #0f0f10;
+  --color-surface-muted: #171717;
+  --color-border: rgba(245, 245, 245, 0.1);
+  --color-text-primary: var(--color-off-white);
+  --color-text-secondary: #b6b6b6;
+  --color-text-inverse: var(--color-off-white);
+  --color-action-primary: var(--color-brand-primary);
+  --color-action-primary-hover: #d29b00;
+  --color-action-secondary: #262626;
+  --color-action-secondary-hover: #323232;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.75rem;
+
+  --shadow-soft: 0 16px 30px rgba(0, 0, 0, 0.34);
+  --shadow-medium: 0 22px 46px rgba(0, 0, 0, 0.42);
+  --shadow-elevated: 0 32px 68px rgba(0, 0, 0, 0.54);
+}

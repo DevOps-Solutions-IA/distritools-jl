@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: distritoolsjl_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "55440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d distritoolsjl_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  app-runner:
+    image: node:22-bookworm
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      NODE_ENV: test
+      PORT: 3100
+      APP_NAME: DistriTools JL Backend Test
+      APP_BASE_URL: http://app-runner:3100
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/distritoolsjl_test?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: test-access-secret
+      JWT_REFRESH_SECRET: test-refresh-secret
+      JWT_2FA_CHALLENGE_SECRET: test-2fa-challenge-secret
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 7d
+      JWT_2FA_CHALLENGE_TTL: 10m
+      PAYMENT_GATEWAY_SECRET: test-payment-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

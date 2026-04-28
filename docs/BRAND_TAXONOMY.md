@@ -1,0 +1,313 @@
+# BRAND_TAXONOMY.md
+
+## Objetivo
+Definir la taxonomía real de marcas, familias y categorías internas que DistriTools JL puede trabajar en storefront, búsqueda, carga de catálogo y administración futura, sin inventar SKUs, precios, stock ni claims comerciales no autorizados.
+
+## Reglas de gobierno
+- No inventar productos.
+- No inventar SKUs.
+- No inventar precios.
+- No inventar stock.
+- No afirmar distribución oficial de ninguna marca sin autorización expresa del negocio.
+- No descargar logos de internet sin asset autorizado.
+- Si una marca no tiene asset aprobado, usar fallback tipográfico elegante.
+- Toda carga futura de productos debe pasar por aprobación manual de SKU.
+
+## Marcas activas
+
+### Ingersoll Rand
+- Enfoque: aire comprimido, industria pesada, herramientas neumáticas, bombas e izaje.
+- Familias:
+  - compresores de aire
+  - compresores industriales
+  - compresores portátiles
+  - herramientas neumáticas
+  - llaves de impacto neumáticas
+  - ratchets neumáticos
+  - esmeriles y lijadoras neumáticas
+  - bombas industriales
+  - soluciones de izaje
+  - accesorios para aire comprimido
+  - repuestos y servicio
+- Categorías internas:
+  - aire-comprimido
+  - compresores
+  - herramientas-neumaticas
+  - bombas
+  - izaje
+  - accesorios
+- Keywords:
+  - ingersoll rand
+  - compresor
+  - aire comprimido
+  - neumática
+  - bomba industrial
+  - izaje
+  - llave impacto neumática
+
+### BeA
+- Enfoque: fijación industrial, grapado, clavado, madera, muebles, pallets y empaques.
+- Familias:
+  - grapadoras neumáticas
+  - clavadoras neumáticas
+  - pinners
+  - bradders
+  - herramientas para pallets
+  - herramientas para muebles
+  - herramientas para empaques
+  - grapas
+  - clavos
+  - fijaciones
+  - accesorios de fijación
+- Categorías internas:
+  - fijacion
+  - grapadoras
+  - clavadoras
+  - consumibles-fijacion
+  - carpinteria
+  - pallets-empaques
+- Keywords:
+  - bea
+  - grapadora
+  - clavadora
+  - grapas
+  - clavos
+  - fijación
+  - pallets
+  - muebles
+  - carpintería
+
+### Pretul
+- Enfoque: ferretería de alto movimiento, línea económica, hogar técnico y taller práctico.
+- Familias:
+  - herramientas manuales
+  - herramientas eléctricas básicas
+  - compresores
+  - bombas
+  - carretillas
+  - jardín
+  - accesorios
+  - medición básica
+  - organización básica
+  - consumibles ferreteros
+- Categorías internas:
+  - herramientas-manuales
+  - herramientas-electricas
+  - compresores
+  - bombas
+  - jardin
+  - construccion-ligera
+  - accesorios
+- Keywords:
+  - pretul
+  - herramienta económica
+  - herramienta manual
+  - compresor pretul
+  - bomba
+  - carretilla
+  - ferretería
+
+### Truper
+- Enfoque: ferretería amplia, herramienta profesional y general, construcción, automotriz, soldadura, plomería y jardín.
+- Familias:
+  - herramientas manuales
+  - herramientas eléctricas
+  - herramientas automotrices
+  - soldadura
+  - plomería
+  - abrasivos
+  - compresores
+  - escaleras
+  - jardín
+  - herrajes
+  - medición
+  - almacenamiento
+  - seguridad industrial
+  - accesorios
+- Categorías internas:
+  - herramientas-manuales
+  - herramientas-electricas
+  - automotriz
+  - soldadura
+  - plomeria
+  - abrasivos
+  - compresores
+  - jardin
+  - herrajes
+  - almacenamiento
+  - seguridad-industrial
+- Keywords:
+  - truper
+  - herramienta manual
+  - herramienta eléctrica
+  - automotriz
+  - soldadura
+  - plomería
+  - abrasivo
+  - compresor
+  - jardín
+  - ferretería
+
+### TOTAL
+- Enfoque: herramienta profesional y general, construcción ligera, energía, soldadura, neumática y jardín.
+- Familias:
+  - herramientas eléctricas
+  - accesorios para herramientas eléctricas
+  - generadores
+  - máquinas de soldar
+  - equipos pequeños de construcción
+  - herramientas neumáticas
+  - bombas de agua
+  - herramientas manuales
+  - herramientas de medición
+  - seguridad
+  - herramientas de jardín
+- Categorías internas:
+  - herramientas-electricas
+  - accesorios
+  - generadores
+  - soldadura
+  - construccion-ligera
+  - herramientas-neumaticas
+  - bombas
+  - herramientas-manuales
+  - medicion
+  - seguridad-industrial
+  - jardin
+- Keywords:
+  - total
+  - total tools
+  - herramienta eléctrica
+  - generador
+  - soldadora
+  - bomba de agua
+  - medición
+  - jardín
+  - neumática
+
+### SENCO
+- Enfoque: fijación profesional, construcción, carpintería, drywall, roofing, flooring y pallets.
+- Familias:
+  - clavadoras
+  - grapadoras
+  - sistemas de tornillos
+  - herramientas cordless pneumatic
+  - compresores
+  - kits de fijación
+  - clavos
+  - grapas
+  - tornillos
+  - accesorios de fijación
+- Categorías internas:
+  - fijacion
+  - clavadoras
+  - grapadoras
+  - sistemas-tornillos
+  - compresores
+  - consumibles-fijacion
+  - carpinteria
+  - drywall
+  - roofing
+  - flooring
+  - pallets-empaques
+- Keywords:
+  - senco
+  - clavadora
+  - grapadora
+  - tornillos
+  - grapas
+  - clavos
+  - compresor
+  - drywall
+  - carpintería
+  - roofing
+  - flooring
+
+### Lincoln Electric
+- Enfoque: soldadura, corte, consumibles, automatización, control de humos y seguridad para soldadura.
+- Familias:
+  - soldadoras MIG
+  - soldadoras TIG
+  - soldadoras STICK
+  - multiproceso
+  - máquinas de soldar
+  - equipos de corte
+  - metales de aporte
+  - electrodos
+  - alambres de soldadura
+  - automatización de soldadura
+  - control de humos
+  - seguridad y PPE para soldadura
+  - accesorios de soldadura
+- Categorías internas:
+  - soldadura
+  - soldadoras
+  - corte
+  - consumibles-soldadura
+  - electrodos
+  - alambres-soldadura
+  - automatizacion
+  - seguridad-industrial
+  - extraccion-humos
+  - accesorios-soldadura
+- Keywords:
+  - lincoln electric
+  - soldadora
+  - mig
+  - tig
+  - stick
+  - electrodo
+  - alambre soldadura
+  - corte
+  - welding
+  - consumibles soldadura
+
+## Categorías internas base
+- aire-comprimido
+- compresores
+- herramientas-neumaticas
+- herramientas-electricas
+- herramientas-manuales
+- fijacion
+- clavadoras
+- grapadoras
+- consumibles-fijacion
+- sistemas-tornillos
+- soldadura
+- soldadoras
+- corte
+- consumibles-soldadura
+- electrodos
+- alambres-soldadura
+- accesorios-soldadura
+- bombas
+- generadores
+- construccion-ligera
+- automotriz
+- plomeria
+- abrasivos
+- jardin
+- medicion
+- seguridad-industrial
+- izaje
+- carpinteria
+- drywall
+- roofing
+- flooring
+- pallets-empaques
+- accesorios
+- herrajes
+- almacenamiento
+- extraccion-humos
+- automatizacion
+
+## Reglas de logos
+- No usar logos descargados de internet.
+- Si el negocio no ha entregado asset autorizado, la marca se representa con fallback tipográfico.
+- El metadata de marca conserva `logo.assetPath = null` y `logo.assetStatus = pending` hasta aprobación explícita.
+
+## Próximos pasos para carga de productos reales
+- Definir SKUs aprobados por negocio para cada marca.
+- Asociar cada SKU a una marca y a una categoría permitida.
+- Cargar precio y stock solo desde operaciones reales.
+- Exponer imágenes y fichas técnicas solo cuando existan assets/datos autorizados.

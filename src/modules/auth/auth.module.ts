@@ -1,0 +1,78 @@
+import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
+import { PermissionsGuard } from 'src/common/guards/permissions.guard';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import {
+  AUDIT_REPOSITORY,
+} from 'src/modules/auth/domain/repositories/audit.repository';
+import {
+  AUTH_SESSION_REPOSITORY,
+} from 'src/modules/auth/domain/repositories/auth-session.repository';
+import {
+  AUTH_USER_REPOSITORY,
+} from 'src/modules/auth/domain/repositories/auth-user.repository';
+import { AuthPolicyService } from 'src/modules/auth/domain/services/auth-policy.service';
+import { LoginAdminUseCase } from 'src/modules/auth/application/use-cases/login-admin.use-case';
+import { LogoutUseCase } from 'src/modules/auth/application/use-cases/logout.use-case';
+import { RefreshTokenUseCase } from 'src/modules/auth/application/use-cases/refresh-token.use-case';
+import { VerifyTwoFactorUseCase } from 'src/modules/auth/application/use-cases/verify-two-factor.use-case';
+import { TOKEN_SERVICE } from 'src/modules/auth/application/ports/token-service.port';
+import { TWO_FACTOR_PORT } from 'src/modules/auth/application/ports/two-factor.port';
+import { AuthController } from 'src/modules/auth/infrastructure/http/controllers/auth.controller';
+import { PrismaAuditRepository } from 'src/modules/auth/infrastructure/repositories/prisma-audit.repository';
+import { PrismaAuthSessionRepository } from 'src/modules/auth/infrastructure/repositories/prisma-auth-session.repository';
+import { PrismaAuthUserRepository } from 'src/modules/auth/infrastructure/repositories/prisma-auth-user.repository';
+import { JwtTokenService } from 'src/modules/auth/infrastructure/security/jwt-token.service';
+import { JwtStrategy } from 'src/modules/auth/infrastructure/security/jwt.strategy';
+import { TwoFactorService } from 'src/modules/auth/infrastructure/security/two-factor.service';
+
+@Module({
+  imports: [
+    JwtModule.register({}),
+  ],
+  controllers: [AuthController],
+  providers: [
+    AuthPolicyService,
+    LoginAdminUseCase,
+    VerifyTwoFactorUseCase,
+    RefreshTokenUseCase,
+    LogoutUseCase,
+    PrismaAuthUserRepository,
+    PrismaAuthSessionRepository,
+    PrismaAuditRepository,
+    JwtTokenService,
+    TwoFactorService,
+    JwtStrategy,
+    {
+      provide: AUTH_USER_REPOSITORY,
+      useExisting: PrismaAuthUserRepository,
+    },
+    {
+      provide: AUTH_SESSION_REPOSITORY,
+      useExisting: PrismaAuthSessionRepository,
+    },
+    {
+      provide: AUDIT_REPOSITORY,
+      useExisting: PrismaAuditRepository,
+    },
+    {
+      provide: TOKEN_SERVICE,
+      useExisting: JwtTokenService,
+    },
+    {
+      provide: TWO_FACTOR_PORT,
+      useExisting: TwoFactorService,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
+    },
+  ],
+  exports: [AUDIT_REPOSITORY, JwtModule],
+})
+export class AuthModule {}
