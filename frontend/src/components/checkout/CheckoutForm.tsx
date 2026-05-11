@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import Link from 'next/link';
@@ -53,6 +53,7 @@ function toHumanCheckoutError(error: unknown) {
 export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const { items, summary } = useCart();
   const [serverError, setServerError] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
   const paymentMethods = getCheckoutPaymentMethods(summary);
   const defaultPaymentMethod = getDefaultPaymentMethod(summary);
 
@@ -100,6 +101,12 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       method: selectedPaymentMethod,
     });
   }, [selectedPaymentMethod]);
+
+  useEffect(() => {
+    if (serverError) {
+      errorRef.current?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+    }
+  }, [serverError]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setServerError(null);
@@ -162,13 +169,15 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   return (
     <form className="grid gap-3 sm:gap-6" onSubmit={onSubmit}>
       {serverError ? (
-        <CheckoutErrorState
-          title="No fue posible continuar con el checkout"
-          description={serverError}
-        />
+        <div ref={errorRef}>
+          <CheckoutErrorState
+            title="No fue posible continuar con el checkout"
+            description={serverError}
+          />
+        </div>
       ) : null}
 
-      <Card variant="elevated">
+      <Card id="checkout-contact-data" variant="elevated">
         <CardBody className="grid gap-3 p-4 sm:gap-5 sm:p-5 md:grid-cols-2">
           <div className="space-y-1 md:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
@@ -333,7 +342,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         </CardBody>
       </Card>
 
-      <div className="sticky bottom-3 z-20 grid gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(5,5,5,0.92)] p-2 shadow-elevated backdrop-blur sm:static sm:flex sm:flex-row sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
+      <div className="sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 grid gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(5,5,5,0.92)] p-2 shadow-elevated backdrop-blur sm:static sm:flex sm:flex-row sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
         <Button
           type="submit"
           size="md"
@@ -342,9 +351,9 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         >
           Finalizar compra
         </Button>
-        <Button type="button" variant="outline" size="md" disabled>
-          Envío pendiente de confirmación
-        </Button>
+        <p className="px-2 text-center text-xs leading-5 text-[var(--color-text-secondary)] sm:flex sm:items-center sm:text-left">
+          Envío pendiente de confirmación operativa.
+        </p>
       </div>
     </form>
   );

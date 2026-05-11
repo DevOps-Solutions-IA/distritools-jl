@@ -11,8 +11,6 @@ const mobileLinks = [
   { label: 'Inicio', href: '/' },
   { label: 'Productos', href: '/productos' },
   { label: 'Marcas', href: '/marcas' },
-  { label: 'Líneas de producto', href: '/categorias' },
-  { label: 'Rastreo', href: '/rastreo-de-pedido' },
   { label: 'Contacto', href: '/contacto' },
   { label: 'Carrito', href: '/carrito' },
 ];
@@ -159,7 +157,7 @@ export function MobileNavigationDrawer() {
               ))}
               <details className="rounded-2xl border border-white/8 bg-white/[0.035] p-3">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--color-off-white)]">
-                  Explorar líneas
+                  Líneas de producto
                 </summary>
                 <div className="mt-3 grid gap-2">
                   {categoryLinks.map((link) => (
@@ -178,6 +176,29 @@ export function MobileNavigationDrawer() {
               <p className="px-1 pt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
                 La información legal está disponible en el footer para no saturar el menú de compra.
               </p>
+              <Link
+                href="/rastreo-de-pedido"
+                onClick={() => setOpen(false)}
+                aria-current={pathname === '/rastreo-de-pedido' ? 'page' : undefined}
+                className="focus-ring mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-full border border-[rgba(255,225,122,0.55)] bg-[var(--color-industrial-yellow)] px-5 text-sm font-black text-[#050505] shadow-[0_18px_48px_rgba(0,0,0,0.35)] transition hover:bg-[var(--color-action-primary-hover)]"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M4 16h2.5l1.7-4.2A3 3 0 0 1 11 10h2.7l1.2-3H18l-1.4 3.5H19a2 2 0 0 1 1.8 1.1L22 14h-2.2" />
+                  <path d="M8 16h6" />
+                  <circle cx="7" cy="17" r="2" />
+                  <circle cx="17" cy="17" r="2" />
+                </svg>
+                Rastrear pedido
+              </Link>
             </nav>
           </div>
         </div>

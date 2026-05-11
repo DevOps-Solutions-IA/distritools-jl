@@ -56,14 +56,12 @@ describe('smoke frontend base', () => {
     ).toBe(true);
     expect(screen.getByRole('link', { name: 'Carrito' })).toHaveAttribute('href', '/carrito');
     expect(screen.getAllByText('Líneas de producto')).toHaveLength(1);
-    expect(screen.getByText('Explorar líneas')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Legal$/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Asesoría$/i })).not.toBeInTheDocument();
-    expect(
-      screen
-        .getAllByRole('link', { name: /^Rastreo$/i })
-        .some((link) => link.getAttribute('href') === '/rastreo-de-pedido'),
-    ).toBe(true);
+    expect(screen.getByRole('link', { name: /rastrear pedido/i })).toHaveAttribute(
+      'href',
+      '/rastreo-de-pedido',
+    );
     expect(screen.getAllByRole('search').length).toBeGreaterThanOrEqual(1);
 
     fireEvent.keyDown(window, { key: 'Escape' });

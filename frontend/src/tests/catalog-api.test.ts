@@ -35,6 +35,10 @@ describe('catalog api', () => {
 
     const products = await listProducts();
 
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/v1/products',
+      expect.objectContaining({ cache: 'no-store' }),
+    );
     expect(products).toHaveLength(1);
     expect(products[0]?.slug).toBe('taladro-industrial');
   });

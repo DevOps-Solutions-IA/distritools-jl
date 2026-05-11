@@ -14,7 +14,7 @@ export function CheckoutPageContent() {
   const router = useRouter();
 
   return (
-    <section className="space-y-4 sm:space-y-8">
+    <section className="space-y-4 pb-28 sm:space-y-8 sm:pb-0">
       <div className="rounded-[1.15rem] border border-[var(--color-border)] bg-[linear-gradient(180deg,#101010_0%,#0b0b0b_100%)] p-4 shadow-soft sm:rounded-[2rem] sm:p-8 sm:shadow-elevated">
         <div className="space-y-1.5 sm:space-y-4">
           <Badge variant="warning">Checkout invitado</Badge>

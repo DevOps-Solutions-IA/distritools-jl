@@ -14,6 +14,16 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  async rewrites() {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000';
+
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiBaseUrl}/api/v1/:path*`,
+      },
+    ];
+  },
   async redirects() {
     return [
       {

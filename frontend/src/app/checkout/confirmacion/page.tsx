@@ -96,8 +96,8 @@ export default async function ConfirmationPage({
               </StorefrontLinkButton>
               <StorefrontLinkButton
                 href={`/rastreo-de-pedido${tracking ? `?query=${encodeURIComponent(tracking)}` : ''}`}
-                storefrontVariant="secondary"
               >
+                <span aria-hidden="true">🛵</span>
                 Rastrear pedido
               </StorefrontLinkButton>
               <a href={siteConfig.whatsappUrl} target="_blank" rel="noreferrer">

@@ -24,7 +24,7 @@ export async function listProducts(filters: { brandId?: string; categoryId?: str
   const response = await productsClient.get<BackendCollectionResponse<BackendProductRecord>>(
     `/products${buildQuery(filters)}`,
     {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     },
   );
 
@@ -33,7 +33,7 @@ export async function listProducts(filters: { brandId?: string; categoryId?: str
 
 export async function getProductById(productId: string) {
   const response = await productsClient.get<BackendProductRecord>(`/products/${productId}`, {
-    next: { revalidate: 60 },
+    cache: 'no-store',
   });
 
   return response.data;
@@ -49,7 +49,7 @@ export async function listVariants(filters: { productId?: string } = {}) {
   const response = await productsClient.get<BackendCollectionResponse<BackendVariantRecord>>(
     `/variants${buildQuery(filters)}`,
     {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     },
   );
 

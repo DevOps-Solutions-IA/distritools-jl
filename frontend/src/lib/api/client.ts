@@ -23,13 +23,14 @@ export async function apiRequest<T>(
   const controller = new AbortController();
   const timeoutMs = options.timeoutMs ?? 10000;
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const baseUrl = typeof window === 'undefined' ? env.apiBaseUrl : '';
 
   const maxRetries = 3;
   const retryDelay = 2000;
 
   for (let i = 0; i < maxRetries; i++) {
     try {
-      const response = await fetch(`${env.apiBaseUrl}${path}`, {
+      const response = await fetch(`${baseUrl}${path}`, {
         ...options,
         method: options.method ?? 'GET',
         headers: {
@@ -76,7 +77,13 @@ export async function apiRequest<T>(
           });
         }
         throw new ApiError({
-          message: error instanceof Error ? error.message : 'Unknown network error',
+          message:
+            error instanceof Error &&
+            /load failed|failed to fetch|networkerror|fetch failed/i.test(error.message)
+              ? 'No pudimos completar tu pedido en este momento. Revisa tus datos e inténtalo nuevamente.'
+              : error instanceof Error
+                ? error.message
+                : 'Unknown network error',
           status: 500,
         });
       }

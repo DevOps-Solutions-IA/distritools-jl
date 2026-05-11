@@ -205,7 +205,17 @@ describe('checkout storefront', () => {
     await waitFor(() => {
       expect(screen.getByText(/actualiza tu carrito/i)).toBeInTheDocument();
     });
+    expect(
+      screen
+        .getAllByRole('link', { name: /volver al carrito/i })
+        .some((link) => link.getAttribute('href') === '/carrito'),
+    ).toBe(true);
+    expect(screen.getByRole('link', { name: /contactar soporte/i })).toHaveAttribute(
+      'href',
+      '/contacto',
+    );
     expect(screen.queryByText(/missing variants/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/load failed/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/019ddc5b/i)).not.toBeInTheDocument();
   });
 
