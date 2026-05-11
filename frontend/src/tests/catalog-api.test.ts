@@ -19,6 +19,7 @@ describe('catalog api', () => {
                 name: 'Taladro industrial',
                 slug: 'taladro-industrial',
                 description: 'Equipo de perforación',
+                metadata: null,
                 brand: null,
                 category: null,
               },

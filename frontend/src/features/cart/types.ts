@@ -15,6 +15,7 @@ export interface CartLineVariant {
   priceLabel: string;
   taxRate: string;
   warehouseId?: string | null;
+  mode?: 'buy' | 'quote';
 }
 
 export interface CartItem {
@@ -31,6 +32,10 @@ export interface CartSummary {
   itemCount: number;
   subtotal: number;
   subtotalLabel: string;
+  pricedItemCount: number;
+  quoteItemCount: number;
+  hasQuoteItems: boolean;
+  hasPricedItems: boolean;
 }
 
 export interface CartState {

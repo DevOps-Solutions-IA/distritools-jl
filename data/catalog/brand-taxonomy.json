@@ -1,0 +1,463 @@
+[
+  {
+    "name": "Ingersoll Rand",
+    "slug": "ingersoll-rand",
+    "status": "active",
+    "commercialPriority": 98,
+    "shortDescription": "Soluciones de aire comprimido, neumática industrial e izaje para operación pesada.",
+    "longDescription": "Marca orientada a compresión de aire, herramientas neumáticas, bombeo industrial y soluciones de izaje para mantenimiento, industria y operación intensiva.",
+    "industrialFocus": [
+      "aire comprimido",
+      "industria pesada",
+      "herramientas neumáticas",
+      "bombas",
+      "izaje"
+    ],
+    "productFamilies": [
+      "compresores de aire",
+      "compresores industriales",
+      "compresores portátiles",
+      "herramientas neumáticas",
+      "llaves de impacto neumáticas",
+      "ratchets neumáticos",
+      "esmeriles y lijadoras neumáticas",
+      "bombas industriales",
+      "soluciones de izaje",
+      "accesorios para aire comprimido",
+      "repuestos y servicio"
+    ],
+    "categorySlugs": [
+      "aire-comprimido",
+      "compresores",
+      "herramientas-neumaticas",
+      "bombas",
+      "izaje",
+      "accesorios"
+    ],
+    "keywords": [
+      "ingersoll rand",
+      "compresor",
+      "aire comprimido",
+      "neumática",
+      "bomba industrial",
+      "izaje",
+      "llave impacto neumática"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Base taxonómica validada por negocio para fase 3.5",
+      "No afirmar distribución oficial sin autorización"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  },
+  {
+    "name": "BeA",
+    "slug": "bea",
+    "status": "active",
+    "commercialPriority": 87,
+    "shortDescription": "Fijación industrial para madera, muebles, pallets y empaque.",
+    "longDescription": "Especialista en grapado y clavado industrial para carpintería, fabricación de muebles, pallets, empaque y procesos de fijación en producción.",
+    "industrialFocus": [
+      "fijación industrial",
+      "grapado",
+      "clavado",
+      "madera",
+      "muebles",
+      "pallets",
+      "embalajes"
+    ],
+    "productFamilies": [
+      "grapadoras neumáticas",
+      "clavadoras neumáticas",
+      "pinners",
+      "bradders",
+      "herramientas para pallets",
+      "herramientas para muebles",
+      "herramientas para empaques",
+      "grapas",
+      "clavos",
+      "fijaciones",
+      "accesorios de fijación"
+    ],
+    "categorySlugs": [
+      "fijacion",
+      "grapadoras",
+      "clavadoras",
+      "consumibles-fijacion",
+      "carpinteria",
+      "pallets-empaques"
+    ],
+    "keywords": [
+      "bea",
+      "grapadora",
+      "clavadora",
+      "grapas",
+      "clavos",
+      "fijación",
+      "pallets",
+      "muebles",
+      "carpintería"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Taxonomía comercial aprobada para fijación industrial",
+      "No crear consumibles o referencias específicas sin SKU real"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  },
+  {
+    "name": "Pretul",
+    "slug": "pretul",
+    "status": "active",
+    "commercialPriority": 75,
+    "shortDescription": "Línea ferretera de rotación alta para trabajo general, hogar técnico y taller.",
+    "longDescription": "Portafolio orientado a herramientas manuales, eléctricas básicas y soluciones de alto movimiento para ferretería, mantenimiento y trabajo práctico.",
+    "industrialFocus": [
+      "ferretería de alto movimiento",
+      "línea económica",
+      "herramientas básicas",
+      "hogar técnico",
+      "taller"
+    ],
+    "productFamilies": [
+      "herramientas manuales",
+      "herramientas eléctricas básicas",
+      "compresores",
+      "bombas",
+      "carretillas",
+      "jardín",
+      "accesorios",
+      "medición básica",
+      "organización básica",
+      "consumibles ferreteros"
+    ],
+    "categorySlugs": [
+      "herramientas-manuales",
+      "herramientas-electricas",
+      "compresores",
+      "bombas",
+      "jardin",
+      "accesorios"
+    ],
+    "keywords": [
+      "pretul",
+      "herramienta económica",
+      "herramienta manual",
+      "compresor pretul",
+      "bomba",
+      "carretilla",
+      "ferretería"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Marca del ecosistema Truper con enfoque de rotación",
+      "No cargar referencias específicas sin aprobación comercial"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  },
+  {
+    "name": "Truper",
+    "slug": "truper",
+    "status": "active",
+    "commercialPriority": 96,
+    "shortDescription": "Ferretería profesional para construcción, mantenimiento, automotriz y operación general.",
+    "longDescription": "Marca amplia para herramientas manuales, eléctricas, automotrices, soldadura, plomería, abrasivos, compresión, jardín y soluciones ferreteras de uso profesional.",
+    "industrialFocus": [
+      "ferretería amplia",
+      "herramienta profesional",
+      "construcción",
+      "automotriz",
+      "soldadura",
+      "plomería",
+      "jardín"
+    ],
+    "productFamilies": [
+      "herramientas manuales",
+      "herramientas eléctricas",
+      "herramientas automotrices",
+      "soldadura",
+      "plomería",
+      "abrasivos",
+      "compresores",
+      "escaleras",
+      "jardín",
+      "herrajes",
+      "medición",
+      "almacenamiento",
+      "seguridad industrial",
+      "accesorios"
+    ],
+    "categorySlugs": [
+      "herramientas-manuales",
+      "herramientas-electricas",
+      "automotriz",
+      "soldadura",
+      "plomeria",
+      "abrasivos",
+      "compresores",
+      "jardin",
+      "escaleras",
+      "herrajes",
+      "medicion",
+      "almacenamiento",
+      "seguridad-industrial",
+      "accesorios"
+    ],
+    "keywords": [
+      "truper",
+      "herramienta manual",
+      "herramienta eléctrica",
+      "automotriz",
+      "soldadura",
+      "plomería",
+      "abrasivo",
+      "compresor",
+      "jardín",
+      "ferretería"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Ecosistema amplio para ferretería profesional",
+      "No afirmar distribución oficial sin documento del negocio"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  },
+  {
+    "name": "TOTAL",
+    "slug": "total",
+    "status": "active",
+    "commercialPriority": 92,
+    "shortDescription": "Herramientas y equipos para construcción ligera, energía, neumática y jardín.",
+    "longDescription": "Portafolio de trabajo general y profesional con herramientas eléctricas, generadores, soldadura, construcción ligera, neumática, bombeo, medición y seguridad.",
+    "industrialFocus": [
+      "trabajo profesional y general",
+      "construcción ligera",
+      "energía",
+      "soldadura",
+      "neumática",
+      "jardín"
+    ],
+    "productFamilies": [
+      "herramientas eléctricas",
+      "accesorios para herramientas eléctricas",
+      "generadores",
+      "máquinas de soldar",
+      "equipos pequeños de construcción",
+      "herramientas neumáticas",
+      "bombas de agua",
+      "herramientas manuales",
+      "herramientas de medición",
+      "seguridad",
+      "herramientas de jardín"
+    ],
+    "categorySlugs": [
+      "herramientas-electricas",
+      "accesorios",
+      "generadores",
+      "soldadura",
+      "construccion-ligera",
+      "herramientas-neumaticas",
+      "bombas",
+      "herramientas-manuales",
+      "medicion",
+      "seguridad-industrial",
+      "jardin"
+    ],
+    "keywords": [
+      "total",
+      "total tools",
+      "herramienta eléctrica",
+      "generador",
+      "soldadora",
+      "bomba de agua",
+      "medición",
+      "jardín",
+      "neumática"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Base taxonómica alineada a portafolio general/pro",
+      "Solo cargar productos con ficha y SKU reales"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  },
+  {
+    "name": "SENCO",
+    "slug": "senco",
+    "status": "active",
+    "commercialPriority": 89,
+    "shortDescription": "Fijación profesional para construcción, carpintería y aplicaciones en madera.",
+    "longDescription": "Marca enfocada en clavadoras, grapadoras, sistemas de tornillos, compresores y consumibles para construcción, carpintería, drywall, roofing y pallets.",
+    "industrialFocus": [
+      "fijación profesional",
+      "construcción",
+      "carpintería",
+      "madera",
+      "drywall",
+      "roofing",
+      "flooring",
+      "pallets"
+    ],
+    "productFamilies": [
+      "clavadoras",
+      "grapadoras",
+      "sistemas de tornillos",
+      "herramientas cordless pneumatic",
+      "compresores",
+      "kits de fijación",
+      "clavos",
+      "grapas",
+      "tornillos",
+      "accesorios de fijación"
+    ],
+    "categorySlugs": [
+      "fijacion",
+      "clavadoras",
+      "grapadoras",
+      "sistemas-tornillos",
+      "compresores",
+      "consumibles-fijacion",
+      "carpinteria",
+      "drywall",
+      "roofing",
+      "flooring",
+      "pallets-empaques"
+    ],
+    "keywords": [
+      "senco",
+      "clavadora",
+      "grapadora",
+      "tornillos",
+      "grapas",
+      "clavos",
+      "compresor",
+      "drywall",
+      "carpintería",
+      "roofing",
+      "flooring"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Taxonomía válida para fijación profesional",
+      "No cargar referencias concretas sin confirmación comercial"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  },
+  {
+    "name": "Lincoln Electric",
+    "slug": "lincoln-electric",
+    "status": "active",
+    "commercialPriority": 94,
+    "shortDescription": "Soldadura, corte, consumibles y automatización para operación industrial.",
+    "longDescription": "Marca especializada en soldadoras MIG/TIG/STICK, corte, consumibles, automatización de soldadura, control de humos y seguridad para soldadura.",
+    "industrialFocus": [
+      "soldadura",
+      "corte",
+      "consumibles de soldadura",
+      "automatización",
+      "extracción de humos",
+      "seguridad para soldadura"
+    ],
+    "productFamilies": [
+      "soldadoras MIG",
+      "soldadoras TIG",
+      "soldadoras STICK",
+      "multiproceso",
+      "máquinas de soldar",
+      "equipos de corte",
+      "metales de aporte",
+      "electrodos",
+      "alambres de soldadura",
+      "automatización de soldadura",
+      "control de humos",
+      "seguridad y PPE para soldadura",
+      "accesorios de soldadura"
+    ],
+    "categorySlugs": [
+      "soldadura",
+      "soldadoras",
+      "corte",
+      "consumibles-soldadura",
+      "electrodos",
+      "alambres-soldadura",
+      "automatizacion",
+      "seguridad-industrial",
+      "extraccion-humos",
+      "accesorios-soldadura"
+    ],
+    "keywords": [
+      "lincoln electric",
+      "soldadora",
+      "mig",
+      "tig",
+      "stick",
+      "electrodo",
+      "alambre soldadura",
+      "corte",
+      "welding",
+      "consumibles soldadura"
+    ],
+    "logo": {
+      "assetPath": null,
+      "assetStatus": "pending",
+      "notes": "Logo pendiente de asset autorizado por negocio"
+    },
+    "sourceNotes": [
+      "Taxonomía para soldadura y corte validada para fase 3.5",
+      "No afirmar distribución oficial sin autorización del negocio"
+    ],
+    "rules": {
+      "allowProductAutoCreation": false,
+      "requiresManualSkuApproval": true,
+      "doNotClaimOfficialDistributor": true
+    }
+  }
+]

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   CreateProductRecord,
@@ -33,8 +34,22 @@ export class PrismaProductRepository implements ProductRepository {
   }
 
   async create(data: CreateProductRecord) {
+    const createData: Prisma.ProductUncheckedCreateInput = {
+      id: data.id,
+      brandId: data.brandId ?? null,
+      categoryId: data.categoryId ?? null,
+      name: data.name,
+      slug: data.slug,
+      description: data.description ?? null,
+      metadata:
+        data.metadata === null
+          ? Prisma.JsonNull
+          : data.metadata,
+      isActive: data.isActive ?? true,
+    };
+
     const created = await this.prisma.product.create({
-      data,
+      data: createData,
     });
 
     return (await this.mapById(created.id))!;
@@ -42,9 +57,17 @@ export class PrismaProductRepository implements ProductRepository {
 
   async update(data: UpdateProductRecord) {
     const { id, ...update } = data;
+    const updateData: Prisma.ProductUncheckedUpdateInput = {
+      ...update,
+      metadata:
+        update.metadata === null
+          ? Prisma.JsonNull
+          : update.metadata,
+    };
+
     await this.prisma.product.update({
       where: { id },
-      data: update,
+      data: updateData,
     });
 
     return (await this.mapById(id))!;

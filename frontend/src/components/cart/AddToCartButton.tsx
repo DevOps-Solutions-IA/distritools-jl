@@ -2,22 +2,31 @@
 
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { mapCatalogVariantToCartPayload } from '@/features/cart/mappers';
+import {
+  mapCatalogProductToQuoteCartPayload,
+  mapCatalogVariantToCartPayload,
+} from '@/features/cart/mappers';
 import { useCart } from '@/features/cart/hooks';
+import { getProductCommerceState } from '@/features/catalog/commerce';
 import type { CatalogProduct, CatalogVariant } from '@/features/catalog/types';
 
 interface AddToCartButtonProps {
   product: CatalogProduct;
   variants: CatalogVariant[];
   className?: string;
+  label?: string;
+  mode?: 'buy' | 'quote';
 }
 
 export function AddToCartButton({
   product,
   variants,
   className,
+  label,
+  mode = 'buy',
 }: AddToCartButtonProps) {
   const { addItem } = useCart();
+  const commerce = getProductCommerceState(product);
   const [selectedVariantId, setSelectedVariantId] = useState(variants[0]?.id ?? '');
 
   const selectedVariant = useMemo(
@@ -25,8 +34,10 @@ export function AddToCartButton({
     [selectedVariantId, variants],
   );
 
+  const isQuoteMode = mode === 'quote' || commerce.cartMode === 'quote';
   const isOutOfStock = product.availability.status === 'out-of-stock';
-  const disabled = !selectedVariant || isOutOfStock;
+  const disabled = isQuoteMode ? false : !selectedVariant || isOutOfStock;
+  const buttonLabel = label ?? 'Comprar';
 
   return (
     <div className="grid gap-3">
@@ -36,7 +47,7 @@ export function AddToCartButton({
           <select
             value={selectedVariantId}
             onChange={(event) => setSelectedVariantId(event.target.value)}
-            className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)]"
+            className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-base text-[var(--color-off-white)]"
           >
             {variants.map((variant) => (
               <option key={variant.id} value={variant.id}>
@@ -49,8 +60,13 @@ export function AddToCartButton({
 
       <Button
         className={className}
-        size="lg"
+        size="md"
         onClick={() => {
+          if (isQuoteMode) {
+            addItem(mapCatalogProductToQuoteCartPayload(product));
+            return;
+          }
+
           if (!selectedVariant) {
             return;
           }
@@ -59,7 +75,7 @@ export function AddToCartButton({
         }}
         disabled={disabled}
       >
-        {selectedVariant ? 'Agregar al carrito' : 'No disponible por ahora'}
+        {buttonLabel}
       </Button>
     </div>
   );

@@ -9,14 +9,15 @@
       <rect x="28" y="162" width="18" height="22" rx="2" transform="rotate(40 28 162)"/>
     </g>
     <path d="M88 14H164C198 14 224 41 224 77V100H194V81C194 57 178 43 154 43H96L88 14Z" fill="#F5F5F5"/>
-    <g transform="skewX(-10)">
+    <g transform="skewX(-9)">
       <text x="74" y="128" fill="#F5F5F5" font-size="96" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif">T</text>
       <text x="145" y="173" fill="#F5B700" font-size="102" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif">T</text>
-      <text x="276" y="118" fill="#F5F5F5" font-size="88" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif">Distri</text>
-      <text x="558" y="118" fill="#F5B700" font-size="88" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif">Tools</text>
-      <text x="820" y="120" fill="#F5F5F5" font-size="72" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif">JL</text>
+      <text x="278" y="118" font-size="86" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif" letter-spacing="-2">
+        <tspan fill="#F5F5F5">Distri</tspan><tspan fill="#F5B700">Tools</tspan>
+      </text>
+      <text x="812" y="120" fill="#F5F5F5" font-size="72" font-weight="900" font-style="italic" font-family="Arial, Helvetica, sans-serif">JL</text>
     </g>
-    <path d="M286 138H734" stroke="#F5B700" stroke-width="8" stroke-linecap="square"/>
-    <path d="M780 48H926L910 136H764L780 48Z" stroke="#F5B700" stroke-width="8"/>
+    <path d="M286 138H742" stroke="#F5B700" stroke-width="8" stroke-linecap="square"/>
+    <path d="M772 48H926L910 136H756L772 48Z" stroke="#F5B700" stroke-width="8"/>
   </g>
 </svg>

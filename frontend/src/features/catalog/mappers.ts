@@ -14,6 +14,8 @@ import type {
   CatalogVariant,
 } from '@/features/catalog/types';
 
+type ProductMetadataAvailability = NonNullable<BackendProductRecord['metadata']>['availability'];
+
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
@@ -50,7 +52,7 @@ export function createAvailabilityFromQuantity(quantity: number): CatalogAvailab
     return {
       status: 'out-of-stock',
       label: 'Sin disponibilidad',
-      description: 'El índice de búsqueda reporta disponibilidad cero para esta coincidencia.',
+      description: 'Este producto no está disponible para compra inmediata.',
       quantity,
       source: 'search',
     };
@@ -59,8 +61,8 @@ export function createAvailabilityFromQuantity(quantity: number): CatalogAvailab
   if (quantity <= 5) {
     return {
       status: 'low-stock',
-      label: 'Stock bajo',
-      description: 'La búsqueda reporta disponibilidad limitada; el backend confirmará la reserva al comprar.',
+      label: 'Bajo stock',
+      description: 'Quedan pocas unidades. Te recomendamos confirmar tu pedido pronto.',
       quantity,
       source: 'search',
     };
@@ -69,7 +71,7 @@ export function createAvailabilityFromQuantity(quantity: number): CatalogAvailab
   return {
     status: 'in-stock',
     label: 'Disponible',
-    description: 'La búsqueda reporta disponibilidad positiva; el backend confirma el stock real en checkout.',
+    description: 'Producto disponible para agregar al carrito.',
     quantity,
     source: 'search',
   };
@@ -78,11 +80,53 @@ export function createAvailabilityFromQuantity(quantity: number): CatalogAvailab
 export function createBackendCheckAvailability(): CatalogAvailability {
   return {
     status: 'check-backend',
-    label: 'Validación backend',
+    label: 'Consultar',
     description:
-      'El backend público todavía no expone disponibilidad detallada por producto. El stock real se confirma al crear la orden.',
+      'Te ayudamos a confirmar existencia y tiempos de entrega antes de finalizar la compra.',
     source: 'catalog-gap',
   };
+}
+
+function createAvailabilityFromProductMetadata(
+  availability: ProductMetadataAvailability,
+): CatalogAvailability | null {
+  if (availability === 'in-stock') {
+    return {
+      status: 'in-stock',
+      label: 'Disponible',
+      description: 'Producto disponible para agregar al carrito.',
+      source: 'catalog-gap',
+    };
+  }
+
+  if (availability === 'low-stock') {
+    return {
+      status: 'low-stock',
+      label: 'Bajo stock',
+      description: 'Quedan pocas unidades. Te recomendamos confirmar tu pedido pronto.',
+      source: 'catalog-gap',
+    };
+  }
+
+  if (availability === 'out-of-stock') {
+    return {
+      status: 'out-of-stock',
+      label: 'Sin disponibilidad',
+      description: 'Este producto no está disponible para compra inmediata.',
+      source: 'catalog-gap',
+    };
+  }
+
+  if (availability === 'by-request') {
+    return {
+      status: 'check-backend',
+      label: 'Cotizar',
+      description: 'Confirmamos precio y disponibilidad con nuestro equipo comercial.',
+      source: 'catalog-gap',
+    };
+  }
+
+  return null;
 }
 
 export function formatPrice(price: string | null | undefined): string | null {
@@ -96,6 +140,30 @@ export function formatPrice(price: string | null | undefined): string | null {
   }
 
   return currencyFormatter.format(numericPrice);
+}
+
+function normalizePresentationCopy(
+  presentation: string | null | undefined,
+): string | null {
+  if (!presentation) {
+    return null;
+  }
+
+  const normalized = presentation.toLocaleLowerCase('es-CO');
+  const quoteTerms = [
+    'referencia por asesor',
+    'referencia por aplicación',
+    'altura por asesor',
+    'configuración por asesor',
+    'equipo por asesor',
+    'a consultar',
+  ];
+
+  if (quoteTerms.some((term) => normalized.includes(term))) {
+    return null;
+  }
+
+  return presentation;
 }
 
 export function mapVariant(record: BackendVariantRecord): CatalogVariant {
@@ -116,19 +184,47 @@ export function mapProduct(
 ): CatalogProduct {
   const mappedVariants = variants.map(mapVariant);
   const primaryVariant = mappedVariants[0] ?? null;
+  const metadata = record.metadata;
 
   return {
     id: record.id,
     name: record.name,
     slug: record.slug,
     description: record.description,
+    longDescription: metadata?.longDescription ?? null,
+    presentation: normalizePresentationCopy(
+      metadata?.presentation ?? primaryVariant?.name ?? null,
+    ),
     brand: record.brand ? mapBrand(record.brand) : null,
     category: record.category ? mapCategory(record.category) : null,
     primaryVariantId: primaryVariant?.id ?? null,
     primarySku: primaryVariant?.sku ?? null,
     primaryPrice: primaryVariant?.price ?? null,
     primaryPriceLabel: primaryVariant?.priceLabel ?? null,
-    availability: createBackendCheckAvailability(),
+    availability:
+      createAvailabilityFromProductMetadata(metadata?.availability) ??
+      createBackendCheckAvailability(),
+    image: {
+      status: metadata?.image?.status ?? 'pending',
+      assetPath: metadata?.image?.assetPath ?? null,
+      notes: metadata?.image?.notes ?? null,
+    },
+    attributes: metadata?.attributes ?? [],
+    tags: metadata?.tags ?? [],
+    seo: {
+      title: metadata?.seo?.title ?? null,
+      description: metadata?.seo?.description ?? null,
+      keywords: metadata?.seo?.keywords ?? [],
+      ogTitle: metadata?.seo?.ogTitle ?? null,
+      ogDescription: metadata?.seo?.ogDescription ?? null,
+      ogImage: metadata?.seo?.ogImage ?? null,
+    },
+    source: {
+      name: metadata?.source?.name ?? null,
+      url: metadata?.source?.url ?? null,
+      retrievedAt: metadata?.source?.retrievedAt ?? null,
+      confidence: metadata?.source?.confidence ?? null,
+    },
   };
 }
 
@@ -143,17 +239,15 @@ export function mapProductDetail(
     variants: variants.map(mapVariant),
     featuredProductsGap: createCatalogGap({
       key: 'featured-products',
-      title: 'Destacados curados no disponibles',
+      title: 'Destacados curados',
       description:
-        'El backend público no expone todavía un endpoint dedicado de productos destacados. La home usa una muestra real del catálogo.',
+        'Selección comercial basada en el catálogo disponible.',
     }),
     relatedProductsGap: createCatalogGap({
       key: 'related-products',
-      title: 'Relacionados pendientes de contrato',
-      description:
-        'El backend no expone aún productos relacionados por producto. La sección queda explícita para integración futura.',
+      title: 'Productos relacionados',
+      description: 'Productos complementarios para ampliar tu compra.',
     }),
-    technicalAttributes: [],
   };
 }
 
@@ -197,5 +291,14 @@ export function sortCatalogProducts(products: CatalogProduct[], sort = 'featured
     );
   }
 
-  return sortedProducts.sort((left, right) => left.name.localeCompare(right.name, 'es'));
+  return sortedProducts.sort((left, right) => {
+    const leftPurchasable = left.primaryPrice !== null ? 1 : 0;
+    const rightPurchasable = right.primaryPrice !== null ? 1 : 0;
+
+    if (leftPurchasable !== rightPurchasable) {
+      return rightPurchasable - leftPurchasable;
+    }
+
+    return left.name.localeCompare(right.name, 'es');
+  });
 }

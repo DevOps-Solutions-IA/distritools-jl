@@ -7,6 +7,7 @@ export interface BackendProductRecord {
   name: string;
   slug: string;
   description: string | null;
+  metadata: BackendProductMetadata | null;
   brand: BackendBrandRecord | null;
   category: BackendCategoryRecord | null;
 }
@@ -47,6 +48,38 @@ export interface BackendBrandMetadata {
     allowProductAutoCreation: boolean;
     requiresManualSkuApproval: boolean;
     doNotClaimOfficialDistributor: boolean;
+  };
+}
+
+export interface BackendProductMetadata {
+  family?: string;
+  subcategory?: string;
+  longDescription?: string;
+  presentation?: string;
+  unit?: string;
+  packageSize?: string;
+  availability?: 'in-stock' | 'low-stock' | 'out-of-stock' | 'by-request';
+  attributes?: Array<{ label: string; value: string }>;
+  tags?: string[];
+  seo?: {
+    title?: string;
+    description?: string;
+    keywords?: string[];
+    ogTitle?: string;
+    ogDescription?: string;
+    ogImage?: string | null;
+  };
+  image?: {
+    status?: 'approved' | 'pending';
+    assetPath?: string | null;
+    notes?: string;
+  };
+  source?: {
+    type?: 'official' | 'internal' | 'distributor' | 'secondary';
+    name?: string;
+    url?: string;
+    retrievedAt?: string;
+    confidence?: 'high' | 'medium' | 'low';
   };
 }
 
@@ -142,6 +175,8 @@ export interface CatalogProduct {
   name: string;
   slug: string;
   description: string | null;
+  longDescription: string | null;
+  presentation: string | null;
   brand: CatalogBrand | null;
   category: CatalogCategory | null;
   primaryVariantId: string | null;
@@ -149,13 +184,33 @@ export interface CatalogProduct {
   primaryPrice: number | null;
   primaryPriceLabel: string | null;
   availability: CatalogAvailability;
+  image: {
+    status: 'approved' | 'pending';
+    assetPath: string | null;
+    notes: string | null;
+  };
+  attributes: Array<{ label: string; value: string }>;
+  tags: string[];
+  seo: {
+    title: string | null;
+    description: string | null;
+    keywords: string[];
+    ogTitle: string | null;
+    ogDescription: string | null;
+    ogImage: string | null;
+  };
+  source: {
+    name: string | null;
+    url: string | null;
+    retrievedAt: string | null;
+    confidence: 'high' | 'medium' | 'low' | null;
+  };
 }
 
 export interface CatalogProductDetail extends CatalogProduct {
   variants: CatalogVariant[];
   featuredProductsGap: CatalogGap | null;
   relatedProductsGap: CatalogGap | null;
-  technicalAttributes: Array<{ label: string; value: string }>;
 }
 
 export interface CatalogSearchResult {

@@ -7,10 +7,10 @@ interface AvailabilityBadgeProps {
 
 export function AvailabilityBadge({ availability }: AvailabilityBadgeProps) {
   const resolvedLabel =
-    availability.status === 'check-backend' ? 'Consultar disponibilidad' : availability.label;
+    availability.status === 'check-backend' ? 'Consultar' : availability.label;
   const resolvedDescription =
     availability.status === 'check-backend'
-      ? 'Te ayudamos a validar existencia y tiempos de entrega.'
+      ? 'Te ayudamos a confirmar existencia y tiempos de entrega.'
       : availability.description;
   const variant =
     availability.status === 'in-stock'

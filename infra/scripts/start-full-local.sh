@@ -41,6 +41,19 @@ stop_pidfile() {
 
 kill_port() {
   local port="$1"
+
+  if command -v docker >/dev/null 2>&1; then
+    mapfile -t container_ids < <(
+      docker ps --format '{{.ID}} {{.Names}} {{.Ports}}' \
+        | awk -v port="$port" '$0 ~ "distritoolsjl" && $0 ~ ":" port "->" { print $1 }'
+    )
+    if [[ "${#container_ids[@]}" -gt 0 ]]; then
+      echo "==> Cerrando contenedores DistriTools JL que ocupan puerto $port: ${container_ids[*]}"
+      docker stop "${container_ids[@]}" >/dev/null
+      sleep 1
+    fi
+  fi
+
   if command -v lsof >/dev/null 2>&1; then
     mapfile -t pids < <(lsof -ti tcp:"$port" || true)
     if [[ "${#pids[@]}" -gt 0 ]]; then
@@ -109,7 +122,7 @@ kill_port 3000
 kill_port 3001
 
 echo "==> Arrancando backend en 3000"
-nohup env \
+setsid env \
   PORT=3000 \
   APP_BASE_URL=http://127.0.0.1:3000 \
   DATABASE_URL="$DATABASE_URL" \
@@ -118,7 +131,8 @@ nohup env \
   JWT_ACCESS_SECRET="${JWT_ACCESS_SECRET:-test-access-secret}" \
   JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-test-refresh-secret}" \
   JWT_2FA_CHALLENGE_SECRET="${JWT_2FA_CHALLENGE_SECRET:-test-2fa-challenge-secret}" \
-  npm run start >"$BACKEND_LOG" 2>&1 &
+  NODE_PATH=dist \
+  node dist/src/main.js >"$BACKEND_LOG" 2>&1 < /dev/null &
 echo $! > "$BACKEND_PID_FILE"
 wait_http "http://127.0.0.1:3000/api/v1/health" "backend"
 
@@ -131,12 +145,12 @@ echo "==> Arrancando frontend en 3001"
     ./node_modules/.bin/next start --port 3001 >"$FRONTEND_LOG" 2>&1 < /dev/null &
   echo $! > "$FRONTEND_PID_FILE"
 )
-wait_http "http://127.0.0.1:3001/storefront" "frontend"
+wait_http "http://127.0.0.1:3001/" "frontend"
 
 echo
 echo "==> Stack local listo"
 echo "Backend:  http://127.0.0.1:3000/api/v1/health"
-echo "Frontend: http://127.0.0.1:3001/storefront"
+echo "Frontend: http://127.0.0.1:3001/"
 echo
 echo "==> Logs"
 echo "Backend log:  $BACKEND_LOG"

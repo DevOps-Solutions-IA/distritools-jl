@@ -11,7 +11,7 @@ export function CartEmptyState() {
         title="Tu carrito está vacío"
         description="Agrega productos desde el catálogo para continuar con tu compra."
       />
-      <Link href="/storefront/productos">
+      <Link href="/productos">
         <Button className="w-full sm:w-auto">Explorar catálogo</Button>
       </Link>
     </div>

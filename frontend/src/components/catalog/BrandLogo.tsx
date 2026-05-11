@@ -30,19 +30,19 @@ export function BrandLogo({
 
   return (
     <Link
-      href={`/storefront/marcas/${brand.slug}`}
+      href={`/marcas/${brand.slug}`}
       aria-label={decorative ? undefined : `Ver marca ${brand.name}`}
       aria-hidden={decorative}
       tabIndex={decorative ? -1 : undefined}
       className={cn(
         'group relative flex h-[5.5rem] min-w-[15rem] items-center justify-center rounded-[1.6rem] border border-white/8 bg-[rgba(255,255,255,0.025)] px-6 transition duration-300 hover:border-white/16 hover:bg-[rgba(255,255,255,0.05)]',
-        compact && 'h-[5rem] min-w-[13rem] rounded-[1.35rem] px-5',
+        compact && 'h-[4.2rem] min-w-[10.5rem] rounded-[1.15rem] px-4 sm:h-[5rem] sm:min-w-[13rem] sm:rounded-[1.35rem] sm:px-5',
         className,
       )}
     >
       <div className="absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_60%)] opacity-0 transition duration-300 group-hover:opacity-100" />
       {assetPath ? (
-        <span className={cn('relative h-12 w-[12.5rem]', compact && 'h-10 w-[11rem]')}>
+        <span className={cn('relative h-12 w-[12.5rem]', compact && 'h-8 w-[8.6rem] sm:h-10 sm:w-[11rem]')}>
           <Image
             src={assetPath}
             alt={brand.name}
@@ -53,7 +53,7 @@ export function BrandLogo({
           />
         </span>
       ) : (
-        <span className="relative text-center text-lg font-semibold uppercase tracking-[0.32em] text-[#c5c9d3] transition duration-300 group-hover:text-white">
+        <span className="relative text-center text-sm font-semibold uppercase tracking-[0.24em] text-[#c5c9d3] transition duration-300 group-hover:text-white sm:text-lg sm:tracking-[0.32em]">
           {brand.name}
         </span>
       )}

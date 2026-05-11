@@ -71,6 +71,19 @@ export class OrderEntity {
     };
   }
 
+  private maskEmail(email: string): string {
+    const [name, domain] = email.split('@');
+    if (!domain) {
+      return '***';
+    }
+
+    return `${name.slice(0, 2)}***@${domain}`;
+  }
+
+  private maskPhone(phone: string): string {
+    return phone.length <= 4 ? '****' : `${phone.slice(0, 3)}***${phone.slice(-2)}`;
+  }
+
   toAdminResponse(orderItems: unknown[]) {
     return {
       id: this.state.id,
@@ -78,11 +91,11 @@ export class OrderEntity {
       status: this.state.status,
       customer: {
         name: this.state.customerName,
-        email: this.state.customerEmail,
-        phone: this.state.customerPhone,
+        email: this.maskEmail(this.state.customerEmail),
+        phone: this.maskPhone(this.state.customerPhone),
       },
       shipping: {
-        address: this.state.shippingAddress,
+        address: 'Dirección protegida',
         city: this.state.shippingCity,
         notes: this.state.shippingNotes,
       },

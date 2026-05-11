@@ -48,7 +48,7 @@ describe('checkout api', () => {
           quantity: 1,
         },
       ],
-      paymentMethod: 'mock',
+      paymentMethod: 'cash_on_delivery',
     });
 
     expect(response.orderNumber).toBe('DTJL-0001');
@@ -84,7 +84,7 @@ describe('checkout api', () => {
             quantity: 1,
           },
         ],
-        paymentMethod: 'mock',
+        paymentMethod: 'cash_on_delivery',
       }),
     ).rejects.toMatchObject({
       message: 'Stock insuficiente',

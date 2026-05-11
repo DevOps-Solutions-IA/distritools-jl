@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsBoolean,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -35,6 +36,11 @@ export class UpdateProductRequestDto {
   @IsString()
   @MaxLength(2000)
   description?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown> | null;
 
   @ApiPropertyOptional()
   @IsOptional()

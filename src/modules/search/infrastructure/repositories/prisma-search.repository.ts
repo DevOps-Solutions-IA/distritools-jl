@@ -89,6 +89,7 @@ export class PrismaSearchRepository implements SearchRepository {
             document.brandName,
             document.categoryName,
             document.description,
+            document.metadataText,
           ]
             .filter(Boolean)
             .join(' '),
@@ -118,6 +119,7 @@ export class PrismaSearchRepository implements SearchRepository {
             document.brandName,
             document.categoryName,
             document.description,
+            document.metadataText,
           ]
             .filter(Boolean)
             .join(' '),

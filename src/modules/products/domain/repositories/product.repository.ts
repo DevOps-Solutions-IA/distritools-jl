@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { ProductState } from 'src/modules/products/domain/entities/product.entity';
 
 export interface CreateProductRecord {
@@ -7,6 +8,7 @@ export interface CreateProductRecord {
   name: string;
   slug: string;
   description?: string | null;
+  metadata?: Prisma.InputJsonValue | null;
   isActive?: boolean;
 }
 
@@ -17,6 +19,7 @@ export interface UpdateProductRecord {
   name?: string;
   slug?: string;
   description?: string | null;
+  metadata?: Prisma.InputJsonValue | null;
   isActive?: boolean;
 }
 

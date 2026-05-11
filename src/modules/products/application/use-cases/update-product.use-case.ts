@@ -26,6 +26,7 @@ export interface UpdateProductInput {
   name?: string;
   slug?: string;
   description?: string | null;
+  metadata?: Prisma.InputJsonValue | null;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -121,6 +122,10 @@ export class UpdateProductUseCase {
       slug,
       description:
         input.description !== undefined ? input.description?.trim() || null : current.description,
+      metadata:
+        input.metadata !== undefined
+          ? input.metadata
+          : (current.metadata as Prisma.InputJsonValue | null),
     });
 
     await this.auditRepository.write({

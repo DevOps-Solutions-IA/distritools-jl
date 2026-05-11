@@ -356,16 +356,16 @@ describe('Platform closure modules', async () => {
       .set('Authorization', `Bearer ${adminToken}`);
     assert.equal(reindex.status, 201);
 
-    const search = await http.get('/api/v1/search').query({ q: 'TOTAL-DEMO-001' });
+    const search = await http.get('/api/v1/search').query({ q: 'TOTAL-TG109136' });
     assert.equal(search.status, 200);
     assert.equal(
-      search.body.data.some((entry: { sku: string }) => entry.sku === 'TOTAL-DEMO-001'),
+      search.body.data.some((entry: { sku: string }) => entry.sku === 'TOTAL-TG109136'),
       true,
     );
 
-    const autocomplete = await http.get('/api/v1/search/autocomplete').query({ q: 'TOTAL-DEMO' });
+    const autocomplete = await http.get('/api/v1/search/autocomplete').query({ q: 'TOTAL-TG' });
     assert.equal(autocomplete.status, 200);
-    assert.equal(autocomplete.body.data.includes('TOTAL-DEMO-001'), true);
+    assert.equal(autocomplete.body.data.includes('TOTAL-TG109136'), true);
 
     const order = await http.post('/api/v1/orders').send({
       customer: {

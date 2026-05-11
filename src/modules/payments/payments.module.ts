@@ -9,11 +9,17 @@ import {
   PAYMENT_GATEWAY_PORT,
 } from 'src/modules/payments/application/ports/payment-gateway.port';
 import {
+  PAYMENT_PROVIDER_PORT,
+} from 'src/modules/payments/application/ports/payment-provider.port';
+import {
   PAYMENT_REPOSITORY,
 } from 'src/modules/payments/domain/repositories/payment.repository';
 import { PaymentPolicyService } from 'src/modules/payments/domain/services/payment-policy.service';
 import { PaymentsController } from 'src/modules/payments/infrastructure/http/controllers/payments.controller';
 import { MockPaymentGatewayAdapter } from 'src/modules/payments/infrastructure/gateways/mock-payment-gateway.adapter';
+import { NullPaymentAdapter } from 'src/modules/payments/infrastructure/gateways/null-payment.adapter';
+import { PayUPaymentAdapter } from 'src/modules/payments/infrastructure/gateways/payu-payment.adapter';
+import { WompiPaymentAdapter } from 'src/modules/payments/infrastructure/gateways/wompi-payment.adapter';
 import { PrismaPaymentRepository } from 'src/modules/payments/infrastructure/repositories/prisma-payment.repository';
 import { WebhooksModule } from 'src/modules/webhooks/webhooks.module';
 
@@ -27,6 +33,9 @@ import { WebhooksModule } from 'src/modules/webhooks/webhooks.module';
     PaymentPolicyService,
     PrismaPaymentRepository,
     MockPaymentGatewayAdapter,
+    NullPaymentAdapter,
+    WompiPaymentAdapter,
+    PayUPaymentAdapter,
     {
       provide: PAYMENT_REPOSITORY,
       useExisting: PrismaPaymentRepository,
@@ -35,7 +44,11 @@ import { WebhooksModule } from 'src/modules/webhooks/webhooks.module';
       provide: PAYMENT_GATEWAY_PORT,
       useExisting: MockPaymentGatewayAdapter,
     },
+    {
+      provide: PAYMENT_PROVIDER_PORT,
+      useExisting: NullPaymentAdapter,
+    },
   ],
-  exports: [PAYMENT_REPOSITORY, ProcessPaymentWebhookUseCase],
+  exports: [PAYMENT_REPOSITORY, PAYMENT_PROVIDER_PORT, ProcessPaymentWebhookUseCase],
 })
 export class PaymentsModule {}

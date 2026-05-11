@@ -2,6 +2,7 @@ import { createApiClient } from '@/lib/api/client';
 import type {
   CreateGuestCheckoutPayload,
   GuestCheckoutOrderResponse,
+  PublicTrackingResponse,
   PublicOrderResponse,
 } from '@/features/checkout/types';
 
@@ -19,6 +20,16 @@ export async function getPublicOrder(orderNumber: string) {
   const response = await ordersClient.get<PublicOrderResponse>(`/orders/${orderNumber}`, {
     cache: 'no-store',
   });
+  return response.data;
+}
+
+export async function trackPublicOrder(query: string) {
+  const response = await ordersClient.get<PublicTrackingResponse>(
+    `/orders/track?query=${encodeURIComponent(query)}`,
+    {
+      cache: 'no-store',
+    },
+  );
   return response.data;
 }
 

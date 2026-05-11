@@ -3,39 +3,39 @@ import type { CatalogGap } from '@/features/catalog/types';
 export const catalogBackendGaps: CatalogGap[] = [
   {
     key: 'product-by-slug',
-    title: 'Resolución directa por slug pendiente',
+    title: 'Detalle comercial en preparación',
     description:
-      'El backend público expone detalle de producto y categoría por id. El storefront resuelve slugs desde listados reales mientras llega un contrato directo.',
+      'Estamos organizando la ficha comercial para que el producto se consulte con mayor precisión.',
   },
   {
     key: 'product-availability',
-    title: 'Disponibilidad pública incompleta',
+    title: 'Disponibilidad por confirmar',
     description:
-      'La disponibilidad pública solo llega en resultados de búsqueda. El detalle de producto aún no expone stock público dedicado.',
+      'Confirmaremos unidades y tiempos de entrega con nuestro equipo comercial.',
   },
   {
     key: 'product-images',
-    title: 'Imágenes de producto no expuestas públicamente',
+    title: 'Imagen pendiente',
     description:
-      'El backend público actual no entrega galería de producto. El storefront usa fallback visual honesto mientras se define ese contrato.',
+      'La imagen final del producto será cargada cuando el asset comercial esté aprobado.',
   },
   {
     key: 'product-attributes',
-    title: 'Ficha técnica pendiente de endpoint público',
+    title: 'Especificaciones por completar',
     description:
-      'Los atributos técnicos todavía no llegan desde el backend público. La PDP muestra el gap de integración de forma explícita.',
+      'Nuestro equipo validará especificaciones completas antes de la venta.',
   },
   {
     key: 'related-products',
-    title: 'Relacionados no implementados en backend público',
+    title: 'Relacionados en preparación',
     description:
-      'No existe endpoint público de productos relacionados. La UI lo declara sin fingir sugerencias artificiales.',
+      'Estamos curando alternativas compatibles para mejorar la compra.',
   },
   {
     key: 'featured-products',
-    title: 'Destacados curados no implementados',
+    title: 'Destacados comerciales',
     description:
-      'No existe endpoint público de destacados. La home muestra una selección real del catálogo y lo etiqueta de forma honesta.',
+      'Mostramos una selección inicial del catálogo disponible para compra o asesoría.',
   },
 ];
 

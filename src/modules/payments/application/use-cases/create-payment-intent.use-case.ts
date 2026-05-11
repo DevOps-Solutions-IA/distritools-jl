@@ -1,4 +1,9 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import {
   DOMAIN_EVENT_PUBLISHER,
@@ -56,6 +61,14 @@ export class CreatePaymentIntentUseCase {
   async execute(input: CreatePaymentIntentInput) {
     if (input.actor) {
       assertHasPermissions(input.actor.permissions, ['payments.create']);
+    }
+
+    if (input.gateway === 'pse') {
+      throw new ConflictException('PSE provider is not configured');
+    }
+
+    if (input.gateway !== 'mock') {
+      throw new BadRequestException('Unsupported payment gateway');
     }
 
     const orderRecord = await this.orderRepository.findByOrderNumber(input.orderNumber);

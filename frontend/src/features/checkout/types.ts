@@ -5,7 +5,10 @@ export interface CheckoutFormValues {
   email: string;
   phone: string;
   document: string;
+  department: string;
   city: string;
+  neighborhood: string;
+  postalCode: string;
   address: string;
   addressDetail: string;
   notes: string;
@@ -97,6 +100,36 @@ export interface PublicOrderResponse {
   createdAt: string;
 }
 
+export interface PublicTrackingResponse {
+  orderNumber: string | null;
+  publicStatus:
+    | 'recibido'
+    | 'pendiente_confirmacion'
+    | 'preparando'
+    | 'pendiente_guia'
+    | 'enviado'
+    | 'en_camino'
+    | 'entregado'
+    | 'no_encontrado'
+    | 'requiere_contacto';
+  paymentStatus: string | null;
+  shippingStatus: string;
+  trackingNumber: string | null;
+  carrier: string | null;
+  estimatedDeliveryDate: string | null;
+  events: Array<{
+    label: string;
+    description: string;
+    date: string | null;
+    status: string;
+  }>;
+  nextStep: string;
+  supportAction: {
+    label: string;
+    href: string;
+  };
+}
+
 export interface PaymentIntentResponse {
   payment: {
     id: string;
@@ -114,17 +147,12 @@ export interface PaymentIntentResponse {
 }
 
 export interface CheckoutSubmissionResult {
-  kind: 'success' | 'gap';
+  kind: 'success' | 'quote';
   order?: GuestCheckoutOrderResponse;
   payment?: PaymentIntentResponse['payment'];
   message?: string;
 }
 
-export interface CheckoutGap {
-  key: 'cart-backend' | 'payment-status-public';
-  title: string;
-  description: string;
-}
 
 export interface CheckoutFormComponentProps {
   items: CartItem[];

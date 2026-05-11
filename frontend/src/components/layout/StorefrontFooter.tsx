@@ -17,48 +17,60 @@ const footerLinks: FooterLinkGroup[] = [
   {
     title: 'Catálogo',
     items: [
-      { label: 'Productos', href: '/storefront/productos' },
-      { label: 'Marcas', href: '/storefront/marcas' },
+      { label: 'Productos', href: '/productos' },
+      { label: 'Marcas', href: '/marcas' },
+      { label: 'Categorías', href: '/categorias' },
     ],
   },
   {
     title: 'Líneas clave',
     items: [
-      { label: 'Compresores y aire', href: '/storefront/productos?category=compresores' },
-      { label: 'Fijación industrial', href: '/storefront/productos?category=fijacion' },
-      { label: 'Soldadura y corte', href: '/storefront/productos?category=soldadura' },
+      { label: 'Compresores y aire', href: '/productos?category=compresores' },
+      { label: 'Fijación industrial', href: '/productos?category=fijacion' },
+      { label: 'Soldadura y corte', href: '/productos?category=soldadura' },
     ],
   },
   {
     title: 'Atención',
     items: [
-      { label: 'Asesoría comercial', href: siteConfig.whatsappUrl, external: true },
+      { label: 'Rastreo de pedido', href: '/rastreo-de-pedido' },
+      { label: 'Contacto', href: '/contacto' },
       { label: 'WhatsApp', href: siteConfig.whatsappUrl, external: true },
+    ],
+  },
+  {
+    title: 'Legal',
+    items: [
+      { label: 'Política de privacidad', href: '/politica-de-privacidad' },
+      { label: 'Tratamiento de datos', href: '/tratamiento-de-datos' },
+      { label: 'Términos y condiciones', href: '/terminos-y-condiciones' },
+      { label: 'Política de envíos', href: '/politica-de-envios' },
+      { label: 'Cambios y garantías', href: '/cambios-devoluciones-y-garantias' },
     ],
   },
 ];
 
 export function StorefrontFooter() {
   return (
-    <footer className="mt-20 border-t border-[var(--color-border)] bg-[#050505]">
-      <div className="enterprise-grid grid gap-10 py-12 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-4">
+    <footer className="mt-10 border-t border-[var(--color-border)] bg-[#050505] sm:mt-16 lg:mt-20">
+      <div className="enterprise-grid grid gap-6 py-7 sm:gap-10 sm:py-10 lg:grid-cols-[0.8fr_1.2fr]">
+        <div className="space-y-2 sm:space-y-3">
           <DistriToolsLogo
-            size="lg"
+            size="sm"
             tone="dark"
-            className="h-[5rem] w-[22rem] max-w-full"
+            className="h-8 w-[10rem] max-w-full sm:h-11 sm:w-[14rem]"
           />
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-[var(--color-industrial-yellow)]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[var(--color-industrial-yellow)]">
             Herramientas que construyen resultados
           </p>
-          <p className="max-w-xl text-sm leading-7 text-[var(--color-text-secondary)]">
+          <p className="max-w-md text-sm leading-6 text-[var(--color-text-secondary)] sm:leading-7">
             Soluciones para industria, mantenimiento, construcción y operación técnica.
           </p>
         </div>
 
-        <div className="grid gap-8 sm:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8">
           {footerLinks.map((group) => (
-            <div key={group.title} className="space-y-4">
+            <div key={group.title} className="space-y-3 sm:space-y-4">
               <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
                 {group.title}
               </h3>
@@ -89,7 +101,7 @@ export function StorefrontFooter() {
           ))}
         </div>
       </div>
-      <div className="enterprise-grid border-t border-white/6 py-5 text-xs uppercase tracking-[0.18em] text-[var(--color-text-secondary)]">
+      <div className="enterprise-grid border-t border-white/6 py-4 text-xs uppercase tracking-[0.18em] text-[var(--color-text-secondary)] sm:py-5">
         DistriTools JL
       </div>
     </footer>

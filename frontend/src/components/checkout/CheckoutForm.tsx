@@ -1,27 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { useCart } from '@/features/cart/hooks';
-import { checkoutBackendGaps } from '@/features/checkout/mappers';
+import {
+  getCheckoutPaymentMethods,
+  getDefaultPaymentMethod,
+} from '@/features/checkout/payment-methods';
 import {
   checkoutSchema,
   type CheckoutSchemaValues,
 } from '@/features/checkout/schema';
 import { submitGuestCheckout } from '@/lib/api/checkout';
 import { CheckoutErrorState } from '@/components/checkout/CheckoutErrorState';
+import {
+  captureCommerceError,
+  trackCommerceEvent,
+} from '@/lib/observability/commerce-events';
 
 interface CheckoutFormProps {
-  onSuccess(args: { orderNumber: string; message?: string }): void;
+  onSuccess(args: {
+    kind: 'order' | 'quote';
+    orderNumber?: string;
+    message?: string;
+    paymentMethod?: CheckoutSchemaValues['paymentGateway'];
+  }): void;
 }
 
 export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const { items, summary } = useCart();
   const [serverError, setServerError] = useState<string | null>(null);
+  const paymentMethods = getCheckoutPaymentMethods(summary);
+  const defaultPaymentMethod = getDefaultPaymentMethod(summary);
 
   const form = useForm<CheckoutSchemaValues>({
     resolver: zodResolver(checkoutSchema),
@@ -30,14 +45,43 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       email: '',
       phone: '',
       document: '',
+      department: '',
       city: '',
+      neighborhood: '',
+      postalCode: '',
       address: '',
       addressDetail: '',
       notes: '',
-      paymentGateway: 'mock',
+      paymentGateway: defaultPaymentMethod,
       acceptsTerms: false,
     },
   });
+
+  const selectedPaymentMethod = form.watch('paymentGateway');
+
+  useEffect(() => {
+    trackCommerceEvent('checkout_started', {
+      itemCount: summary.itemCount,
+      hasQuoteItems: summary.hasQuoteItems,
+      hasPricedItems: summary.hasPricedItems,
+    });
+  }, [summary.hasPricedItems, summary.hasQuoteItems, summary.itemCount]);
+
+  useEffect(() => {
+    const selectedMethod = paymentMethods.find(
+      (method) => method.id === selectedPaymentMethod,
+    );
+
+    if (!selectedMethod?.enabled) {
+      form.setValue('paymentGateway', defaultPaymentMethod);
+    }
+  }, [defaultPaymentMethod, form, paymentMethods, selectedPaymentMethod]);
+
+  useEffect(() => {
+    trackCommerceEvent('payment_method_selected', {
+      method: selectedPaymentMethod,
+    });
+  }, [selectedPaymentMethod]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setServerError(null);
@@ -50,22 +94,56 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     try {
       const result = await submitGuestCheckout(values, items);
       if (result.kind === 'success' && result.order) {
+        trackCommerceEvent('order_submitted', {
+          method: values.paymentGateway,
+          hasQuoteItems: summary.hasQuoteItems,
+          hasPricedItems: summary.hasPricedItems,
+        });
+        trackCommerceEvent('checkout_completed', {
+          kind: 'order',
+          method: values.paymentGateway,
+        });
         onSuccess({
+          kind: 'order',
           orderNumber: result.order.orderNumber,
           message: result.message,
+          paymentMethod: values.paymentGateway,
+        });
+        return;
+      }
+
+      if (result.kind === 'quote') {
+        trackCommerceEvent('quote_requested', {
+          method: values.paymentGateway,
+          itemCount: summary.itemCount,
+        });
+        trackCommerceEvent('checkout_completed', {
+          kind: 'quote',
+          method: values.paymentGateway,
+        });
+        onSuccess({
+          kind: 'quote',
+          message: result.message,
+          paymentMethod: values.paymentGateway,
         });
       }
     } catch (error) {
+      captureCommerceError('create_order', error, {
+        method: values.paymentGateway,
+        itemCount: summary.itemCount,
+      });
       setServerError(
-        error instanceof Error
-          ? error.message
-          : 'No fue posible crear la orden invitada.',
+        values.paymentGateway === 'pse'
+          ? 'PSE no está disponible en este momento. Selecciona otro método de pago.'
+          : error instanceof Error
+            ? error.message
+            : 'No fue posible crear la orden invitada.',
       );
     }
   });
 
   return (
-    <form className="grid gap-6" onSubmit={onSubmit}>
+    <form className="grid gap-3 sm:gap-6" onSubmit={onSubmit}>
       {serverError ? (
         <CheckoutErrorState
           title="No fue posible continuar con el checkout"
@@ -74,13 +152,13 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       ) : null}
 
       <Card variant="elevated">
-        <CardBody className="grid gap-5 md:grid-cols-2">
-          <div className="md:col-span-2 space-y-1">
+        <CardBody className="grid gap-3 p-4 sm:gap-5 sm:p-5 md:grid-cols-2">
+          <div className="space-y-1 md:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
-              Datos de contacto y entrega
+              Datos de contacto
             </p>
-            <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-              Completa la información necesaria para generar tu orden y continuar con el proceso de pago.
+            <p className="text-xs leading-5 text-[var(--color-text-secondary)] sm:text-sm sm:leading-6">
+              Completa tu información para confirmar el pedido y coordinar la entrega.
             </p>
           </div>
           <Input
@@ -104,10 +182,38 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             {...form.register('document')}
             error={form.formState.errors.document?.message}
           />
+        </CardBody>
+      </Card>
+
+      <Card variant="elevated">
+        <CardBody className="grid gap-3 p-4 sm:gap-5 sm:p-5 md:grid-cols-2">
+          <div className="space-y-1 md:col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
+              Entrega
+            </p>
+            <p className="text-xs leading-5 text-[var(--color-text-secondary)] sm:text-sm sm:leading-6">
+              La transportadora y el valor de envío se confirmarán antes del despacho.
+            </p>
+          </div>
+          <Input
+            label="Departamento"
+            {...form.register('department')}
+            error={form.formState.errors.department?.message}
+          />
           <Input
             label="Ciudad"
             {...form.register('city')}
             error={form.formState.errors.city?.message}
+          />
+          <Input
+            label="Barrio"
+            {...form.register('neighborhood')}
+            error={form.formState.errors.neighborhood?.message}
+          />
+          <Input
+            label="Código postal"
+            {...form.register('postalCode')}
+            error={form.formState.errors.postalCode?.message}
           />
           <Input
             label="Dirección principal"
@@ -119,29 +225,68 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
             {...form.register('addressDetail')}
             error={form.formState.errors.addressDetail?.message}
           />
-          <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--color-off-white)]">
-            Método de pago
-            <select
-              {...form.register('paymentGateway')}
-              className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)]"
-            >
-              <option value="mock">Pasarela disponible</option>
-            </select>
-          </label>
           <div className="md:col-span-2">
             <label className="flex flex-col gap-2 text-sm font-semibold text-[var(--color-off-white)]">
               Notas
               <textarea
                 {...form.register('notes')}
-                rows={4}
-                className="focus-ring rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-3 text-sm text-[var(--color-off-white)]"
+                rows={3}
+                className="focus-ring rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-3 text-base text-[var(--color-off-white)]"
               />
             </label>
           </div>
-          <label className="md:col-span-2 flex items-start gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-sm leading-6 text-[var(--color-text-secondary)]">
-            <input type="checkbox" {...form.register('acceptsTerms')} className="mt-1 h-4 w-4" />
+        </CardBody>
+      </Card>
+
+      <Card variant="elevated">
+        <CardBody className="space-y-3 p-4 sm:space-y-5 sm:p-5">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
+              Pago
+            </p>
+            <p className="text-xs leading-5 text-[var(--color-text-secondary)] sm:text-sm sm:leading-6">
+              Elige un método disponible. PSE permanece bloqueado sin proveedor configurado.
+            </p>
+          </div>
+          <div className="grid gap-2">
+            {paymentMethods.map((method) => (
+              <label
+                key={method.id}
+                data-testid="payment-method-option"
+                className="flex min-h-14 cursor-pointer items-center gap-3 rounded-[1rem] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2.5 transition hover:border-[rgba(245,183,0,0.45)] has-[:checked]:border-[var(--color-industrial-yellow)] has-[:checked]:bg-[rgba(245,183,0,0.08)] has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-55 sm:min-h-16 sm:px-4"
+              >
+                <input
+                  type="radio"
+                  value={method.id}
+                  disabled={!method.enabled}
+                  {...form.register('paymentGateway')}
+                  className="h-4 w-4 accent-[var(--color-industrial-yellow)]"
+                />
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="font-semibold text-[var(--color-off-white)]">
+                    {method.label}
+                  </span>
+                  <span className="truncate text-xs leading-5 text-[var(--color-text-secondary)] sm:text-sm">
+                    {method.enabled ? method.description : method.unavailableReason ?? method.description}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <label
+            data-testid="data-treatment-consent"
+            className="flex min-h-12 items-start gap-3 rounded-[1rem] border border-[var(--color-border)] bg-[rgba(255,255,255,0.025)] px-3 py-2.5 text-xs leading-5 text-[var(--color-text-secondary)] sm:text-sm md:col-span-2"
+          >
+            <input type="checkbox" {...form.register('acceptsTerms')} className="mt-0.5 h-4 w-4 accent-[var(--color-industrial-yellow)]" />
             <span>
-              Acepto el tratamiento de datos y autorizo la creación de mi solicitud de compra.
+              Acepto el{' '}
+              <Link
+                href="/tratamiento-de-datos"
+                className="font-semibold text-[var(--color-industrial-yellow)] underline-offset-4 hover:underline"
+              >
+                tratamiento de datos
+              </Link>{' '}
+              y la creación de mi solicitud.
             </span>
           </label>
           {form.formState.errors.acceptsTerms?.message ? (
@@ -153,33 +298,35 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       </Card>
 
       <Card className="border-dashed bg-[var(--color-surface-muted)]">
-        <CardBody className="space-y-3">
-          <h3 className="text-lg font-semibold text-[var(--color-off-white)]">
-            Condiciones del proceso de compra
+        <CardBody className="space-y-1.5 p-3 sm:space-y-3 sm:p-5">
+          <h3 className="text-sm font-semibold text-[var(--color-off-white)] sm:text-lg">
+            Confirmación de compra
           </h3>
-          <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-            Antes de pasar al pago, la orden valida condiciones comerciales y disponibilidad vigente.
+          <p className="text-xs leading-5 text-[var(--color-text-secondary)] sm:text-sm sm:leading-6">
+            Revisa tu pedido antes de enviarlo. Te contactaremos si necesitamos confirmar algún detalle.
           </p>
           <p className="text-sm font-medium text-[var(--color-off-white)]">
-            Subtotal actual: {summary.subtotalLabel}
+            Subtotal: {summary.hasPricedItems ? summary.subtotalLabel : 'Por cotizar'}
           </p>
-          <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
-            {checkoutBackendGaps.find((gap) => gap.key === 'payment-status-public')?.description}
-          </p>
+          {summary.hasQuoteItems ? (
+            <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
+              Incluye productos por cotizar. Confirmaremos precio y disponibilidad antes de finalizar.
+            </p>
+          ) : null}
         </CardBody>
       </Card>
 
-      <div className="flex flex-col gap-3 sm:flex-row">
+      <div className="sticky bottom-3 z-20 grid gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(5,5,5,0.92)] p-2 shadow-elevated backdrop-blur sm:static sm:flex sm:flex-row sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
         <Button
           type="submit"
-          size="lg"
+          size="md"
           loading={form.formState.isSubmitting}
           disabled={!items.length}
         >
-          Crear orden invitada
+          Finalizar compra
         </Button>
-        <Button type="button" variant="outline" size="lg" disabled>
-          Confirmación posterior al pago
+        <Button type="button" variant="outline" size="md" disabled>
+          Envío pendiente de confirmación
         </Button>
       </div>
     </form>

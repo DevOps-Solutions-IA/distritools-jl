@@ -309,3 +309,74 @@ GO
 
 ## Próximo paso exacto
 Implementar Fase 4 — Dashboard administrativo conectado a auth/RBAC backend, productos, inventario, órdenes y métricas operativas.
+
+---
+
+# Fase 2A — Catálogo Maestro Real de Marcas y Productos
+
+## Fecha de ejecución
+2026-04-28
+
+## Estado
+GO
+
+## Alcance implementado
+- `/` mantiene la tienda principal y `/storefront` permanece como compatibilidad/redirección limpia.
+- Se creó catálogo maestro versionado en `data/catalog/master-products.json`.
+- Se integró seed idempotente de productos en `src/modules/products/infrastructure/seeds/master-product-catalog.seed.ts`.
+- Se añadió `Product.metadata` para SEO, fuente, presentación, atributos, imagen y disponibilidad comercial.
+- ProductCard quedó simplificada: imagen/fallback dominante, nombre, precio y dos CTA.
+- Se eliminó texto visible tipo demo/técnico en fixtures y copy público revisado.
+- Se agregó categoría `escaleras` para alinear Truper con la taxonomía real.
+
+## Marcas organizadas
+- Ingersoll Rand
+- BeA
+- Pretul
+- Truper
+- TOTAL
+- SENCO
+- Lincoln Electric
+
+## Productos organizados
+- 14 productos iniciales, 2 por marca.
+- Solo los productos TOTAL con precio/stock local aprobado crean variantes vendibles.
+- El resto queda como `by-request`, sin precio ni stock falso.
+
+## Fuentes oficiales usadas
+- Ingersoll Rand: https://www.ingersollrand.com/
+- BeA Group: https://www.bea-group.com/
+- Truper/Pretul: https://www.truper.com/
+- TOTAL Tools: https://www.totalbusiness.com/
+- SENCO: https://www.senco.com/
+- Lincoln Electric: https://www.lincolnelectric.com/
+
+## Comandos ejecutados
+- `npx prisma validate`: PASS
+- `npx prisma generate`: PASS
+- `bash -lc 'set -a; source .env.test; set +a; npm run prisma:migrate:deploy'`: PASS
+- `npm run lint`: PASS
+- `npm run typecheck`: PASS
+- `npm run build`: PASS
+- `npm run test`: PASS
+- `npm run test:critical`: PASS (`32/32`)
+- `cd frontend && npm run lint`: PASS
+- `cd frontend && npm run typecheck`: PASS
+- `cd frontend && npm run test`: PASS (`31/31`)
+- `cd frontend && npm run build`: PASS
+
+## Fallos reales corregidos durante la corrida
+- ProductCard no mostraba imágenes aprobadas porque validaba estado inexistente `available`; corregido a `approved`.
+- `test:critical` ejecutaba suites compartiendo DB con concurrencia y podía romper permisos/categorías; ahora corre secuencial.
+- DB de pruebas no tenía migración `products.metadata`; se aplicó migración.
+- Truper referenciaba categoría `escaleras` inexistente; se añadió a taxonomía base.
+- Tests de catálogo tenían expectativas ambiguas por marca repetida; se ajustaron a roles accesibles.
+
+## Riesgos restantes
+- Falta carga comercial autorizada de todos los SKUs reales por marca.
+- Faltan imágenes oficiales de producto con derechos validados.
+- Los precios reales deben venir de operación comercial o ERP; no se inventaron precios externos.
+- Los productos `by-request` no crean variante vendible hasta contar con SKU, precio y stock verificado.
+
+## Próximo paso exacto
+Implementar Fase 4 — Dashboard administrativo conectado a auth/RBAC backend, productos, inventario, órdenes, métricas operativas y administración visual de marcas.

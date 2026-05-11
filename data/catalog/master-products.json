@@ -1,0 +1,618 @@
+[
+  {
+    "name": "Taladro percutor 1/2 pulg TOTAL",
+    "slug": "taladro-percutor-1-2-total",
+    "brandSlug": "total",
+    "categorySlug": "herramientas-electricas",
+    "family": "Herramientas eléctricas",
+    "subcategory": "Taladros percutores",
+    "shortDescription": "Taladro percutor para perforación, montaje y mantenimiento en obra o taller.",
+    "longDescription": "Herramienta eléctrica TOTAL para perforar en metal, madera y mampostería ligera. Es una opción práctica para mantenimiento técnico, instalación y trabajo continuo con asesoría comercial disponible.",
+    "presentation": "1/2 pulg",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": "TOTAL-TG109136",
+    "price": 349900,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 5,
+    "availability": "in-stock",
+    "attributes": [
+      { "label": "Tipo", "value": "Taladro percutor" },
+      { "label": "Aplicación", "value": "Perforación y montaje" },
+      { "label": "Presentación", "value": "1/2 pulg" }
+    ],
+    "tags": ["taladro", "percutor", "herramienta eléctrica", "total", "perforación"],
+    "seo": {
+      "title": "Taladro percutor 1/2 pulg TOTAL | DistriTools JL",
+      "description": "Compra taladro percutor TOTAL de 1/2 pulg para obra, taller y mantenimiento con asesoría comercial DistriTools JL.",
+      "keywords": ["taladro percutor", "TOTAL", "herramientas eléctricas", "DistriTools JL"],
+      "ogTitle": "Taladro percutor TOTAL",
+      "ogDescription": "Herramienta eléctrica TOTAL para perforación y montaje técnico."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen comercial pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "TOTAL Tools catálogo oficial",
+      "url": "https://www.totalbusiness.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "medium"
+    }
+  },
+  {
+    "name": "Esmeril angular 4 1/2 pulg TOTAL",
+    "slug": "esmeril-angular-4-1-2-total",
+    "brandSlug": "total",
+    "categorySlug": "herramientas-electricas",
+    "family": "Herramientas eléctricas",
+    "subcategory": "Esmeriles angulares",
+    "shortDescription": "Esmeril angular para corte, desbaste y preparación de superficies.",
+    "longDescription": "Esmeril angular TOTAL para trabajo general, desbaste y corte con discos compatibles. Recomendado para taller, mantenimiento e industria liviana cuando se requiere una herramienta compacta y funcional.",
+    "presentation": "4 1/2 pulg",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": "TOTAL-TG10811556",
+    "price": 289900,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 2,
+    "availability": "low-stock",
+    "attributes": [
+      { "label": "Tipo", "value": "Esmeril angular" },
+      { "label": "Aplicación", "value": "Corte y desbaste" },
+      { "label": "Presentación", "value": "4 1/2 pulg" }
+    ],
+    "tags": ["esmeril", "angular", "total", "corte", "desbaste"],
+    "seo": {
+      "title": "Esmeril angular 4 1/2 pulg TOTAL | DistriTools JL",
+      "description": "Compra esmeril angular TOTAL de 4 1/2 pulg para corte y desbaste con asesoría comercial.",
+      "keywords": ["esmeril angular", "TOTAL", "corte", "desbaste", "DistriTools JL"],
+      "ogTitle": "Esmeril angular TOTAL",
+      "ogDescription": "Herramienta TOTAL para corte, desbaste y mantenimiento técnico."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen comercial pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "TOTAL Tools catálogo oficial",
+      "url": "https://www.totalbusiness.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "medium"
+    }
+  },
+  {
+    "name": "Compresor de aire de pistón Ingersoll Rand",
+    "slug": "compresor-aire-piston-ingersoll-rand",
+    "brandSlug": "ingersoll-rand",
+    "categorySlug": "compresores",
+    "family": "Compresores de aire",
+    "subcategory": "Compresores de pistón",
+    "shortDescription": "Compresor de aire para talleres, mantenimiento y aplicaciones de aire comprimido.",
+    "longDescription": "Solución Ingersoll Rand orientada a suministro de aire comprimido para operación técnica, servicio y mantenimiento. La referencia exacta y configuración se confirman con asesoría comercial según demanda de caudal, presión y uso.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "equipo",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Compresor de aire" },
+      { "label": "Aplicación", "value": "Aire comprimido industrial y comercial" },
+      { "label": "Marca", "value": "Ingersoll Rand" }
+    ],
+    "tags": ["ingersoll rand", "compresor", "aire comprimido", "taller", "industria"],
+    "seo": {
+      "title": "Compresores de aire Ingersoll Rand | DistriTools JL",
+      "description": "Consulta compresores de aire Ingersoll Rand para taller, mantenimiento e industria con asesoría DistriTools JL.",
+      "keywords": ["Ingersoll Rand", "compresor de aire", "aire comprimido", "DistriTools JL"],
+      "ogTitle": "Compresor Ingersoll Rand",
+      "ogDescription": "Soluciones de aire comprimido para operación técnica."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Ingersoll Rand catálogo oficial",
+      "url": "https://www.ingersollrand.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Llave de impacto neumática Ingersoll Rand",
+    "slug": "llave-impacto-neumatica-ingersoll-rand",
+    "brandSlug": "ingersoll-rand",
+    "categorySlug": "herramientas-neumaticas",
+    "family": "Herramientas neumáticas",
+    "subcategory": "Llaves de impacto",
+    "shortDescription": "Llave de impacto neumática para mantenimiento, ensamble y servicio industrial.",
+    "longDescription": "Herramienta neumática Ingersoll Rand para aplicaciones de torque en taller, mantenimiento y operación técnica. La referencia final se confirma según torque requerido, conexión y uso esperado.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Llave de impacto neumática" },
+      { "label": "Aplicación", "value": "Torque y mantenimiento" },
+      { "label": "Energía", "value": "Aire comprimido" }
+    ],
+    "tags": ["llave impacto", "neumática", "ingersoll rand", "aire comprimido"],
+    "seo": {
+      "title": "Llaves de impacto neumáticas Ingersoll Rand | DistriTools JL",
+      "description": "Consulta llaves de impacto neumáticas Ingersoll Rand para mantenimiento y trabajo técnico.",
+      "keywords": ["llave de impacto", "Ingersoll Rand", "herramienta neumática"],
+      "ogTitle": "Llave de impacto Ingersoll Rand",
+      "ogDescription": "Herramienta neumática para torque y servicio industrial."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Ingersoll Rand catálogo oficial",
+      "url": "https://www.ingersollrand.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Grapadora neumática BeA para fijación industrial",
+    "slug": "grapadora-neumatica-bea-fijacion-industrial",
+    "brandSlug": "bea",
+    "categorySlug": "grapadoras",
+    "family": "Fijación industrial",
+    "subcategory": "Grapadoras neumáticas",
+    "shortDescription": "Grapadora neumática BeA para madera, empaque, muebles y procesos de fijación.",
+    "longDescription": "Herramienta BeA para aplicaciones de grapado profesional en producción, carpintería, muebles y empaque. La referencia final se define según calibre, tipo de grapa y aplicación.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Grapadora neumática" },
+      { "label": "Aplicación", "value": "Madera, muebles y empaque" },
+      { "label": "Consumible", "value": "Grapas según referencia" }
+    ],
+    "tags": ["bea", "grapadora", "fijación", "madera", "empaque"],
+    "seo": {
+      "title": "Grapadoras neumáticas BeA | DistriTools JL",
+      "description": "Consulta grapadoras neumáticas BeA para fijación industrial en madera, muebles y empaques.",
+      "keywords": ["BeA", "grapadora neumática", "fijación industrial"],
+      "ogTitle": "Grapadora neumática BeA",
+      "ogDescription": "Herramienta de fijación para producción y carpintería."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "BeA Group catálogo oficial",
+      "url": "https://www.bea-group.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Clavadora neumática BeA para carpintería",
+    "slug": "clavadora-neumatica-bea-carpinteria",
+    "brandSlug": "bea",
+    "categorySlug": "clavadoras",
+    "family": "Fijación industrial",
+    "subcategory": "Clavadoras neumáticas",
+    "shortDescription": "Clavadora BeA para ensamble, carpintería y aplicaciones de fijación en madera.",
+    "longDescription": "Clavadora neumática BeA para trabajo profesional en carpintería, muebles, pallets y aplicaciones de ensamble. La referencia se confirma según tipo de clavo, longitud y aplicación.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Clavadora neumática" },
+      { "label": "Aplicación", "value": "Carpintería y ensamble" },
+      { "label": "Consumible", "value": "Clavos según referencia" }
+    ],
+    "tags": ["bea", "clavadora", "carpintería", "pallets", "fijación"],
+    "seo": {
+      "title": "Clavadoras neumáticas BeA | DistriTools JL",
+      "description": "Consulta clavadoras neumáticas BeA para carpintería, ensamble, pallets y fijación industrial.",
+      "keywords": ["BeA", "clavadora neumática", "carpintería"],
+      "ogTitle": "Clavadora neumática BeA",
+      "ogDescription": "Herramienta de clavado para madera y producción."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "BeA Group catálogo oficial",
+      "url": "https://www.bea-group.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Taladro eléctrico Pretul",
+    "slug": "taladro-electrico-pretul",
+    "brandSlug": "pretul",
+    "categorySlug": "herramientas-electricas",
+    "family": "Herramientas eléctricas básicas",
+    "subcategory": "Taladros",
+    "shortDescription": "Taladro Pretul para tareas de hogar técnico, taller y mantenimiento general.",
+    "longDescription": "Herramienta Pretul orientada a trabajos prácticos de perforación y mantenimiento general. La referencia exacta se confirma según disponibilidad comercial.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Taladro eléctrico" },
+      { "label": "Aplicación", "value": "Hogar técnico y taller" },
+      { "label": "Línea", "value": "Pretul" }
+    ],
+    "tags": ["pretul", "taladro", "herramienta eléctrica", "ferretería"],
+    "seo": {
+      "title": "Taladros Pretul | DistriTools JL",
+      "description": "Consulta taladros Pretul para hogar técnico, taller y mantenimiento general.",
+      "keywords": ["Pretul", "taladro", "herramienta eléctrica"],
+      "ogTitle": "Taladro Pretul",
+      "ogDescription": "Herramienta eléctrica para trabajo práctico y mantenimiento."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Catálogo Truper/Pretul",
+      "url": "https://www.truper.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "medium"
+    }
+  },
+  {
+    "name": "Bomba de agua Pretul",
+    "slug": "bomba-agua-pretul",
+    "brandSlug": "pretul",
+    "categorySlug": "bombas",
+    "family": "Bombas",
+    "subcategory": "Bombas de agua",
+    "shortDescription": "Bomba Pretul para transferencia de agua y apoyo en mantenimiento.",
+    "longDescription": "Bomba de agua Pretul para aplicaciones prácticas de transferencia, suministro y apoyo técnico. La referencia y capacidad se confirman según necesidad del cliente.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 equipo",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Bomba de agua" },
+      { "label": "Aplicación", "value": "Transferencia y suministro" },
+      { "label": "Línea", "value": "Pretul" }
+    ],
+    "tags": ["pretul", "bomba", "agua", "mantenimiento"],
+    "seo": {
+      "title": "Bombas de agua Pretul | DistriTools JL",
+      "description": "Consulta bombas de agua Pretul para transferencia, suministro y mantenimiento.",
+      "keywords": ["Pretul", "bomba de agua", "bombas"],
+      "ogTitle": "Bomba de agua Pretul",
+      "ogDescription": "Equipo para transferencia y apoyo en mantenimiento."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Catálogo Truper/Pretul",
+      "url": "https://www.truper.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "medium"
+    }
+  },
+  {
+    "name": "Rotomartillo Truper",
+    "slug": "rotomartillo-truper",
+    "brandSlug": "truper",
+    "categorySlug": "herramientas-electricas",
+    "family": "Herramientas eléctricas",
+    "subcategory": "Rotomartillos",
+    "shortDescription": "Rotomartillo Truper para perforación en obra, instalación y mantenimiento.",
+    "longDescription": "Herramienta Truper para perforación en materiales de construcción y trabajos de montaje. Se recomienda confirmar referencia y capacidad según aplicación.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Rotomartillo" },
+      { "label": "Aplicación", "value": "Obra e instalación" },
+      { "label": "Marca", "value": "Truper" }
+    ],
+    "tags": ["truper", "rotomartillo", "taladro", "construcción"],
+    "seo": {
+      "title": "Rotomartillos Truper | DistriTools JL",
+      "description": "Consulta rotomartillos Truper para perforación, obra e instalación con asesoría comercial.",
+      "keywords": ["Truper", "rotomartillo", "herramienta eléctrica"],
+      "ogTitle": "Rotomartillo Truper",
+      "ogDescription": "Herramienta para perforación en obra y mantenimiento."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Catálogo Truper",
+      "url": "https://www.truper.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "medium"
+    }
+  },
+  {
+    "name": "Escalera Truper para trabajo técnico",
+    "slug": "escalera-truper-trabajo-tecnico",
+    "brandSlug": "truper",
+    "categorySlug": "escaleras",
+    "family": "Escaleras",
+    "subcategory": "Escaleras de trabajo",
+    "shortDescription": "Escalera Truper para mantenimiento, obra y trabajo técnico.",
+    "longDescription": "Escalera Truper para apoyo en instalación, mantenimiento y operación técnica. La altura, material y capacidad se confirman según requerimiento.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 escalera",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Escalera" },
+      { "label": "Aplicación", "value": "Trabajo técnico y mantenimiento" },
+      { "label": "Marca", "value": "Truper" }
+    ],
+    "tags": ["truper", "escalera", "mantenimiento", "obra"],
+    "seo": {
+      "title": "Escaleras Truper | DistriTools JL",
+      "description": "Consulta escaleras Truper para mantenimiento, obra y operación técnica.",
+      "keywords": ["Truper", "escalera", "herramientas"],
+      "ogTitle": "Escalera Truper",
+      "ogDescription": "Escalera para obra, mantenimiento y trabajo técnico."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Catálogo Truper",
+      "url": "https://www.truper.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "medium"
+    }
+  },
+  {
+    "name": "Clavadora profesional SENCO",
+    "slug": "clavadora-profesional-senco",
+    "brandSlug": "senco",
+    "categorySlug": "clavadoras",
+    "family": "Fijación profesional",
+    "subcategory": "Clavadoras",
+    "shortDescription": "Clavadora SENCO para construcción, carpintería y aplicaciones de fijación profesional.",
+    "longDescription": "Herramienta SENCO para clavado profesional en madera, construcción y ensamble. La referencia final depende del tipo de clavo, ángulo y aplicación.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Clavadora" },
+      { "label": "Aplicación", "value": "Construcción y carpintería" },
+      { "label": "Marca", "value": "SENCO" }
+    ],
+    "tags": ["senco", "clavadora", "carpintería", "construcción"],
+    "seo": {
+      "title": "Clavadoras SENCO | DistriTools JL",
+      "description": "Consulta clavadoras SENCO para construcción, carpintería y fijación profesional.",
+      "keywords": ["SENCO", "clavadora", "fijación"],
+      "ogTitle": "Clavadora SENCO",
+      "ogDescription": "Herramienta de fijación para construcción y carpintería."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "SENCO catálogo oficial",
+      "url": "https://www.senco.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Grapadora profesional SENCO",
+    "slug": "grapadora-profesional-senco",
+    "brandSlug": "senco",
+    "categorySlug": "grapadoras",
+    "family": "Fijación profesional",
+    "subcategory": "Grapadoras",
+    "shortDescription": "Grapadora SENCO para fijación en construcción, madera y acabados.",
+    "longDescription": "Herramienta SENCO para grapado profesional en aplicaciones de construcción, carpintería y ensamble. La referencia se selecciona según tipo de grapa y material.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 herramienta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Grapadora" },
+      { "label": "Aplicación", "value": "Fijación profesional" },
+      { "label": "Marca", "value": "SENCO" }
+    ],
+    "tags": ["senco", "grapadora", "fijación", "construcción"],
+    "seo": {
+      "title": "Grapadoras SENCO | DistriTools JL",
+      "description": "Consulta grapadoras SENCO para construcción, carpintería y fijación profesional.",
+      "keywords": ["SENCO", "grapadora", "fijación"],
+      "ogTitle": "Grapadora SENCO",
+      "ogDescription": "Herramienta de grapado para fijación profesional."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "SENCO catálogo oficial",
+      "url": "https://www.senco.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Soldadora multiproceso Lincoln Electric",
+    "slug": "soldadora-multiproceso-lincoln-electric",
+    "brandSlug": "lincoln-electric",
+    "categorySlug": "soldadoras",
+    "family": "Soldadura",
+    "subcategory": "Soldadoras multiproceso",
+    "shortDescription": "Soldadora Lincoln Electric para aplicaciones MIG, TIG o STICK según referencia.",
+    "longDescription": "Equipo Lincoln Electric para procesos de soldadura profesional. La configuración exacta se confirma según material, proceso, amperaje y entorno de trabajo.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 equipo",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Soldadora multiproceso" },
+      { "label": "Aplicación", "value": "Soldadura profesional" },
+      { "label": "Procesos", "value": "MIG, TIG o STICK según referencia" }
+    ],
+    "tags": ["lincoln electric", "soldadora", "mig", "tig", "stick"],
+    "seo": {
+      "title": "Soldadoras Lincoln Electric | DistriTools JL",
+      "description": "Consulta soldadoras Lincoln Electric MIG, TIG, STICK y multiproceso para trabajo profesional.",
+      "keywords": ["Lincoln Electric", "soldadora", "MIG", "TIG", "STICK"],
+      "ogTitle": "Soldadora Lincoln Electric",
+      "ogDescription": "Equipo de soldadura para aplicaciones profesionales."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Lincoln Electric catálogo oficial",
+      "url": "https://www.lincolnelectric.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  },
+  {
+    "name": "Careta de soldadura Lincoln Electric",
+    "slug": "careta-soldadura-lincoln-electric",
+    "brandSlug": "lincoln-electric",
+    "categorySlug": "seguridad-industrial",
+    "family": "Seguridad para soldadura",
+    "subcategory": "Caretas de soldadura",
+    "shortDescription": "Careta Lincoln Electric para protección visual en procesos de soldadura.",
+    "longDescription": "Careta de soldadura Lincoln Electric para apoyar la protección visual del operario durante procesos de soldadura. La referencia se confirma según nivel de protección y aplicación.",
+    "presentation": "Cotizar",
+    "unit": "unidad",
+    "packageSize": "1 careta",
+    "sku": null,
+    "price": null,
+    "currency": "COP",
+    "taxRate": 19,
+    "stockQuantity": 0,
+    "availability": "by-request",
+    "attributes": [
+      { "label": "Tipo", "value": "Careta de soldadura" },
+      { "label": "Aplicación", "value": "Protección visual" },
+      { "label": "Marca", "value": "Lincoln Electric" }
+    ],
+    "tags": ["lincoln electric", "careta", "soldadura", "seguridad"],
+    "seo": {
+      "title": "Caretas de soldadura Lincoln Electric | DistriTools JL",
+      "description": "Consulta caretas Lincoln Electric para protección visual en soldadura profesional.",
+      "keywords": ["Lincoln Electric", "careta de soldadura", "seguridad industrial"],
+      "ogTitle": "Careta Lincoln Electric",
+      "ogDescription": "Protección visual para procesos de soldadura."
+    },
+    "image": {
+      "status": "pending",
+      "assetPath": null,
+      "notes": "Imagen pendiente de asset autorizado."
+    },
+    "source": {
+      "type": "official",
+      "name": "Lincoln Electric catálogo oficial",
+      "url": "https://www.lincolnelectric.com/",
+      "retrievedAt": "2026-04-28",
+      "confidence": "high"
+    }
+  }
+]

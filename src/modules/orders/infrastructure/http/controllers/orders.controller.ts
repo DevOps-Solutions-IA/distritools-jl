@@ -4,6 +4,7 @@ import {
   Get,
   Headers,
   Inject,
+  Query,
   Ip,
   Param,
   Post,
@@ -16,6 +17,7 @@ import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { CancelOrderUseCase } from 'src/modules/orders/application/use-cases/cancel-order.use-case';
 import { CreateOrderUseCase } from 'src/modules/orders/application/use-cases/create-order.use-case';
 import { GetOrderUseCase } from 'src/modules/orders/application/use-cases/get-order.use-case';
+import { TrackOrderUseCase } from 'src/modules/orders/application/use-cases/track-order.use-case';
 import { CancelOrderRequestDto } from 'src/modules/orders/infrastructure/http/dto/cancel-order.request.dto';
 import { CreateOrderRequestDto } from 'src/modules/orders/infrastructure/http/dto/create-order.request.dto';
 
@@ -29,6 +31,8 @@ export class OrdersController {
     private readonly cancelOrderUseCase: CancelOrderUseCase,
     @Inject(GetOrderUseCase)
     private readonly getOrderUseCase: GetOrderUseCase,
+    @Inject(TrackOrderUseCase)
+    private readonly trackOrderUseCase: TrackOrderUseCase,
   ) {}
 
   @Public()
@@ -43,6 +47,12 @@ export class OrdersController {
       ipAddress,
       userAgent,
     });
+  }
+
+  @Public()
+  @Get('orders/track')
+  track(@Query('query') query = '') {
+    return this.trackOrderUseCase.execute(query);
   }
 
   @Public()

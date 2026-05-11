@@ -29,7 +29,7 @@ export function KpiCard({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-sm font-medium text-[var(--color-text-secondary)]">{title}</p>
-            <p className="mt-2 text-3xl font-semibold tracking-tight text-[var(--color-graphite-black)]">
+            <p className="mt-2 text-3xl font-semibold tracking-tight text-[var(--color-off-white)]">
               {value}
             </p>
           </div>

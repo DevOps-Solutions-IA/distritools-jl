@@ -11,6 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Prisma } from '@prisma/client';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
@@ -81,9 +82,15 @@ export class ProductsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
+    const metadata =
+      body.metadata === undefined
+        ? undefined
+        : (body.metadata as Prisma.InputJsonValue);
+
     return this.createProductUseCase.execute({
       actor,
       ...body,
+      metadata,
       ipAddress,
       userAgent,
     });
@@ -99,10 +106,16 @@ export class ProductsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
+    const metadata =
+      body.metadata === undefined || body.metadata === null
+        ? body.metadata
+        : (body.metadata as Prisma.InputJsonValue);
+
     return this.updateProductUseCase.execute({
       actor,
       productId,
       ...body,
+      metadata,
       ipAddress,
       userAgent,
     });

@@ -26,6 +26,7 @@ export interface CreateProductInput {
   name: string;
   slug: string;
   description?: string | null;
+  metadata?: Prisma.InputJsonValue | null;
   isActive?: boolean;
   ipAddress?: string;
   userAgent?: string;
@@ -102,6 +103,7 @@ export class CreateProductUseCase {
       name: this.productPolicyService.normalizeName(input.name),
       slug,
       description: input.description?.trim() || null,
+      metadata: input.metadata ?? null,
       isActive: input.isActive ?? true,
     });
 

@@ -4,6 +4,8 @@ import { CART_STORAGE_KEY } from '@/features/cart/storage';
 import { CheckoutPageContent } from '@/components/checkout/CheckoutPageContent';
 import * as checkoutApi from '@/lib/api/checkout';
 
+const pushMock = vi.fn();
+
 vi.mock('next/link', () => ({
   default: ({
     children,
@@ -19,6 +21,12 @@ vi.mock('next/link', () => ({
   ),
 }));
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: pushMock,
+  }),
+}));
+
 function seedCart(warehouseId: string | null = null) {
   window.localStorage.setItem(
     CART_STORAGE_KEY,
@@ -27,24 +35,24 @@ function seedCart(warehouseId: string | null = null) {
         id: 'cart-var-1',
         product: {
           id: 'prod-1',
-          slug: 'taladro-demo',
-          name: 'Taladro demo',
+          slug: 'taladro-percutor-1-2-total',
+          name: 'Taladro percutor 1/2 TOTAL',
           brandName: 'Makita',
           categoryName: 'Perforación',
         },
         variant: {
           id: 'var-1',
           productId: 'prod-1',
-          name: 'Taladro demo',
-          sku: 'SKU-100',
+          name: 'Taladro percutor 1/2 TOTAL',
+          sku: 'TOTAL-TG109136',
           price: 259900,
           priceLabel: '$ 259.900',
           taxRate: '19.00',
           warehouseId,
         },
         quantity: 1,
-        availabilityLabel: 'Validación backend',
-        availabilityDescription: 'El stock final se valida en checkout.',
+        availabilityLabel: 'Consultar',
+        availabilityDescription: 'Confirmamos disponibilidad antes de finalizar la compra.',
         addedAt: new Date().toISOString(),
       },
     ]),
@@ -53,7 +61,9 @@ function seedCart(warehouseId: string | null = null) {
 
 describe('checkout storefront', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     window.localStorage.clear();
+    pushMock.mockClear();
   });
 
   it('validación de checkout inválido', async () => {
@@ -66,10 +76,13 @@ describe('checkout storefront', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /crear orden invitada/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /finalizar compra/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /crear orden invitada/i }));
+    expect(screen.queryByText(/^1$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Carrito$/)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /finalizar compra/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/ingresa un nombre completo válido/i)).toBeInTheDocument();
@@ -101,7 +114,7 @@ describe('checkout storefront', () => {
           initiateUrl: '/api/v1/payments/DTJL-001/initiate',
         },
       },
-      message: 'La confirmación final del pago depende del backend y sus webhooks.',
+      message: 'Recibirás confirmación cuando tu pedido sea validado.',
     });
 
     render(
@@ -115,13 +128,16 @@ describe('checkout storefront', () => {
     });
 
     fireEvent.change(screen.getByLabelText(/nombre completo/i), {
-      target: { value: 'Cliente Demo' },
+      target: { value: 'Cliente DistriTools' },
     });
     fireEvent.change(screen.getByLabelText(/correo/i), {
-      target: { value: 'cliente@demo.com' },
+      target: { value: 'cliente@distritools.local' },
     });
     fireEvent.change(screen.getByLabelText(/teléfono/i), {
       target: { value: '3000000000' },
+    });
+    fireEvent.change(screen.getByLabelText(/departamento/i), {
+      target: { value: 'Valle del Cauca' },
     });
     fireEvent.change(screen.getByLabelText(/ciudad/i), {
       target: { value: 'Cali' },
@@ -130,30 +146,85 @@ describe('checkout storefront', () => {
       target: { value: 'Calle 10 # 1-20' },
     });
     fireEvent.click(screen.getByRole('checkbox'));
-    fireEvent.click(screen.getByRole('button', { name: /crear orden invitada/i }));
+    expect(screen.getByTestId('data-treatment-consent')).toHaveTextContent(/acepto el tratamiento de datos/i);
+    expect(screen.getByLabelText(/pse/i)).toBeDisabled();
+    expect(screen.getAllByTestId('payment-method-option').length).toBeGreaterThanOrEqual(3);
+    fireEvent.click(screen.getByRole('button', { name: /finalizar compra/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/orden creada correctamente/i)).toBeInTheDocument();
-      expect(screen.getByText(/DTJL-001/i)).toBeInTheDocument();
+      expect(pushMock).toHaveBeenCalledWith(
+        '/checkout/confirmacion?order=DTJL-001&method=cash_on_delivery',
+      );
     });
   });
 
-  it('pago retorno no confirma pago por frontend', async () => {
-    const PaymentReturnPage = (await import('@/app/storefront/pago/retorno/page')).default;
+  it('checkout por cotización redirige a confirmación comercial', async () => {
+    window.localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([
+        {
+          id: 'cart-quote-prod-1',
+          product: {
+            id: 'prod-1',
+            slug: 'taladro-percutor-1-2-total',
+            name: 'Taladro percutor 1/2 TOTAL',
+            brandName: 'TOTAL',
+            categoryName: 'Perforación',
+          },
+          variant: {
+            id: 'quote-prod-1',
+            productId: 'prod-1',
+            name: 'Cotización',
+            sku: 'COTIZAR',
+            price: 0,
+            priceLabel: 'Por cotizar',
+            taxRate: '0.00',
+            warehouseId: null,
+            mode: 'quote',
+          },
+          quantity: 1,
+          availabilityLabel: 'Cotizar',
+          availabilityDescription: 'Confirmaremos precio y disponibilidad antes de finalizar.',
+          addedAt: new Date().toISOString(),
+        },
+      ]),
+    );
 
     render(
       <CartProvider>
-        {await PaymentReturnPage({
-          searchParams: Promise.resolve({
-            orderNumber: 'DTJL-001',
-            gateway: 'mock',
-            status: 'pending',
-          }),
-        })}
+        <CheckoutPageContent />
       </CartProvider>,
     );
 
-    expect(screen.getByText(/backend \+ webhook/i)).toBeInTheDocument();
-    expect(screen.getByText(/el pago no se confirma desde frontend/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /finalizar compra/i })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), {
+      target: { value: 'Cliente DistriTools' },
+    });
+    fireEvent.change(screen.getByLabelText(/correo/i), {
+      target: { value: 'cliente@distritools.local' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono/i), {
+      target: { value: '3000000000' },
+    });
+    fireEvent.change(screen.getByLabelText(/departamento/i), {
+      target: { value: 'Valle del Cauca' },
+    });
+    fireEvent.change(screen.getByLabelText(/ciudad/i), {
+      target: { value: 'Cali' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección principal/i), {
+      target: { value: 'Calle 10 # 1-20' },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /finalizar compra/i }));
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith(
+        '/checkout/confirmacion?type=quote&method=commercial_confirmation',
+      );
+    });
   });
 });

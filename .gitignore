@@ -42,7 +42,9 @@ Thumbs.db
 *:Zone.Identifier
 
 # Runtime / generated data
-data/
+data/*
+!data/catalog/
+!data/catalog/*.json
 *.sqlite
 *.db
 

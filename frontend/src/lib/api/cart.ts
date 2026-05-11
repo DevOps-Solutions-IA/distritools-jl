@@ -7,6 +7,6 @@ export const cartApiCapabilities = {
 export async function assertBackendCartUnavailable() {
   throw new ApiError({
     status: 501,
-    message: 'El backend público aún no expone endpoints de carrito.',
+    message: 'El carrito local no está disponible en este momento.',
   });
 }

@@ -15,6 +15,7 @@ import { InventoryModule } from 'src/modules/inventory/inventory.module';
 import { StockMovementsModule } from 'src/modules/stock-movements/stock-movements.module';
 import { OrdersModule } from 'src/modules/orders/orders.module';
 import { PaymentsModule } from 'src/modules/payments/payments.module';
+import { ShippingModule } from 'src/modules/shipping/shipping.module';
 import { WebhooksModule } from 'src/modules/webhooks/webhooks.module';
 import { AuditModule } from 'src/modules/audit/audit.module';
 import { NotificationsModule } from 'src/modules/notifications/notifications.module';
@@ -26,6 +27,7 @@ import { BrandsModule } from 'src/modules/brands/brands.module';
 import { CategoriesModule } from 'src/modules/categories/categories.module';
 import { ProductsModule } from 'src/modules/products/products.module';
 import { VariantsModule } from 'src/modules/variants/variants.module';
+import { AdminOperationsModule } from 'src/modules/admin-operations/admin-operations.module';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { VariantsModule } from 'src/modules/variants/variants.module';
     OrdersModule,
     WebhooksModule,
     PaymentsModule,
+    ShippingModule,
     AuditModule,
     NotificationsModule,
     SearchModule,
@@ -58,6 +61,7 @@ import { VariantsModule } from 'src/modules/variants/variants.module';
     CategoriesModule,
     ProductsModule,
     VariantsModule,
+    AdminOperationsModule,
   ],
   providers: [RequestContextMiddleware],
 })

@@ -67,10 +67,10 @@ export function BrandCard({ brand }: BrandCardProps) {
       </CardBody>
 
       <CardFooter className="flex flex-col gap-3 border-t border-[var(--color-border)] p-6 sm:flex-row">
-        <Link href={`/storefront/marcas/${brand.slug}`} className="w-full">
+        <Link href={`/marcas/${brand.slug}`} className="w-full">
           <Button className="w-full">Ver marca</Button>
         </Link>
-        <Link href={`/storefront/productos?brand=${brand.slug}`} className="w-full">
+        <Link href={`/productos?brand=${brand.slug}`} className="w-full">
           <Button variant="outline" className="w-full">
             Filtrar catálogo
           </Button>

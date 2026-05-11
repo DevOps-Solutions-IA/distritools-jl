@@ -19,13 +19,13 @@ export function ProductFilters({
   selectedSort,
 }: ProductFiltersProps) {
   return (
-    <form className="grid gap-4 rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-soft md:grid-cols-[1fr_1fr_220px_auto]">
-      <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-off-white)]">
+    <form className="grid gap-4 rounded-[1.75rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-soft lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(12rem,220px)_auto]">
+      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[var(--color-off-white)]">
         Categoría
         <select
           name="category"
           defaultValue={selectedCategorySlug ?? ''}
-          className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)]"
+          className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-base text-[var(--color-off-white)]"
         >
           <option value="">Todas</option>
           {categories.map((category) => (
@@ -36,12 +36,12 @@ export function ProductFilters({
         </select>
       </label>
 
-      <label className="flex flex-col gap-2 text-sm font-medium text-[var(--color-off-white)]">
+      <label className="flex min-w-0 flex-col gap-2 text-sm font-medium text-[var(--color-off-white)]">
         Marca
         <select
           name="brand"
           defaultValue={selectedBrandSlug ?? ''}
-          className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)]"
+          className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-base text-[var(--color-off-white)]"
         >
           <option value="">Todas</option>
           {brands.map((brand) => (
@@ -59,7 +59,7 @@ export function ProductFilters({
           <Button type="submit" className="w-full md:w-auto">
             Aplicar
           </Button>
-          <Link href="/storefront/marcas" className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
+          <Link href="/marcas" className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">
             Ver marcas
           </Link>
         </div>

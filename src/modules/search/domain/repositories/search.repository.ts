@@ -23,6 +23,7 @@ export interface VariantIndexSource {
   categoryName: string | null;
   categorySlug: string | null;
   description: string | null;
+  metadataText?: string | null;
   isActive: boolean;
   availability: number;
 }

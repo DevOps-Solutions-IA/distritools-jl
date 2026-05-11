@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -22,6 +23,7 @@ import {
 } from 'src/modules/orders/domain/repositories/order-variant.repository';
 import { CreateOrderUseCase } from 'src/modules/orders/application/use-cases/create-order.use-case';
 import { OrderPolicyService } from 'src/modules/orders/domain/services/order-policy.service';
+import { isPaymentMethodType } from 'src/modules/payments/domain/payment-methods';
 
 export interface CreateGuestCheckoutOrderInput {
   customer: {
@@ -72,6 +74,14 @@ export class CreateGuestCheckoutOrderUseCase {
   ) {}
 
   async execute(input: CreateGuestCheckoutOrderInput) {
+    const paymentMethod = input.paymentMethod ?? 'commercial_confirmation';
+    const allowInternalGatewayTestMethod =
+      process.env.NODE_ENV === 'test' && paymentMethod === 'mock';
+
+    if (!isPaymentMethodType(paymentMethod) && !allowInternalGatewayTestMethod) {
+      throw new BadRequestException('Unsupported payment method');
+    }
+
     const consolidatedItems = this.consolidateItems(input.items);
     const requestedVariantIds = consolidatedItems.map((item) => item.variantId);
     const variants = await this.orderVariantRepository.findByIds(requestedVariantIds);
@@ -156,7 +166,7 @@ export class CreateGuestCheckoutOrderUseCase {
         orderId: created.order.id,
         orderNumber: created.order.orderNumber,
         status: created.order.status,
-        paymentMethod: input.paymentMethod ?? null,
+        paymentMethod,
         deliveryMethod: input.deliveryMethod ?? null,
       },
       ipAddress: input.ipAddress,
@@ -182,8 +192,11 @@ export class CreateGuestCheckoutOrderUseCase {
       total: created.order.totals.grandTotal,
       currency: 'COP',
       payment: {
-        canInitiate: true,
-        initiateUrl: `/api/v1/payments/${created.order.orderNumber}/initiate`,
+        canInitiate: paymentMethod === 'pse' || allowInternalGatewayTestMethod,
+        initiateUrl:
+          paymentMethod === 'pse' || allowInternalGatewayTestMethod
+            ? `/api/v1/payments/${created.order.orderNumber}/initiate`
+            : null,
       },
     };
   }

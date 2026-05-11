@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  Inject,
   Ip,
   Param,
   Patch,
@@ -12,6 +13,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import { CreateAdminUserUseCase } from 'src/modules/users/application/use-cases/create-admin-user.use-case';
 import { DeactivateAdminUserUseCase } from 'src/modules/users/application/use-cases/deactivate-admin-user.use-case';
 import { GetAdminUserUseCase } from 'src/modules/users/application/use-cases/get-admin-user.use-case';
@@ -24,11 +26,41 @@ import { UpdateAdminUserRequestDto } from 'src/modules/users/infrastructure/http
 @Controller('admin/users')
 export class UsersController {
   constructor(
+    @Inject(CreateAdminUserUseCase)
     private readonly createAdminUserUseCase: CreateAdminUserUseCase,
+    @Inject(UpdateAdminUserUseCase)
     private readonly updateAdminUserUseCase: UpdateAdminUserUseCase,
+    @Inject(DeactivateAdminUserUseCase)
     private readonly deactivateAdminUserUseCase: DeactivateAdminUserUseCase,
+    @Inject(GetAdminUserUseCase)
     private readonly getAdminUserUseCase: GetAdminUserUseCase,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
   ) {}
+
+  @Permissions('users.read')
+  @Get()
+  async list(@CurrentUserDecorator() _actor: CurrentUser) {
+    const users = await this.prisma.user.findMany({
+      include: { role: true },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+
+    return {
+      data: users.map((user) => ({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email.replace(/^(.{2}).*(@.*)$/, '$1***$2'),
+        phone: user.phone ? `${user.phone.slice(0, 3)}***${user.phone.slice(-2)}` : null,
+        role: user.role ? { id: user.role.id, name: user.role.name, slug: user.role.slug } : null,
+        isActive: user.isActive,
+        twoFactorEnabled: Boolean(user.twoFactorSecret),
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+      })),
+    };
+  }
 
   @Permissions('users.create')
   @Post()

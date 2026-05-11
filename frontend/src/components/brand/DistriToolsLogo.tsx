@@ -46,9 +46,9 @@ const logoAssetMap: Record<
 
 const sizeClassMap: Record<LogoVariant, Record<LogoSize, string>> = {
   horizontal: {
-    sm: 'h-11 w-[210px]',
-    md: 'h-[4.8rem] w-[360px]',
-    lg: 'h-[7rem] w-[500px]',
+    sm: 'h-9 w-[170px]',
+    md: 'h-12 w-[230px]',
+    lg: 'h-16 w-[300px]',
   },
   mark: {
     sm: 'h-10 w-10',

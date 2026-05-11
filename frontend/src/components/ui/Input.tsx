@@ -33,7 +33,7 @@ export function Input({
         aria-invalid={Boolean(error)}
         aria-describedby={error || helperText ? descriptionId : undefined}
         className={cn(
-          'focus-ring h-11 rounded-md border bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)] placeholder:text-[var(--color-text-secondary)] disabled:bg-[rgba(255,255,255,0.05)] disabled:text-[var(--color-text-secondary)]',
+          'focus-ring h-11 rounded-md border bg-[var(--color-surface-muted)] px-3 text-base text-[var(--color-off-white)] placeholder:text-[var(--color-text-secondary)] disabled:bg-[rgba(255,255,255,0.05)] disabled:text-[var(--color-text-secondary)]',
           error ? 'border-[var(--color-error-red)]' : 'border-[var(--color-border)]',
           className,
         )}

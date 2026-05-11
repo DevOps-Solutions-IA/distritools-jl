@@ -14,6 +14,65 @@ const nextConfig: NextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/storefront/productos/:slug',
+        destination: '/productos/:slug',
+        permanent: true,
+      },
+      {
+        source: '/storefront/productos',
+        destination: '/productos',
+        permanent: true,
+      },
+      {
+        source: '/storefront/carrito',
+        destination: '/carrito',
+        permanent: true,
+      },
+      {
+        source: '/storefront/checkout',
+        destination: '/checkout',
+        permanent: true,
+      },
+      {
+        source: '/storefront/marcas/:slug',
+        destination: '/marcas/:slug',
+        permanent: true,
+      },
+      {
+        source: '/storefront/marcas',
+        destination: '/marcas',
+        permanent: true,
+      },
+      {
+        source: '/storefront/categorias/:slug',
+        destination: '/categorias/:slug',
+        permanent: true,
+      },
+      {
+        source: '/storefront/buscar',
+        destination: '/buscar',
+        permanent: true,
+      },
+      {
+        source: '/storefront/orden/:orderNumber',
+        destination: '/checkout/confirmacion',
+        permanent: true,
+      },
+      {
+        source: '/storefront/pago/retorno',
+        destination: '/checkout/confirmacion',
+        permanent: true,
+      },
+      {
+        source: '/storefront',
+        destination: '/',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

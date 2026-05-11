@@ -10,14 +10,14 @@ export function CartPageContent() {
   const { items, summary, removeItem, setQuantity } = useCart();
 
   return (
-    <section className="space-y-8">
-      <div className="space-y-4">
-        <Badge variant="default">Selección de compra</Badge>
-        <h1 className="text-4xl font-semibold text-[var(--color-off-white)]">
-          Revisa tu selección antes de pasar al checkout
+    <section className="space-y-5 sm:space-y-8">
+      <div className="space-y-2 sm:space-y-4">
+        <Badge variant="default">Carrito</Badge>
+        <h1 className="text-2xl font-semibold text-[var(--color-off-white)] sm:text-4xl">
+          Revisa tu selección
         </h1>
-        <p className="max-w-3xl text-base leading-7 text-[var(--color-text-secondary)]">
-          Ajusta cantidades, valida tu selección y continúa al siguiente paso de compra.
+        <p className="max-w-3xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base sm:leading-7">
+          Ajusta cantidades y continúa para confirmar compra o cotización.
         </p>
       </div>
 

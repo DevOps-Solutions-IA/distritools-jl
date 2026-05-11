@@ -55,11 +55,9 @@ export async function getStorefrontHomeData(): Promise<CatalogPageResult<Storefr
   }
 
   const featuredSample = sortCatalogProducts(
-    products
-      .slice(0, 6)
-      .map((product) => mapProduct(product, variantsByProductId.get(product.id) ?? [])),
+    products.map((product) => mapProduct(product, variantsByProductId.get(product.id) ?? [])),
     'featured',
-  );
+  ).slice(0, 6);
 
   return {
     data: {
@@ -229,7 +227,7 @@ export async function getCategoryListingData(categorySlug: string): Promise<Cata
 
 function resolveSearchHref(record: { documentType: 'variant' | 'content'; title: string }, products: BackendProductRecord[]) {
   if (record.documentType === 'content') {
-    return '/storefront';
+    return '/';
   }
 
   const matchedProduct = products.find(
@@ -238,7 +236,7 @@ function resolveSearchHref(record: { documentType: 'variant' | 'content'; title:
       product.slug.localeCompare(record.title, 'es', { sensitivity: 'base' }) === 0,
   );
 
-  return matchedProduct ? `/storefront/productos/${matchedProduct.slug}` : `/storefront/productos`;
+  return matchedProduct ? `/productos/${matchedProduct.slug}` : `/productos`;
 }
 
 export async function getSearchPageData(query: string): Promise<CatalogPageResult<SearchPageData>> {

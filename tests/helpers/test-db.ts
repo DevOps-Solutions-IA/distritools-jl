@@ -5,6 +5,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { hash } from 'bcrypt';
 import { seedBrandTaxonomy } from 'src/modules/brands/infrastructure/seeds/brand-taxonomy.seed';
 import { seedCategoryTaxonomy } from 'src/modules/categories/infrastructure/seeds/category-taxonomy.seed';
+import { seedMasterProductCatalog } from 'src/modules/products/infrastructure/seeds/master-product-catalog.seed';
 import { v7 as uuidv7 } from 'uuid';
 
 export const prisma = new PrismaClient();
@@ -192,14 +193,6 @@ export async function seedBaseData() {
   });
 
   const warehouseId = uuidv7();
-  const totalBrand = seededBrands.find((brand) => brand.slug === 'total');
-  const category = await prisma.category.findUniqueOrThrow({
-    where: { slug: 'herramientas-electricas' },
-  });
-  const productId = uuidv7();
-  const secondProductId = uuidv7();
-  const variantId = uuidv7();
-  const secondVariantId = uuidv7();
 
   await prisma.warehouse.create({
     data: {
@@ -210,109 +203,26 @@ export async function seedBaseData() {
     },
   });
 
-  await prisma.product.createMany({
-    data: [
-      {
-        id: productId,
-        brandId: totalBrand?.id ?? null,
-        categoryId: category.id,
-        name: 'Taladro percutor industrial TOTAL',
-        slug: 'taladro-percutor-industrial-total',
-        description: 'Herramienta eléctrica para perforación, montaje y mantenimiento técnico.',
-        isActive: true,
-      },
-      {
-        id: secondProductId,
-        brandId: totalBrand?.id ?? null,
-        categoryId: category.id,
-        name: 'Esmeril angular TOTAL',
-        slug: 'esmeril-angular-total',
-        description: 'Equipo de desbaste y corte para trabajo general e industrial liviano.',
-        isActive: true,
-      },
-    ],
-  });
+  await seedMasterProductCatalog(prisma, { warehouseId });
 
-  await prisma.variant.createMany({
-    data: [
-      {
-        id: variantId,
-        productId,
-        sku: 'TOTAL-DEMO-001',
-        name: 'Taladro percutor 1/2',
-        price: '349900.00',
-        taxRate: '19.00',
-        isActive: true,
-      },
-      {
-        id: secondVariantId,
-        productId: secondProductId,
-        sku: 'TOTAL-DEMO-002',
-        name: 'Esmeril angular 4 1/2',
-        price: '289900.00',
-        taxRate: '19.00',
-        isActive: true,
-      },
-    ],
+  const totalBrand = seededBrands.find((brand) => brand.slug === 'total');
+  const category = await prisma.category.findUniqueOrThrow({
+    where: { slug: 'herramientas-electricas' },
   });
+  const product = await prisma.product.findUniqueOrThrow({
+    where: { slug: 'taladro-percutor-1-2-total' },
+    include: { variants: true },
+  });
+  const secondProduct = await prisma.product.findUniqueOrThrow({
+    where: { slug: 'esmeril-angular-4-1-2-total' },
+    include: { variants: true },
+  });
+  const variant = product.variants[0];
+  const secondVariant = secondProduct.variants[0];
 
-  await prisma.inventoryItem.createMany({
-    data: [
-      {
-        id: uuidv7(),
-        variantId,
-        warehouseId,
-        onHandQty: 5,
-        reservedQty: 0,
-      },
-      {
-        id: uuidv7(),
-        variantId: secondVariantId,
-        warehouseId,
-        onHandQty: 2,
-        reservedQty: 0,
-      },
-    ],
-  });
-
-  await prisma.searchDocument.createMany({
-    data: [
-      {
-        id: uuidv7(),
-        documentType: 'variant',
-        variantId,
-        title: 'Taladro percutor industrial TOTAL',
-        subtitle: 'Taladro percutor 1/2',
-        sku: 'TOTAL-DEMO-001',
-        brandName: 'TOTAL',
-        brandSlug: 'total',
-        categoryName: 'Herramientas eléctricas',
-        categorySlug: 'herramientas-electricas',
-        searchText:
-          'Taladro percutor industrial TOTAL Taladro percutor 1/2 TOTAL-DEMO-001 TOTAL Herramientas eléctricas perforación mantenimiento',
-        isActive: true,
-        availability: 5,
-        priority: 10,
-      },
-      {
-        id: uuidv7(),
-        documentType: 'variant',
-        variantId: secondVariantId,
-        title: 'Esmeril angular TOTAL',
-        subtitle: 'Esmeril angular 4 1/2',
-        sku: 'TOTAL-DEMO-002',
-        brandName: 'TOTAL',
-        brandSlug: 'total',
-        categoryName: 'Herramientas eléctricas',
-        categorySlug: 'herramientas-electricas',
-        searchText:
-          'Esmeril angular TOTAL Esmeril angular 4 1/2 TOTAL-DEMO-002 TOTAL Herramientas eléctricas corte desbaste industrial',
-        isActive: true,
-        availability: 2,
-        priority: 10,
-      },
-    ],
-  });
+  if (!variant || !secondVariant) {
+    throw new Error('El catálogo maestro no creó las variantes base de TOTAL.');
+  }
 
   return {
     roles: {
@@ -332,10 +242,10 @@ export async function seedBaseData() {
         warehouseId,
         brandId: totalBrand?.id ?? null,
         categoryId: category.id,
-        productId,
-        secondProductId,
-        variantId,
-      secondVariantId,
+        productId: product.id,
+        secondProductId: secondProduct.id,
+        variantId: variant.id,
+        secondVariantId: secondVariant.id,
     },
   };
 }

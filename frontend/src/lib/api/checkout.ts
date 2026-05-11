@@ -11,8 +11,27 @@ export async function submitGuestCheckout(
   values: CheckoutSchemaValues,
   items: CartItem[],
 ): Promise<CheckoutSubmissionResult> {
+  if (items.some((item) => item.variant.mode === 'quote')) {
+    return {
+      kind: 'quote',
+      message:
+        'Recibimos tu solicitud. Confirmaremos precio y disponibilidad antes de finalizar.',
+    };
+  }
+
   const payload = mapCheckoutFormToOrderPayload(values, items);
   const orderResponse = await createGuestOrder(payload);
+
+  if (values.paymentGateway !== 'pse') {
+    return {
+      kind: 'success',
+      order: orderResponse,
+      message:
+        values.paymentGateway === 'cash_on_delivery'
+          ? 'Pago contra entrega seleccionado. Confirmaremos cobertura y disponibilidad antes del despacho.'
+          : 'Coordinaremos el pago después de confirmar disponibilidad y entrega.',
+    };
+  }
 
   try {
     const paymentResponse = await initiatePayment(
@@ -32,7 +51,7 @@ export async function submitGuestCheckout(
       message:
         error instanceof Error
           ? error.message
-          : 'La orden fue creada, pero el inicio de pago no pudo completarse desde el frontend.',
+          : 'La orden fue creada. Te contactaremos para finalizar la compra.',
     };
   }
 }

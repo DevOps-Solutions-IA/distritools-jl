@@ -5,6 +5,7 @@ export interface ProductState {
   name: string;
   slug: string;
   description: string | null;
+  metadata: unknown | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +46,7 @@ export class ProductEntity {
       name: this.state.name,
       slug: this.state.slug,
       description: this.state.description,
+      metadata: this.state.metadata,
       brand: this.state.brand,
       category: this.state.category,
     };

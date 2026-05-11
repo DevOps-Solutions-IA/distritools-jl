@@ -1,0 +1,266 @@
+[
+  {
+    "slug": "herramientas",
+    "name": "Herramientas",
+    "description": "Familias de herramienta manual, eléctrica y neumática para trabajo técnico e industrial.",
+    "sortOrder": 10,
+    "children": [
+      {
+        "slug": "herramientas-manuales",
+        "name": "Herramientas manuales",
+        "description": "Herramientas manuales para montaje, mantenimiento y operación general.",
+        "sortOrder": 11
+      },
+      {
+        "slug": "herramientas-electricas",
+        "name": "Herramientas eléctricas",
+        "description": "Herramientas eléctricas para perforación, corte, desbaste y trabajo continuo.",
+        "sortOrder": 12
+      },
+      {
+        "slug": "herramientas-neumaticas",
+        "name": "Herramientas neumáticas",
+        "description": "Herramientas accionadas por aire para producción, mantenimiento y servicio.",
+        "sortOrder": 13
+      }
+    ]
+  },
+  {
+    "slug": "aire-comprimido",
+    "name": "Aire comprimido",
+    "description": "Infraestructura, compresión y distribución de aire para aplicaciones industriales.",
+    "sortOrder": 20,
+    "children": [
+      {
+        "slug": "compresores",
+        "name": "Compresores",
+        "description": "Compresores industriales, comerciales y portátiles.",
+        "sortOrder": 21
+      },
+      {
+        "slug": "accesorios",
+        "name": "Accesorios",
+        "description": "Accesorios, conexiones y apoyo para herramientas y sistemas industriales.",
+        "sortOrder": 22
+      }
+    ]
+  },
+  {
+    "slug": "fijacion",
+    "name": "Fijación",
+    "description": "Tecnologías de clavado, grapado y consumibles para fijación profesional.",
+    "sortOrder": 30,
+    "children": [
+      {
+        "slug": "clavadoras",
+        "name": "Clavadoras",
+        "description": "Clavadoras para carpintería, construcción, pallets y acabados.",
+        "sortOrder": 31
+      },
+      {
+        "slug": "grapadoras",
+        "name": "Grapadoras",
+        "description": "Grapadoras industriales y profesionales para madera, empaque y producción.",
+        "sortOrder": 32
+      },
+      {
+        "slug": "consumibles-fijacion",
+        "name": "Consumibles de fijación",
+        "description": "Grapas, clavos, tornillos y fijaciones para aplicaciones industriales.",
+        "sortOrder": 33
+      },
+      {
+        "slug": "sistemas-tornillos",
+        "name": "Sistemas de tornillos",
+        "description": "Sistemas y consumibles para atornillado técnico y producción.",
+        "sortOrder": 34
+      }
+    ]
+  },
+  {
+    "slug": "soldadura-y-corte",
+    "name": "Soldadura y corte",
+    "description": "Equipos, consumibles y seguridad para unión y corte de metales.",
+    "sortOrder": 40,
+    "children": [
+      {
+        "slug": "soldadura",
+        "name": "Soldadura",
+        "description": "Portafolio general de soldadura industrial y técnica.",
+        "sortOrder": 41
+      },
+      {
+        "slug": "soldadoras",
+        "name": "Soldadoras",
+        "description": "Equipos MIG, TIG, STICK, multiproceso y máquinas de soldar.",
+        "sortOrder": 42
+      },
+      {
+        "slug": "consumibles-soldadura",
+        "name": "Consumibles de soldadura",
+        "description": "Consumibles, metales de aporte y accesorios para soldadura.",
+        "sortOrder": 43
+      },
+      {
+        "slug": "corte",
+        "name": "Corte",
+        "description": "Equipos de corte y soluciones complementarias.",
+        "sortOrder": 44
+      },
+      {
+        "slug": "electrodos",
+        "name": "Electrodos",
+        "description": "Electrodos y aportes para soldadura técnica.",
+        "sortOrder": 45
+      },
+      {
+        "slug": "alambres-soldadura",
+        "name": "Alambres de soldadura",
+        "description": "Alambres y consumibles continuos para soldadura.",
+        "sortOrder": 46
+      },
+      {
+        "slug": "accesorios-soldadura",
+        "name": "Accesorios de soldadura",
+        "description": "Accesorios, antorchas y complementos para soldadura y corte.",
+        "sortOrder": 47
+      },
+      {
+        "slug": "extraccion-humos",
+        "name": "Extracción de humos",
+        "description": "Sistemas para control y extracción de humos de soldadura.",
+        "sortOrder": 48
+      }
+    ]
+  },
+  {
+    "slug": "construccion-e-industria",
+    "name": "Construcción e industria",
+    "description": "Equipos y soluciones para obra, mantenimiento y operación pesada.",
+    "sortOrder": 50,
+    "children": [
+      {
+        "slug": "generadores",
+        "name": "Generadores",
+        "description": "Generadores para respaldo y operación en campo.",
+        "sortOrder": 51
+      },
+      {
+        "slug": "bombas",
+        "name": "Bombas",
+        "description": "Bombas de agua e industriales para transferencia y servicio.",
+        "sortOrder": 52
+      },
+      {
+        "slug": "izaje",
+        "name": "Izaje",
+        "description": "Soluciones de manejo e izaje de carga.",
+        "sortOrder": 53
+      },
+      {
+        "slug": "construccion-ligera",
+        "name": "Construcción ligera",
+        "description": "Equipos pequeños y soporte para construcción y obra liviana.",
+        "sortOrder": 54
+      },
+      {
+        "slug": "escaleras",
+        "name": "Escaleras",
+        "description": "Escaleras y soporte de acceso para mantenimiento, obra y operación técnica.",
+        "sortOrder": 55
+      },
+      {
+        "slug": "drywall",
+        "name": "Drywall",
+        "description": "Aplicaciones y herramientas para drywall.",
+        "sortOrder": 56
+      },
+      {
+        "slug": "roofing",
+        "name": "Roofing",
+        "description": "Aplicaciones y fijación para cubiertas y techado.",
+        "sortOrder": 57
+      },
+      {
+        "slug": "flooring",
+        "name": "Flooring",
+        "description": "Herramientas y fijación para pisos y recubrimientos.",
+        "sortOrder": 58
+      },
+      {
+        "slug": "pallets-empaques",
+        "name": "Pallets y empaques",
+        "description": "Soluciones para ensamble de pallets, empaque y embalaje.",
+        "sortOrder": 59
+      }
+    ]
+  },
+  {
+    "slug": "operacion-tecnica",
+    "name": "Operación técnica",
+    "description": "Familias complementarias para mantenimiento, seguridad y soporte técnico.",
+    "sortOrder": 60,
+    "children": [
+      {
+        "slug": "automotriz",
+        "name": "Automotriz",
+        "description": "Herramientas y equipos para servicio automotriz.",
+        "sortOrder": 61
+      },
+      {
+        "slug": "plomeria",
+        "name": "Plomería",
+        "description": "Herramientas y accesorios para instalaciones hidráulicas.",
+        "sortOrder": 62
+      },
+      {
+        "slug": "abrasivos",
+        "name": "Abrasivos",
+        "description": "Discos, lijas y consumibles abrasivos para desbaste y acabado.",
+        "sortOrder": 63
+      },
+      {
+        "slug": "jardin",
+        "name": "Jardín",
+        "description": "Herramientas y equipos de trabajo exterior y jardín.",
+        "sortOrder": 64
+      },
+      {
+        "slug": "medicion",
+        "name": "Medición",
+        "description": "Instrumentos y herramientas de medición básica y técnica.",
+        "sortOrder": 65
+      },
+      {
+        "slug": "seguridad-industrial",
+        "name": "Seguridad industrial",
+        "description": "PPE y elementos de seguridad para operación industrial.",
+        "sortOrder": 66
+      },
+      {
+        "slug": "carpinteria",
+        "name": "Carpintería",
+        "description": "Herramientas y fijación para madera, acabados y producción.",
+        "sortOrder": 67
+      },
+      {
+        "slug": "herrajes",
+        "name": "Herrajes",
+        "description": "Componentes y herrajes para instalación y montaje.",
+        "sortOrder": 68
+      },
+      {
+        "slug": "almacenamiento",
+        "name": "Almacenamiento",
+        "description": "Organización, almacenamiento y soporte para operación técnica.",
+        "sortOrder": 69
+      },
+      {
+        "slug": "automatizacion",
+        "name": "Automatización",
+        "description": "Automatización y control para procesos técnicos especializados.",
+        "sortOrder": 70
+      }
+    ]
+  }
+]

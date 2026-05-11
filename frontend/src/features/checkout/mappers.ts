@@ -1,25 +1,7 @@
 import { ApiError } from '@/lib/api/errors';
 import type { CartItem } from '@/features/cart/types';
-import type {
-  CheckoutGap,
-  CreateGuestCheckoutPayload,
-} from '@/features/checkout/types';
+import type { CreateGuestCheckoutPayload } from '@/features/checkout/types';
 import type { CheckoutSchemaValues } from '@/features/checkout/schema';
-
-export const checkoutBackendGaps: CheckoutGap[] = [
-  {
-    key: 'cart-backend',
-    title: 'Carrito backend no expuesto públicamente',
-    description:
-      'No existe endpoint público de carrito. En Fase 3 el carrito opera en LocalStorage con sincronización futura lista.',
-  },
-  {
-    key: 'payment-status-public',
-    title: 'Estado público de pago no expuesto',
-    description:
-      'Existe inicio de pago, pero no un endpoint público de consulta de pago. La confirmación definitiva sigue dependiendo del backend/webhook.',
-  },
-];
 
 export function mapCheckoutFormToOrderPayload(
   values: CheckoutSchemaValues,
@@ -33,10 +15,17 @@ export function mapCheckoutFormToOrderPayload(
   }
 
   const lines = items.map((item) => ({
-      productId: item.product.id,
-      variantId: item.variant.id,
-      quantity: item.quantity,
-    }));
+    productId: item.product.id,
+    variantId: item.variant.id,
+    quantity: item.quantity,
+  }));
+
+  if (items.some((item) => item.variant.mode === 'quote')) {
+    throw new ApiError({
+      status: 422,
+      message: 'Los productos por cotizar requieren confirmación comercial.',
+    });
+  }
 
   return {
     customer: {
@@ -48,8 +37,20 @@ export function mapCheckoutFormToOrderPayload(
     shippingAddress: {
       city: values.city.trim(),
       addressLine1: values.address.trim(),
-      addressLine2: values.addressDetail.trim() || undefined,
-      notes: values.notes.trim() || undefined,
+      addressLine2: [
+        values.addressDetail.trim(),
+        values.neighborhood.trim() ? `Barrio: ${values.neighborhood.trim()}` : '',
+        values.postalCode.trim() ? `CP: ${values.postalCode.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | ') || undefined,
+      notes:
+        [
+          values.department.trim() ? `Departamento: ${values.department.trim()}` : '',
+          values.notes.trim(),
+        ]
+          .filter(Boolean)
+          .join(' | ') || undefined,
     },
     items: lines,
     deliveryMethod: 'standard',

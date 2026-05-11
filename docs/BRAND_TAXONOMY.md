@@ -133,6 +133,7 @@ Definir la taxonomía real de marcas, familias y categorías internas que Distri
   - abrasivos
   - compresores
   - jardin
+  - escaleras
   - herrajes
   - almacenamiento
   - seguridad-industrial
@@ -283,6 +284,7 @@ Definir la taxonomía real de marcas, familias y categorías internas que Distri
 - bombas
 - generadores
 - construccion-ligera
+- escaleras
 - automotriz
 - plomeria
 - abrasivos
@@ -305,6 +307,24 @@ Definir la taxonomía real de marcas, familias y categorías internas que Distri
 - No usar logos descargados de internet.
 - Si el negocio no ha entregado asset autorizado, la marca se representa con fallback tipográfico.
 - El metadata de marca conserva `logo.assetPath = null` y `logo.assetStatus = pending` hasta aprobación explícita.
+
+## Catálogo maestro inicial
+- Fuente versionada: `data/catalog/master-products.json`.
+- Seed idempotente: `src/modules/products/infrastructure/seeds/master-product-catalog.seed.ts`.
+- Total organizado: 14 productos iniciales, 2 por marca obligatoria.
+- Variantes con precio/stock: solo productos TOTAL que ya existían como semilla comercial local y quedaron normalizados con SKU realista.
+- Productos sin precio/stock: quedan `by-request`; no crean variante vendible ni inventario falso.
+- Imágenes: todas quedan con `image.status = pending` hasta recibir assets autorizados.
+- Trazabilidad: cada producto incluye `source.name`, `source.url`, `retrievedAt` y `confidence`.
+
+### Productos iniciales por marca
+- TOTAL: Taladro percutor 1/2 pulg TOTAL; Esmeril angular 4 1/2 pulg TOTAL.
+- Ingersoll Rand: Compresor de aire de pistón; Llave de impacto neumática.
+- BeA: Grapadora neumática para fijación industrial; Clavadora neumática para carpintería.
+- Pretul: Taladro eléctrico; Bomba de agua.
+- Truper: Rotomartillo; Escalera para trabajo técnico.
+- SENCO: Clavadora profesional; Grapadora profesional.
+- Lincoln Electric: Soldadora multiproceso; Careta de soldadura.
 
 ## Próximos pasos para carga de productos reales
 - Definir SKUs aprobados por negocio para cada marca.
