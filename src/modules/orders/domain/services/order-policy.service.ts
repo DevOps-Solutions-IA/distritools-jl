@@ -18,14 +18,16 @@ export class OrderPolicyService {
 
     if (missing.length > 0) {
       throw new NotFoundException(
-        `Missing variants for order: ${missing.join(', ')}`,
+        'No pudimos confirmar uno de los productos del carrito. Actualiza tu carrito e inténtalo de nuevo.',
       );
     }
   }
 
   ensureVariantSellable(variant: OrderVariantReference): void {
     if (!variant.isActive) {
-      throw new BadRequestException(`Variant ${variant.id} is inactive`);
+      throw new BadRequestException(
+        'Uno de los productos del carrito no está disponible para compra en este momento.',
+      );
     }
   }
 
@@ -35,14 +37,16 @@ export class OrderPolicyService {
   ): void {
     if (!variant.productId || variant.productId !== productId) {
       throw new UnprocessableEntityException(
-        `Variant ${variant.id} does not belong to product ${productId}`,
+        'No pudimos validar la selección de producto. Vuelve a agregarlo al carrito.',
       );
     }
   }
 
   ensureGuestVariantActive(variant: OrderVariantReference): void {
     if (!variant.isActive) {
-      throw new UnprocessableEntityException(`Variant ${variant.id} is inactive`);
+      throw new UnprocessableEntityException(
+        'Uno de los productos del carrito no está disponible para compra en este momento.',
+      );
     }
   }
 

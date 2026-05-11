@@ -350,7 +350,7 @@ describe('catalog storefront', () => {
 
     expect(screen.getByText(/compra herramientas en segundos/i)).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /ver productos/i }).length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByRole('link', { name: /asesoría/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('link', { name: /^rastreo$/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Taladro percutor 1\/2 TOTAL/i)).toBeInTheDocument();
   });
 

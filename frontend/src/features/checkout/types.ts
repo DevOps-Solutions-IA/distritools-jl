@@ -42,12 +42,17 @@ export interface CreateGuestCheckoutPayload {
 export interface GuestCheckoutOrderResponse {
   orderId: string;
   orderNumber: string;
+  trackingCode: string;
   status: string;
   total: string;
   currency: string;
+  notification: {
+    status: 'queued' | 'sent' | 'failed' | 'pending_provider';
+    channel: 'email';
+  };
   payment: {
     canInitiate: boolean;
-    initiateUrl: string;
+    initiateUrl: string | null;
   };
 }
 
@@ -102,6 +107,7 @@ export interface PublicOrderResponse {
 
 export interface PublicTrackingResponse {
   orderNumber: string | null;
+  trackingCode: string | null;
   publicStatus:
     | 'recibido'
     | 'pendiente_confirmacion'
@@ -116,6 +122,7 @@ export interface PublicTrackingResponse {
   shippingStatus: string;
   trackingNumber: string | null;
   carrier: string | null;
+  trackingUrl: string | null;
   estimatedDeliveryDate: string | null;
   events: Array<{
     label: string;

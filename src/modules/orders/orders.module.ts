@@ -17,6 +17,7 @@ import {
 } from 'src/modules/orders/domain/repositories/order-variant.repository';
 import { OrderNumberService } from 'src/modules/orders/domain/services/order-number.service';
 import { OrderPolicyService } from 'src/modules/orders/domain/services/order-policy.service';
+import { OrderTrackingCodeService } from 'src/modules/orders/domain/services/order-tracking-code.service';
 import { CheckoutController } from 'src/modules/orders/infrastructure/http/controllers/checkout.controller';
 import { OrdersController } from 'src/modules/orders/infrastructure/http/controllers/orders.controller';
 import { PrismaOrderRepository } from 'src/modules/orders/infrastructure/repositories/prisma-order.repository';
@@ -38,6 +39,7 @@ import { PromotionsModule } from 'src/modules/promotions/promotions.module';
     GetOrderUseCase,
     TrackOrderUseCase,
     OrderNumberService,
+    OrderTrackingCodeService,
     OrderPolicyService,
     PrismaOrderRepository,
     PrismaOrderVariantRepository,

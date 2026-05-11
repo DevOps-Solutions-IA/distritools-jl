@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 interface TrackingPageProps {
-  searchParams?: Promise<{ orden?: string }>;
+  searchParams?: Promise<{ orden?: string; query?: string }>;
 }
 
 function translateStatus(status: string) {
@@ -34,9 +34,9 @@ function translateStatus(status: string) {
 
 export default async function OrderTrackingPage({ searchParams }: TrackingPageProps) {
   const params = await searchParams;
-  const orderNumber = params?.orden?.trim();
-  const tracking = orderNumber
-    ? await trackPublicOrder(orderNumber).catch(() => null)
+  const trackingQuery = (params?.query ?? params?.orden)?.trim();
+  const tracking = trackingQuery
+    ? await trackPublicOrder(trackingQuery).catch(() => null)
     : null;
 
   return (
@@ -50,14 +50,14 @@ export default async function OrderTrackingPage({ searchParams }: TrackingPagePr
           Rastreo de pedido
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base sm:leading-7">
-          Consulta el estado comercial con tu número de pedido. No mostramos dirección, teléfono ni correo en esta vista pública.
+          Consulta el estado comercial con tu número de pedido o código de rastreo interno. No mostramos dirección, teléfono ni correo en esta vista pública.
         </p>
         <form className="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]">
           <StorefrontInput
-            name="orden"
-            defaultValue={orderNumber}
-            placeholder="Número de pedido o guía"
-            aria-label="Número de pedido o guía"
+            name="query"
+            defaultValue={trackingQuery}
+            placeholder="Pedido o código interno"
+            aria-label="Número de pedido o código de rastreo interno"
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
@@ -68,11 +68,16 @@ export default async function OrderTrackingPage({ searchParams }: TrackingPagePr
         </form>
       </section>
 
-      {orderNumber ? (
+      {trackingQuery ? (
         tracking && tracking.publicStatus !== 'no_encontrado' ? (
           <section className="rounded-[1.5rem] border border-[var(--color-border)] bg-[#0d0d0d] p-5">
             <p className="text-sm text-[var(--color-text-secondary)]">Pedido</p>
             <h2 className="mt-1 text-2xl font-semibold text-[var(--color-off-white)]">{tracking.orderNumber}</h2>
+            {tracking.trackingCode ? (
+              <p className="mt-2 rounded-full border border-white/10 bg-white/[0.035] px-3 py-2 text-sm font-semibold text-[var(--color-off-white)]">
+                Código interno: {tracking.trackingCode}
+              </p>
+            ) : null}
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">Estado</p>

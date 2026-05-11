@@ -20,6 +20,21 @@ export class NotificationTemplateService {
       typeof payload.customerEmail === 'string' ? payload.customerEmail : null;
     const customerPhone =
       typeof payload.customerPhone === 'string' ? payload.customerPhone : null;
+    const orderNumber = String(payload.orderNumber ?? '');
+    const trackingCode = String(payload.trackingCode ?? '');
+    const total = (payload.totals as { grandTotal?: string } | undefined)?.grandTotal ?? null;
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    const itemLines = items
+      .map((item) => {
+        const record = item as {
+          sku?: unknown;
+          name?: unknown;
+          quantity?: unknown;
+          lineTotal?: unknown;
+        };
+        return `- ${String(record.name ?? 'Producto')} (${String(record.sku ?? 'SKU pendiente')}) x ${String(record.quantity ?? '1')}: ${String(record.lineTotal ?? 'Total pendiente')}`;
+      })
+      .join('\n');
 
     switch (event.eventName) {
       case 'order.created':
@@ -29,8 +44,24 @@ export class NotificationTemplateService {
                 {
                   channel: 'email' as const,
                   recipient: customerEmail,
-                  subject: `Pedido ${String(payload.orderNumber)} recibido`,
-                  content: `Tu pedido ${String(payload.orderNumber)} fue creado correctamente.`,
+                  subject: `Confirmación de pedido DistriTools JL #${orderNumber}`,
+                  content: [
+                    `Hola, recibimos tu pedido ${orderNumber}.`,
+                    '',
+                    `Código de rastreo interno: ${trackingCode}`,
+                    'Estado de envío: Guía de transportadora pendiente de asignación.',
+                    total ? `Total: ${total} COP` : null,
+                    '',
+                    'Productos:',
+                    itemLines || '- Productos registrados en la orden.',
+                    '',
+                    `Rastrea tu pedido en /rastreo-de-pedido?query=${encodeURIComponent(trackingCode)}`,
+                    'Soporte WhatsApp: https://wa.me/573000000000',
+                    '',
+                    'Este mensaje no incluye IDs internos, tokens ni secretos.',
+                  ]
+                    .filter((line): line is string => line !== null)
+                    .join('\n'),
                   provider: 'mock-email',
                 },
               ]

@@ -27,9 +27,27 @@ interface CheckoutFormProps {
   onSuccess(args: {
     kind: 'order' | 'quote';
     orderNumber?: string;
+    trackingCode?: string;
     message?: string;
     paymentMethod?: CheckoutSchemaValues['paymentGateway'];
   }): void;
+}
+
+function toHumanCheckoutError(error: unknown) {
+  const fallback = 'No fue posible crear la orden invitada.';
+  if (!(error instanceof Error)) {
+    return fallback;
+  }
+
+  const message = error.message;
+  if (
+    /missing variants/i.test(message) ||
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.test(message)
+  ) {
+    return 'No pudimos confirmar uno de los productos del carrito. Actualiza tu carrito e inténtalo de nuevo.';
+  }
+
+  return message;
 }
 
 export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
@@ -106,6 +124,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
         onSuccess({
           kind: 'order',
           orderNumber: result.order.orderNumber,
+          trackingCode: result.order.trackingCode,
           message: result.message,
           paymentMethod: values.paymentGateway,
         });
@@ -135,9 +154,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       setServerError(
         values.paymentGateway === 'pse'
           ? 'PSE no está disponible en este momento. Selecciona otro método de pago.'
-          : error instanceof Error
-            ? error.message
-            : 'No fue posible crear la orden invitada.',
+          : toHumanCheckoutError(error),
       );
     }
   });

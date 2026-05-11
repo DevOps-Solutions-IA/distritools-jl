@@ -7,6 +7,7 @@ import {
   TRACKING_PROVIDER,
   TrackingProvider,
 } from 'src/modules/orders/application/ports/tracking-provider.port';
+import { OrderTrackingCodeService } from 'src/modules/orders/domain/services/order-tracking-code.service';
 
 export type PublicTrackingStatus =
   | 'recibido'
@@ -41,6 +42,8 @@ export class TrackOrderUseCase {
     private readonly orderRepository: OrderRepository,
     @Inject(TRACKING_PROVIDER)
     private readonly trackingProvider: TrackingProvider,
+    @Inject(OrderTrackingCodeService)
+    private readonly orderTrackingCodeService: OrderTrackingCodeService,
   ) {}
 
   async execute(query: string) {
@@ -49,12 +52,14 @@ export class TrackOrderUseCase {
       return this.notFoundResponse();
     }
 
-    const order = await this.orderRepository.findByOrderNumber(normalizedQuery);
+    const orderNumber = this.orderTrackingCodeService.resolveOrderNumber(normalizedQuery);
+    const order = await this.orderRepository.findByOrderNumber(orderNumber);
     if (!order) {
       return this.notFoundResponse();
     }
 
     const providerStatus = await this.trackingProvider.getTrackingStatus(order.orderNumber);
+    const trackingCode = this.orderTrackingCodeService.create(order.orderNumber);
     const publicStatus = providerStatus.rawStatus
       ? (this.trackingProvider.mapProviderStatusToPublicStatus(providerStatus.rawStatus) as PublicTrackingStatus)
       : mapOrderStatusToPublicStatus(order.status);
@@ -63,11 +68,13 @@ export class TrackOrderUseCase {
 
     return {
       orderNumber: order.orderNumber,
+      trackingCode,
       publicStatus,
       paymentStatus: order.status === 'paid' ? 'confirmado' : 'pendiente_confirmacion',
       shippingStatus,
       trackingNumber: providerStatus.trackingNumber,
       carrier: providerStatus.carrier,
+      trackingUrl: null,
       estimatedDeliveryDate: providerStatus.estimatedDeliveryDate,
       events: [
         {
@@ -98,11 +105,13 @@ export class TrackOrderUseCase {
   private notFoundResponse() {
     return {
       orderNumber: null,
+      trackingCode: null,
       publicStatus: 'no_encontrado' as const,
       paymentStatus: null,
       shippingStatus: 'no_encontrado' as const,
       trackingNumber: null,
       carrier: null,
+      trackingUrl: null,
       estimatedDeliveryDate: null,
       events: [],
       nextStep: 'Revisa el número o contacta soporte para validar la información.',

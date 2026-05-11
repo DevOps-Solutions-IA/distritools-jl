@@ -23,6 +23,7 @@ export default async function ConfirmationPage({
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const order = getSingleValue(resolvedSearchParams.order);
+  const tracking = getSingleValue(resolvedSearchParams.tracking);
   const type = getSingleValue(resolvedSearchParams.type);
   const method = getSingleValue(resolvedSearchParams.method);
   const isQuote = type === 'quote';
@@ -63,9 +64,13 @@ export default async function ConfirmationPage({
                   : paymentCopy.detail}
               </p>
               {order ? (
-                <p className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--color-off-white)]">
-                  Número de pedido: {order}
-                </p>
+                <div className="grid gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--color-off-white)]">
+                  <p>Número de pedido: {order}</p>
+                  {tracking ? <p>Código de rastreo interno: {tracking}</p> : null}
+                  <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+                    Guía de transportadora pendiente de asignación. No se inventa guía externa.
+                  </p>
+                </div>
               ) : null}
             </div>
 
@@ -88,6 +93,12 @@ export default async function ConfirmationPage({
               <StorefrontLinkButton href="/">Volver al inicio</StorefrontLinkButton>
               <StorefrontLinkButton href="/productos" storefrontVariant="secondary">
                 Seguir comprando
+              </StorefrontLinkButton>
+              <StorefrontLinkButton
+                href={`/rastreo-de-pedido${tracking ? `?query=${encodeURIComponent(tracking)}` : ''}`}
+                storefrontVariant="secondary"
+              >
+                Rastrear pedido
               </StorefrontLinkButton>
               <a href={siteConfig.whatsappUrl} target="_blank" rel="noreferrer">
                 <span className="focus-ring inline-flex h-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.055] px-5 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)] hover:bg-white/10">

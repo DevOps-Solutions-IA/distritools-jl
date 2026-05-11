@@ -198,6 +198,9 @@ describe('Inventory, orders, payments, and webhooks', async () => {
     assert.equal(response.status, 201);
     assert.equal(response.body.status, 'pending_payment');
     assert.equal(typeof response.body.orderNumber, 'string');
+    assert.equal(typeof response.body.trackingCode, 'string');
+    assert.equal(response.body.trackingCode.startsWith('DTJL-TRK-'), true);
+    assert.equal(response.body.notification.status, 'queued');
     assert.equal(response.body.payment.canInitiate, true);
     assert.equal(
       response.body.payment.initiateUrl,
@@ -221,6 +224,47 @@ describe('Inventory, orders, payments, and webhooks', async () => {
 
     assert.equal(inventory.reservedQty, inventoryBefore.reservedQty + 2);
     assert.equal(Boolean(audit), true);
+
+    const tracking = await http.get('/api/v1/orders/track').query({
+      query: response.body.trackingCode,
+    });
+    assert.equal(tracking.status, 200);
+    assert.equal(tracking.body.orderNumber, response.body.orderNumber);
+    assert.equal(tracking.body.trackingCode, response.body.trackingCode);
+    assert.equal(tracking.body.trackingNumber, null);
+    assert.equal(tracking.body.carrier, null);
+    assert.equal(tracking.body.shippingStatus, 'pendiente_guia');
+  });
+
+  await it('guest checkout hides missing variant technical identifiers', async () => {
+    const missingVariantId = '019ddc5b-210e-771a-91b9-3a7b13ecf6a7';
+    const response = await http.post('/api/v1/checkout/guest-order').send({
+      customer: {
+        fullName: 'Guest Buyer',
+        email: 'missing-variant@example.com',
+        phone: '3001212199',
+      },
+      shippingAddress: {
+        city: 'Cali',
+        addressLine1: 'Guest Street 99',
+      },
+      items: [
+        {
+          productId: seeded.inventory.productId,
+          variantId: missingVariantId,
+          quantity: 1,
+        },
+      ],
+      paymentMethod: 'mock',
+    });
+
+    assert.equal(response.status, 404);
+    assert.equal(
+      response.body.message,
+      'No pudimos confirmar uno de los productos del carrito. Actualiza tu carrito e inténtalo de nuevo.',
+    );
+    assert.equal(JSON.stringify(response.body).includes(missingVariantId), false);
+    assert.equal(JSON.stringify(response.body).includes('Missing variants'), false);
   });
 
   await it('guest checkout rejects invalid variant product pairing', async () => {

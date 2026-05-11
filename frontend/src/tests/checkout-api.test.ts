@@ -14,9 +14,14 @@ describe('checkout api', () => {
           JSON.stringify({
             orderId: 'ord-1',
             orderNumber: 'DTJL-0001',
+            trackingCode: 'DTJL-TRK-20260511-000001',
             status: 'pending_payment',
             total: '1190.00',
             currency: 'COP',
+            notification: {
+              status: 'queued',
+              channel: 'email',
+            },
             payment: {
               canInitiate: true,
               initiateUrl: '/api/v1/payments/DTJL-0001/initiate',
@@ -52,6 +57,7 @@ describe('checkout api', () => {
     });
 
     expect(response.orderNumber).toBe('DTJL-0001');
+    expect(response.trackingCode).toBe('DTJL-TRK-20260511-000001');
   });
 
   it('API de creación de orden maneja error', async () => {

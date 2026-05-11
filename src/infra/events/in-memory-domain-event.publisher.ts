@@ -28,7 +28,15 @@ export class InMemoryDomainEventPublisher
       eventId: event.eventId ?? uuidv7(),
     };
 
-    this.logger.log(JSON.stringify(enrichedEvent));
+    this.logger.log(
+      JSON.stringify({
+        eventId: enrichedEvent.eventId,
+        eventName: enrichedEvent.eventName,
+        eventVersion: enrichedEvent.eventVersion,
+        occurredAt: enrichedEvent.occurredAt,
+        correlationId: enrichedEvent.correlationId,
+      }),
+    );
     const listeners = this.emitter.listeners(enrichedEvent.eventName);
 
     await Promise.all(

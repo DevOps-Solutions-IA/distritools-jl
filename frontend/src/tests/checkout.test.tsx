@@ -106,9 +106,14 @@ describe('checkout storefront', () => {
       order: {
         orderId: 'ord-1',
         orderNumber: 'DTJL-001',
+        trackingCode: 'DTJL-TRK-001',
         status: 'pending_payment',
         total: '259900.00',
         currency: 'COP',
+        notification: {
+          status: 'queued',
+          channel: 'email',
+        },
         payment: {
           canInitiate: true,
           initiateUrl: '/api/v1/payments/DTJL-001/initiate',
@@ -153,9 +158,55 @@ describe('checkout storefront', () => {
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith(
-        '/checkout/confirmacion?order=DTJL-001&method=cash_on_delivery',
+        '/checkout/confirmacion?order=DTJL-001&tracking=DTJL-TRK-001&method=cash_on_delivery',
       );
     });
+  });
+
+  it('oculta errores técnicos de variantes faltantes al cliente', async () => {
+    seedCart();
+    vi.spyOn(checkoutApi, 'submitGuestCheckout').mockRejectedValue(
+      new Error(
+        'Missing variants for order: 019ddc5b-210e-771a-91b9-3a7b13ecf6a7',
+      ),
+    );
+
+    render(
+      <CartProvider>
+        <CheckoutPageContent />
+      </CartProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/nombre completo/i)).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/nombre completo/i), {
+      target: { value: 'Cliente DistriTools' },
+    });
+    fireEvent.change(screen.getByLabelText(/correo/i), {
+      target: { value: 'cliente@distritools.local' },
+    });
+    fireEvent.change(screen.getByLabelText(/teléfono/i), {
+      target: { value: '3000000000' },
+    });
+    fireEvent.change(screen.getByLabelText(/departamento/i), {
+      target: { value: 'Valle del Cauca' },
+    });
+    fireEvent.change(screen.getByLabelText(/ciudad/i), {
+      target: { value: 'Cali' },
+    });
+    fireEvent.change(screen.getByLabelText(/dirección principal/i), {
+      target: { value: 'Calle 10 # 1-20' },
+    });
+    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('button', { name: /finalizar compra/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/actualiza tu carrito/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/missing variants/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/019ddc5b/i)).not.toBeInTheDocument();
   });
 
   it('checkout por cotización redirige a confirmación comercial', async () => {

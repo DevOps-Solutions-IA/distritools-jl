@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { GlobalLiveSearch } from '@/components/storefront/GlobalLiveSearch';
-import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils/cn';
 
 const mobileLinks = [
@@ -160,7 +159,7 @@ export function MobileNavigationDrawer() {
               ))}
               <details className="rounded-2xl border border-white/8 bg-white/[0.035] p-3">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--color-off-white)]">
-                  Líneas de producto
+                  Explorar líneas
                 </summary>
                 <div className="mt-3 grid gap-2">
                   {categoryLinks.map((link) => (
@@ -176,15 +175,6 @@ export function MobileNavigationDrawer() {
                   ))}
                 </div>
               </details>
-              <a
-                href={siteConfig.whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => setOpen(false)}
-                className="focus-ring inline-flex h-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.055] px-5 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)] hover:bg-white/10"
-              >
-                Asesoría
-              </a>
               <p className="px-1 pt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
                 La información legal está disponible en el footer para no saturar el menú de compra.
               </p>

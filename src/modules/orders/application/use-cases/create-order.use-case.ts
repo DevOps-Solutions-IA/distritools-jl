@@ -26,6 +26,7 @@ import {
 import { OrderEntity } from 'src/modules/orders/domain/entities/order.entity';
 import { OrderNumberService } from 'src/modules/orders/domain/services/order-number.service';
 import { OrderPolicyService } from 'src/modules/orders/domain/services/order-policy.service';
+import { OrderTrackingCodeService } from 'src/modules/orders/domain/services/order-tracking-code.service';
 import { OrderStatus } from '@prisma/client';
 import { OrderItemEntity } from 'src/modules/order-items/domain/entities/order-item.entity';
 import { EvaluatePromotionsUseCase } from 'src/modules/promotions/application/use-cases/evaluate-promotions.use-case';
@@ -70,6 +71,8 @@ export class CreateOrderUseCase {
     private readonly orderNumberService: OrderNumberService,
     @Inject(OrderPolicyService)
     private readonly orderPolicyService: OrderPolicyService,
+    @Inject(OrderTrackingCodeService)
+    private readonly orderTrackingCodeService: OrderTrackingCodeService,
     @Inject(EvaluatePromotionsUseCase)
     private readonly evaluatePromotionsUseCase: EvaluatePromotionsUseCase,
     @Inject(AUDIT_REPOSITORY)
@@ -81,6 +84,7 @@ export class CreateOrderUseCase {
   async execute(input: CreateOrderInput) {
     const orderId = uuidv7();
     const orderNumber = this.orderNumberService.generate();
+    const trackingCode = this.orderTrackingCodeService.create(orderNumber);
     const requestedVariantIds = [...new Set(input.items.map((item) => item.variantId))];
     const variants = await this.orderVariantRepository.findByIds(requestedVariantIds);
 
@@ -213,6 +217,7 @@ export class CreateOrderUseCase {
       payload: {
         orderId: order.order.id,
         orderNumber: order.order.orderNumber,
+        trackingCode,
         status: order.order.status,
         totals: {
           subtotal: order.order.subtotal,
@@ -223,6 +228,13 @@ export class CreateOrderUseCase {
         },
         customerEmail: order.order.customerEmail,
         customerPhone: order.order.customerPhone,
+        items: order.items.map((item) => ({
+          sku: item.skuSnapshot,
+          name: item.variantNameSnapshot,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.lineGrandTotal,
+        })),
       },
     });
 
@@ -230,6 +242,7 @@ export class CreateOrderUseCase {
       order: orderEntity.toAdminResponse(
         order.items.map((item) => OrderItemEntity.fromState(item).toResponse()),
       ),
+      trackingCode,
     };
   }
 }

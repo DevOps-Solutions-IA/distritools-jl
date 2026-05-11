@@ -188,9 +188,14 @@ export class CreateGuestCheckoutOrderUseCase {
     return {
       orderId: created.order.id,
       orderNumber: created.order.orderNumber,
+      trackingCode: created.trackingCode,
       status: created.order.status,
       total: created.order.totals.grandTotal,
       currency: 'COP',
+      notification: {
+        status: 'queued',
+        channel: 'email',
+      },
       payment: {
         canInitiate: paymentMethod === 'pse' || allowInternalGatewayTestMethod,
         initiateUrl:

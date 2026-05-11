@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { StorefrontLinkButton } from '@/components/storefront/StorefrontButton';
-import { siteConfig } from '@/config/site';
 
 interface StorefrontHeroProps {
   featuredFamilies?: string[];
@@ -27,14 +26,9 @@ export function StorefrontHero({ featuredFamilies = [] }: StorefrontHeroProps) {
             <StorefrontLinkButton href="/productos" storefrontSize="large" className="w-full sm:w-auto">
               Ver productos
             </StorefrontLinkButton>
-            <a
-              href={siteConfig.whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="focus-ring inline-flex h-12 w-full items-center justify-center rounded-full border border-white/15 bg-white/[0.055] px-5 text-base font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)] hover:bg-white/10 sm:w-auto"
-            >
-              Asesoría
-            </a>
+            <StorefrontLinkButton href="/rastreo-de-pedido" storefrontVariant="secondary" storefrontSize="large" className="w-full sm:w-auto">
+              Rastreo
+            </StorefrontLinkButton>
           </div>
         </div>
 

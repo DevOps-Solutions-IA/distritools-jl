@@ -65,14 +65,12 @@ export function StorefrontShell({ children, className }: StorefrontShellProps) {
             />
 
             <div className="flex items-center justify-between gap-3 xl:justify-end">
-              <a
-                href={siteConfig.whatsappUrl}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href="/rastreo-de-pedido"
                 className="focus-ring inline-flex h-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.055] px-5 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)] hover:bg-white/10"
               >
-                Asesoría
-              </a>
+                Rastreo
+              </Link>
               <CartDrawer />
             </div>
           </div>

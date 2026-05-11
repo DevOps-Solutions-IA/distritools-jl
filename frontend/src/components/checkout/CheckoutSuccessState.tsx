@@ -6,11 +6,13 @@ import { Card, CardBody } from '@/components/ui/Card';
 
 interface CheckoutSuccessStateProps {
   orderNumber: string;
+  trackingCode?: string;
   message?: string;
 }
 
 export function CheckoutSuccessState({
   orderNumber,
+  trackingCode,
   message,
 }: CheckoutSuccessStateProps) {
   return (
@@ -21,8 +23,9 @@ export function CheckoutSuccessState({
         </h2>
         <p className="text-sm leading-6 text-[var(--color-text-secondary)]">
           Pedido <strong>{orderNumber}</strong>. {message ?? 'Recibirás confirmación cuando tu pedido sea validado.'}
+          {trackingCode ? <> Código de rastreo interno: <strong>{trackingCode}</strong>.</> : null}
         </p>
-        <Link href={`/checkout/confirmacion?order=${encodeURIComponent(orderNumber)}`}>
+        <Link href={`/checkout/confirmacion?order=${encodeURIComponent(orderNumber)}${trackingCode ? `&tracking=${encodeURIComponent(trackingCode)}` : ''}`}>
           <Button>Ver confirmación</Button>
         </Link>
       </CardBody>
