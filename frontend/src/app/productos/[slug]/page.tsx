@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Breadcrumbs } from '@/components/catalog/Breadcrumbs';
 import { PriceDisplay } from '@/components/catalog/PriceDisplay';
 import { ProductCommerceBadge } from '@/components/catalog/ProductCommerceBadge';
+import { ProductDetailAccordion } from '@/components/catalog/ProductDetailAccordion';
 import { ProductImageFrame } from '@/components/catalog/ProductImageFrame';
 import { StorefrontShell } from '@/components/layout/StorefrontShell';
 import { Badge } from '@/components/ui/Badge';
@@ -97,12 +98,12 @@ export default async function ProductDetailPage({
               { label: data.name },
             ]}
           />
-          <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
-            <Card variant="elevated" className="overflow-hidden rounded-[1.35rem] lg:rounded-[2rem]">
+          <div className="grid items-start gap-4 lg:grid-cols-[0.95fr_1.05fr] lg:gap-8">
+            <Card variant="elevated" className="overflow-hidden rounded-[1.35rem] lg:self-start lg:rounded-[2rem]">
               <CardBody className="space-y-3 p-3 sm:p-5">
-                <ProductImageFrame product={data} className="min-h-[260px] sm:min-h-[360px] lg:min-h-[430px]" priority />
+                <ProductImageFrame product={data} className="h-[260px] sm:h-[360px] lg:h-[430px]" priority />
                 <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                  {['Sin cuenta', 'Asesoría', 'Entrega'].map((item) => (
+                  {['Compra', 'Stock', 'Entrega'].map((item) => (
                     <div
                       key={item}
                       className="rounded-2xl border border-[var(--color-border)] bg-white/[0.035] px-2 py-2 text-center text-[11px] font-semibold text-[var(--color-off-white)] sm:px-4 sm:py-3 sm:text-xs"
@@ -148,19 +149,19 @@ export default async function ProductDetailPage({
               </div>
 
               <div className="sticky bottom-3 z-20 grid gap-2 rounded-[1.2rem] border border-white/10 bg-[rgba(5,5,5,0.92)] p-2 shadow-elevated backdrop-blur sm:static sm:grid-cols-2 sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-0">
-                <AddToCartButton
-                  product={data}
-                  variants={productVariants}
-                  label="Comprar"
-                  mode={quoteMode ? 'quote' : 'buy'}
-                />
+                  <AddToCartButton
+                    product={data}
+                    variants={productVariants}
+                    label="Comprar"
+                    mode={quoteMode ? 'quote' : 'buy'}
+                  />
                 <a
                   href={siteConfig.whatsappUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="focus-ring inline-flex h-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.055] px-5 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)] hover:bg-white/10"
                 >
-                  Asesoría
+                  WhatsApp
                 </a>
               </div>
 
@@ -180,21 +181,15 @@ export default async function ProductDetailPage({
               </div>
 
               <Card className="bg-[var(--color-surface-muted)]">
-                <CardBody className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                  <details open className="group">
-                    <summary className="cursor-pointer list-none text-lg font-semibold text-[var(--color-off-white)]">
-                      Detalles
-                    </summary>
-                    <p className="mt-3 text-sm leading-7 text-[var(--color-text-secondary)]">
+                <CardBody className="space-y-3 p-3 sm:space-y-4 sm:p-4">
+                  <ProductDetailAccordion title="Detalles" defaultOpen>
+                    <p className="text-sm leading-7 text-[var(--color-text-secondary)]">
                       {data.longDescription ?? data.description ?? 'Detalles disponibles con asesoría comercial.'}
                     </p>
-                  </details>
+                  </ProductDetailAccordion>
                   {data.attributes.length ? (
-                    <details className="group">
-                      <summary className="cursor-pointer list-none text-lg font-semibold text-[var(--color-off-white)]">
-                        Especificaciones
-                      </summary>
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <ProductDetailAccordion title="Especificaciones">
+                      <div className="grid gap-2 sm:grid-cols-2">
                         {data.attributes.map((attribute) => (
                           <div
                             key={`${attribute.label}-${attribute.value}`}
@@ -205,7 +200,7 @@ export default async function ProductDetailPage({
                           </div>
                         ))}
                       </div>
-                    </details>
+                    </ProductDetailAccordion>
                   ) : null}
                 </CardBody>
               </Card>

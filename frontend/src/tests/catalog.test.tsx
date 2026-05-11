@@ -4,6 +4,7 @@ import { AvailabilityBadge } from '@/components/catalog/AvailabilityBadge';
 import { BrandLogo } from '@/components/catalog/BrandLogo';
 import { ProductCard } from '@/components/catalog/ProductCard';
 import { ProductGrid } from '@/components/catalog/ProductGrid';
+import { ProductImageFrame } from '@/components/catalog/ProductImageFrame';
 import { ProductSearchBar } from '@/components/catalog/ProductSearchBar';
 import { BrandCard } from '@/components/catalog/BrandCard';
 import { BrandLogoSlider } from '@/components/catalog/BrandLogoSlider';
@@ -122,6 +123,15 @@ describe('catalog storefront', () => {
     );
     expect(screen.getAllByRole('button', { name: /comprar/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole('link', { name: /^ver$/i })).not.toBeInTheDocument();
+  });
+
+  it('ProductImageFrame placeholder mantiene imagen limpia sin textos internos', () => {
+    const { container } = render(<ProductImageFrame product={baseProduct} />);
+    const frame = screen.getByLabelText(/imagen de producto pendiente/i);
+
+    expect(frame).toBeInTheDocument();
+    expect(frame).not.toHaveTextContent(/perforación|total|taladro/i);
+    expect(container.querySelector('svg')).toBeInTheDocument();
   });
 
   it('ProductGrid excluye productos sin precio o stock de la vitrina pública', () => {
@@ -422,7 +432,7 @@ describe('catalog storefront', () => {
     expect(screen.getByText(/producto no encontrado/i)).toBeInTheDocument();
   });
 
-  it('Product detail page muestra AddToCartButton', async () => {
+  it('Product detail page muestra PDP premium con acordeón real', async () => {
     vi.mocked(getProductDetailData).mockResolvedValue({
       data: {
         ...baseProduct,
@@ -450,6 +460,16 @@ describe('catalog storefront', () => {
     );
 
     expect(screen.getByRole('button', { name: /comprar/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/imagen de producto pendiente/i)).not.toHaveTextContent(/total|perforación/i);
+    expect(screen.getByRole('button', { name: /detalles/i })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    const specs = screen.getByRole('button', { name: /especificaciones/i });
+    expect(specs).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(specs);
+    expect(specs).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Taladro percutor')).toBeInTheDocument();
   });
 
   it('Product detail page maneja error de carga', async () => {

@@ -141,5 +141,8 @@ describe('smoke frontend base', () => {
     expect(screen.getByLabelText(/escribir por whatsapp/i)).toHaveClass(
       'bg-[var(--color-industrial-yellow)]',
     );
+    expect(screen.getByLabelText(/escribir por whatsapp/i).querySelector('svg')).toBeInTheDocument();
+    expect(screen.queryByText(/^WA$/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/escribir por whatsapp/i).innerHTML).toContain('whatsappPulse');
   });
 });

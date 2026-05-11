@@ -11,6 +11,9 @@ const mobileLinks = [
   { label: 'Inicio', href: '/' },
   { label: 'Productos', href: '/productos' },
   { label: 'Marcas', href: '/marcas' },
+];
+
+const mobileSecondaryLinks = [
   { label: 'Contacto', href: '/contacto' },
   { label: 'Carrito', href: '/carrito' },
 ];
@@ -173,9 +176,22 @@ export function MobileNavigationDrawer() {
                   ))}
                 </div>
               </details>
-              <p className="px-1 pt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
-                La información legal está disponible en el footer para no saturar el menú de compra.
-              </p>
+              {mobileSecondaryLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  aria-current={pathname === link.href ? 'page' : undefined}
+                  className={cn(
+                    'rounded-2xl border px-4 py-3 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)]',
+                    pathname === link.href
+                      ? 'border-[var(--color-industrial-yellow)] bg-[rgba(245,183,0,0.12)]'
+                      : 'border-white/8 bg-white/[0.035]',
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
               <Link
                 href="/rastreo-de-pedido"
                 onClick={() => setOpen(false)}
