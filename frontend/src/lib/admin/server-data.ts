@@ -120,6 +120,7 @@ export interface AdminOperationalSnapshot {
   roles: { data: AdminRoleRow[] };
   audit: { data: AdminAuditRow[] };
   notifications: { data: AdminNotificationRow[] };
+  shippingCapabilities: Record<string, unknown>;
   inventoryHistory: { data: Array<Record<string, unknown>> };
   priceHistory: { data: Array<Record<string, unknown>> };
   legal: { data: Array<Record<string, unknown>> };
@@ -137,14 +138,19 @@ async function getAdminAccessToken() {
   }
 }
 
+function isAdminAuthDisabled() {
+  return process.env.APP_ENV !== 'production' && process.env.ADMIN_AUTH_DISABLED === 'true';
+}
+
 export async function adminFetch<T>(path: string): Promise<AdminApiResult<T>> {
   const token = await getAdminAccessToken();
-  if (!token) {
+  const authDisabled = isAdminAuthDisabled();
+  if (!token && !authDisabled) {
     return { ok: false, status: 401, data: null, error: 'Sesión administrativa requerida.' };
   }
 
   const response = await fetch(`${env.apiBaseUrl}/api/v1${path}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     cache: 'no-store',
   });
   const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
@@ -184,6 +190,7 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     roles,
     audit,
     notifications,
+    shippingCapabilities,
     inventoryHistory,
     priceHistory,
     legal,
@@ -199,6 +206,7 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     read('/admin/roles', { data: [] }, errors, 'roles'),
     read('/admin/audit?limit=50', { data: [] }, errors, 'audit'),
     read('/admin/notifications?limit=50', { data: [] }, errors, 'notifications'),
+    read('/admin/shipping/capabilities', {}, errors, 'shippingCapabilities'),
     read('/admin/inventory/history', { data: [] }, errors, 'inventoryHistory'),
     read('/admin/prices/history', { data: [] }, errors, 'priceHistory'),
     read('/admin/content/legal', { data: [] }, errors, 'legal'),
@@ -216,6 +224,7 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     roles,
     audit,
     notifications,
+    shippingCapabilities,
     inventoryHistory,
     priceHistory,
     legal,

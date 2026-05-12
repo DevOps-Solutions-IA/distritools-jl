@@ -9,6 +9,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (
+    process.env.APP_ENV !== 'production' &&
+    process.env.ADMIN_AUTH_DISABLED === 'true'
+  ) {
+    return NextResponse.next();
+  }
+
   const isLogin = pathname === '/admin/login';
   const hasAccessCookie = Boolean(request.cookies.get(ADMIN_ACCESS_COOKIE)?.value);
 

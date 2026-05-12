@@ -62,7 +62,7 @@ describe('Checkout provider contracts', async () => {
       ],
     });
 
-    assert.equal(shipment.provider, 'none');
+    assert.equal(shipment.provider, 'internal');
     assert.equal(shipment.trackingNumber, null);
     assert.equal(shipment.routeNumber, null);
     assert.equal(shipment.labelUrl, null);

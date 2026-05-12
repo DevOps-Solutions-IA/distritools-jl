@@ -2,6 +2,10 @@ import { ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from 'src/common/constants/auth.constants';
+import {
+  createDevAdminUser,
+  isDevAdminAuthDisabled,
+} from 'src/common/security/dev-admin-bypass';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -16,6 +20,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     ]);
 
     if (isPublic) {
+      return true;
+    }
+
+    if (isDevAdminAuthDisabled()) {
+      const request = context.switchToHttp().getRequest<{ user?: unknown }>();
+      request.user = createDevAdminUser();
       return true;
     }
 

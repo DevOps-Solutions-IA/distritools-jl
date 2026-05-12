@@ -22,7 +22,7 @@ import { CheckoutController } from 'src/modules/orders/infrastructure/http/contr
 import { OrdersController } from 'src/modules/orders/infrastructure/http/controllers/orders.controller';
 import { PrismaOrderRepository } from 'src/modules/orders/infrastructure/repositories/prisma-order.repository';
 import { PrismaOrderVariantRepository } from 'src/modules/orders/infrastructure/repositories/prisma-order-variant.repository';
-import { NoneTrackingProvider } from 'src/modules/orders/infrastructure/providers/none-tracking.provider';
+import { PrismaTrackingProvider } from 'src/modules/orders/infrastructure/providers/prisma-tracking.provider';
 import {
   ORDER_ITEM_REPOSITORY,
 } from 'src/modules/order-items/domain/repositories/order-item.repository';
@@ -44,7 +44,7 @@ import { PromotionsModule } from 'src/modules/promotions/promotions.module';
     PrismaOrderRepository,
     PrismaOrderVariantRepository,
     PrismaOrderItemRepository,
-    NoneTrackingProvider,
+    PrismaTrackingProvider,
     {
       provide: ORDER_REPOSITORY,
       useExisting: PrismaOrderRepository,
@@ -55,7 +55,7 @@ import { PromotionsModule } from 'src/modules/promotions/promotions.module';
     },
     {
       provide: TRACKING_PROVIDER,
-      useExisting: NoneTrackingProvider,
+      useExisting: PrismaTrackingProvider,
     },
     {
       provide: ORDER_ITEM_REPOSITORY,

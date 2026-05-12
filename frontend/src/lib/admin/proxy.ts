@@ -7,6 +7,10 @@ async function getAdminAccessToken() {
   return cookieStore.get('dt_admin_access')?.value ?? null;
 }
 
+function isAdminAuthDisabled() {
+  return process.env.APP_ENV !== 'production' && process.env.ADMIN_AUTH_DISABLED === 'true';
+}
+
 async function parsePayload(request: Request) {
   const contentType = request.headers.get('content-type') ?? '';
   if (!contentType.includes('application/json')) {
@@ -22,7 +26,7 @@ export async function proxyAdminRequest(
 ) {
   const token = await getAdminAccessToken();
 
-  if (!token) {
+  if (!token && !isAdminAuthDisabled()) {
     return NextResponse.json({ message: 'Sesión administrativa requerida.' }, { status: 401 });
   }
 
@@ -30,8 +34,8 @@ export async function proxyAdminRequest(
   const response = await fetch(`${env.apiBaseUrl}/api/v1${backendPath}`, {
     method,
     headers: {
-      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: payload === undefined ? undefined : JSON.stringify(payload),
     cache: 'no-store',

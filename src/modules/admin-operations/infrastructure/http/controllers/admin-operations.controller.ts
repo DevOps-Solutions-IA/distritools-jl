@@ -2385,9 +2385,21 @@ export class AdminOperationsController {
         payuConfigured: Boolean(process.env.PAYU_API_KEY),
       },
       shipping: {
-        provider: process.env.SHIPPING_PROVIDER ?? 'none',
+        provider: process.env.SHIPPING_PROVIDER ?? 'internal',
         coordinadoraConfigured: Boolean(process.env.COORDINADORA_CLIENT_SECRET),
         servientregaConfigured: Boolean(process.env.SERVIENTREGA_CLIENT_SECRET),
+        ninetyNineEnviosConfigured: Boolean(
+          process.env.NINETY_NINE_ENVIOS_API_BASE_URL
+          && (process.env.NINETY_NINE_ENVIOS_API_KEY
+            || (process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET)),
+        ),
+        ninetyNineEnviosEnv: process.env.NINETY_NINE_ENVIOS_ENV ?? 'sandbox',
+        ninetyNineEnviosCodEnabled: process.env.NINETY_NINE_ENVIOS_ENABLE_COD === 'true',
+        defaultOriginConfigured: Boolean(
+          process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_CITY
+          && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DEPARTMENT
+          && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_ADDRESS,
+        ),
       },
       notifications: {
         emailProvider: process.env.EMAIL_PROVIDER ?? 'none',
@@ -2404,8 +2416,20 @@ export class AdminOperationsController {
   getProviderSettings() {
     const paymentProvider = process.env.PAYMENT_PROVIDER ?? 'none';
     const pseProvider = process.env.PAYMENT_PSE_PROVIDER ?? 'none';
-    const shippingProvider = process.env.SHIPPING_PROVIDER ?? 'none';
+    const shippingProvider = process.env.SHIPPING_PROVIDER ?? 'internal';
     const notificationProvider = process.env.NOTIFICATION_PROVIDER ?? 'none';
+    const ninetyNineEnviosConfigured = Boolean(
+      process.env.NINETY_NINE_ENVIOS_API_BASE_URL
+      && (process.env.NINETY_NINE_ENVIOS_API_KEY
+        || (process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET)),
+    );
+    const mock99Allowed = process.env.NODE_ENV !== 'production'
+      || process.env.ALLOW_MOCK_99ENVIOS_IN_PRODUCTION === 'true';
+    const shippingReady = shippingProvider === '99envios'
+      ? ninetyNineEnviosConfigured
+      : shippingProvider === 'mock_99envios'
+        ? mock99Allowed
+        : shippingProvider !== 'internal' && shippingProvider !== 'none';
     return {
       payments: {
         provider: paymentProvider,
@@ -2418,11 +2442,23 @@ export class AdminOperationsController {
       },
       shipping: {
         provider: shippingProvider,
-        ready: shippingProvider !== 'none',
+        ready: shippingReady,
         configured: {
           coordinadora: Boolean(process.env.COORDINADORA_CLIENT_SECRET),
           servientrega: Boolean(process.env.SERVIENTREGA_CLIENT_SECRET),
+          ninetyNineEnvios: ninetyNineEnviosConfigured,
+          ninetyNineEnviosWebhook: Boolean(process.env.NINETY_NINE_ENVIOS_WEBHOOK_SECRET),
+          origin: Boolean(
+            process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_CITY
+            && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DEPARTMENT
+            && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_ADDRESS,
+          ),
         },
+        mode: shippingProvider === '99envios' && !ninetyNineEnviosConfigured
+          ? 'pending_provider'
+          : shippingProvider,
+        env: process.env.NINETY_NINE_ENVIOS_ENV ?? 'sandbox',
+        cashOnDelivery: process.env.NINETY_NINE_ENVIOS_ENABLE_COD === 'true',
       },
       notifications: {
         provider: notificationProvider,
@@ -2434,7 +2470,7 @@ export class AdminOperationsController {
       },
       productionGuards: {
         nullProvidersBlocked: process.env.NODE_ENV === 'production'
-          ? paymentProvider !== 'none' && shippingProvider !== 'none' && notificationProvider !== 'none'
+          ? paymentProvider !== 'none' && shippingReady && notificationProvider !== 'none'
           : false,
       },
     };
@@ -2461,6 +2497,23 @@ export class AdminOperationsController {
     }
     if ((process.env.SHIPPING_PROVIDER ?? 'none') === 'servientrega' && !process.env.SERVIENTREGA_CLIENT_SECRET) {
       failures.push('Servientrega activo sin credenciales.');
+    }
+    if ((process.env.SHIPPING_PROVIDER ?? 'none') === '99envios') {
+      const configured = Boolean(
+        process.env.NINETY_NINE_ENVIOS_API_BASE_URL
+        && (process.env.NINETY_NINE_ENVIOS_API_KEY
+          || (process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET)),
+      );
+      if (!configured) {
+        failures.push('99 Envíos activo sin base URL y credenciales oficiales.');
+      }
+    }
+    if (
+      process.env.NODE_ENV === 'production'
+      && (process.env.SHIPPING_PROVIDER ?? 'none') === 'mock_99envios'
+      && process.env.ALLOW_MOCK_99ENVIOS_IN_PRODUCTION !== 'true'
+    ) {
+      failures.push('mock_99envios bloqueado en producción.');
     }
     return { valid: failures.length === 0, failures, providers };
   }

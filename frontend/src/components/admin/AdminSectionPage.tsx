@@ -328,6 +328,22 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
 
         {moduleKey === 'envios' || moduleKey === 'rastreo' ? (
           <section className="space-y-4">
+            <div className="grid gap-3 lg:grid-cols-4">
+              {[
+                ['Provider', String(operations.shippingCapabilities.provider ?? 'internal')],
+                ['Modo', String(operations.shippingCapabilities.mode ?? 'pending_provider')],
+                ['Listo', operations.shippingCapabilities.ready ? 'Sí' : 'No'],
+                ['COD', operations.shippingCapabilities.supportsCashOnDelivery ? 'Disponible' : 'Pendiente'],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-text-secondary)]">{label}</p>
+                  <p className="mt-2 text-lg font-semibold text-[var(--color-off-white)]">{value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-4 text-sm leading-6 text-amber-100">
+              99 Envíos queda API-ready. Si faltan credenciales/documentación oficial, producción permanece bloqueada y no se inventan guías ni tarifas.
+            </div>
             <OperationalNotice
               status={operations.shipments.operationalState?.status}
               message={operations.shipments.operationalState?.message}

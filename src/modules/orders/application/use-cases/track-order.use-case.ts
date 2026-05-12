@@ -65,6 +65,8 @@ export class TrackOrderUseCase {
       : mapOrderStatusToPublicStatus(order.status);
     const shippingStatus: PublicTrackingStatus =
       providerStatus.trackingNumber || providerStatus.carrier ? publicStatus : 'pendiente_guia';
+    const isMockTracking = providerStatus.carrier === 'mock_99envios'
+      || providerStatus.trackingNumber?.startsWith('MOCK99-');
 
     return {
       orderNumber: order.orderNumber,
@@ -86,14 +88,18 @@ export class TrackOrderUseCase {
         {
           label: providerStatus.trackingNumber ? 'Guía asignada' : 'Guía pendiente de asignación',
           description: providerStatus.trackingNumber
-            ? 'La guía fue asignada por un proveedor real.'
+            ? isMockTracking
+              ? 'Guía mock local/test. No representa una transportadora productiva.'
+              : 'La guía fue asignada por una transportadora configurada.'
             : 'Seguimiento operativo interno. No se inventa guía, transportadora ni ruta.',
           date: null,
           status: shippingStatus,
         },
       ],
       nextStep: providerStatus.trackingNumber
-        ? 'Consulta el avance logístico con la guía entregada por la transportadora.'
+        ? isMockTracking
+          ? 'Validación local/test disponible. Para producción falta credencial y documentación oficial de la transportadora.'
+          : 'Consulta el avance logístico con la guía entregada por la transportadora.'
         : 'Te contactaremos cuando la operación logística tenga guía real.',
       supportAction: {
         label: 'Contactar soporte',
