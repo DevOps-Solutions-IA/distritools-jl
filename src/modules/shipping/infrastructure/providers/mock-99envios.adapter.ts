@@ -47,6 +47,20 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
     ];
   }
 
+  async testConnection() {
+    assertMockAllowed();
+    return {
+      ok: true,
+      status: 'mock_authenticated',
+      message: 'Login mock local/test. No autentica contra 99 Envíos real.',
+      tokenPresent: true,
+    };
+  }
+
+  async getRateLimitStatus() {
+    return { used: 0, limit: 300, remaining: 300, blockedUntil: null, retryAfter: null };
+  }
+
   async quoteShipment(input: ShipmentQuoteInput): Promise<ShipmentQuote> {
     assertMockAllowed();
     const packageCount = Math.max(input.packages.length, 1);
@@ -129,9 +143,15 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
     };
   }
 
-  async generateLabel(shipmentId: string) {
+  async generateLabel(input: { guideNumber: string; pdfType?: 1 | 2 }) {
     assertMockAllowed();
-    return { labelUrl: `https://mock.local/99envios/labels/${shipmentId}.pdf` };
+    return {
+      labelUrl: `https://mock.local/99envios/labels/${input.guideNumber}-${input.pdfType ?? 2}.pdf`,
+      pdfBase64: Buffer.from(`PDF mock ${input.guideNumber}`).toString('base64'),
+      contentType: 'application/pdf',
+      labelFormat: input.pdfType === 1 ? 'PDF_STICKER' as const : 'PDF_NORMAL' as const,
+      status: 'mock_pdf',
+    };
   }
 
   async schedulePickup(_input: SchedulePickupInput) {
@@ -164,6 +184,34 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
 
   async resolveShipmentIssue(issueId: string) {
     return { id: issueId, status: 'resolved_mock' };
+  }
+
+  async getBranchIssues(branchCode: string) {
+    return {
+      branchCode,
+      data: [{
+        externalIssueId: 'mock-issue-1',
+        branchCode,
+        guideNumber: 'MOCK99-ISSUE',
+        issueType: 'nuevo intento de entrega',
+        description: 'Novedad mock local/test.',
+        recipientMasked: 'Ju***',
+        addressMasked: '[redacted]',
+        phoneMasked: '30***',
+      }],
+    };
+  }
+
+  async updateBranchIssue(issueId: string, input: { guideNumber: string; issue: string; observations?: string }) {
+    return {
+      message: 'Novedad registrada con éxito',
+      novedad_id: issueId,
+      updated_data: {
+        numero_preenvio: input.guideNumber,
+        novedad_sucursal: input.issue,
+        observaciones: input.observations ?? null,
+      },
+    };
   }
 
   async getReturns(shipmentId: string) {

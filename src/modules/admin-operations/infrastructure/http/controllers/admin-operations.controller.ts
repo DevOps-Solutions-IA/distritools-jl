@@ -2390,16 +2390,14 @@ export class AdminOperationsController {
         servientregaConfigured: Boolean(process.env.SERVIENTREGA_CLIENT_SECRET),
         ninetyNineEnviosConfigured: Boolean(
           process.env.NINETY_NINE_ENVIOS_API_BASE_URL
-          && (process.env.NINETY_NINE_ENVIOS_API_KEY
-            || (process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET)),
+          && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
+          && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
         ),
         ninetyNineEnviosEnv: process.env.NINETY_NINE_ENVIOS_ENV ?? 'sandbox',
         ninetyNineEnviosCodEnabled: process.env.NINETY_NINE_ENVIOS_ENABLE_COD === 'true',
-        defaultOriginConfigured: Boolean(
-          process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_CITY
-          && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DEPARTMENT
-          && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_ADDRESS,
-        ),
+        defaultBranchCodeConfigured: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE),
+        defaultOriginDaneConfigured: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DANE_CODE),
+        defaultPdfType: process.env.NINETY_NINE_ENVIOS_DEFAULT_PDF_TYPE ?? '2',
       },
       notifications: {
         emailProvider: process.env.EMAIL_PROVIDER ?? 'none',
@@ -2420,8 +2418,8 @@ export class AdminOperationsController {
     const notificationProvider = process.env.NOTIFICATION_PROVIDER ?? 'none';
     const ninetyNineEnviosConfigured = Boolean(
       process.env.NINETY_NINE_ENVIOS_API_BASE_URL
-      && (process.env.NINETY_NINE_ENVIOS_API_KEY
-        || (process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET)),
+      && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
     );
     const mock99Allowed = process.env.NODE_ENV !== 'production'
       || process.env.ALLOW_MOCK_99ENVIOS_IN_PRODUCTION === 'true';
@@ -2447,12 +2445,12 @@ export class AdminOperationsController {
           coordinadora: Boolean(process.env.COORDINADORA_CLIENT_SECRET),
           servientrega: Boolean(process.env.SERVIENTREGA_CLIENT_SECRET),
           ninetyNineEnvios: ninetyNineEnviosConfigured,
-          ninetyNineEnviosWebhook: Boolean(process.env.NINETY_NINE_ENVIOS_WEBHOOK_SECRET),
-          origin: Boolean(
-            process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_CITY
-            && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DEPARTMENT
-            && process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_ADDRESS,
-          ),
+          authEmail: Boolean(process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL),
+          authPassword: Boolean(process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD),
+          integrationToken: Boolean(process.env.NINETY_NINE_ENVIOS_INTEGRATION_TOKEN),
+          integrationId: Boolean(process.env.NINETY_NINE_ENVIOS_INTEGRATION_ID),
+          branchCode: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE),
+          originDane: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DANE_CODE),
         },
         mode: shippingProvider === '99envios' && !ninetyNineEnviosConfigured
           ? 'pending_provider'
@@ -2501,11 +2499,11 @@ export class AdminOperationsController {
     if ((process.env.SHIPPING_PROVIDER ?? 'none') === '99envios') {
       const configured = Boolean(
         process.env.NINETY_NINE_ENVIOS_API_BASE_URL
-        && (process.env.NINETY_NINE_ENVIOS_API_KEY
-          || (process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET)),
+        && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
+        && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
       );
       if (!configured) {
-        failures.push('99 Envíos activo sin base URL y credenciales oficiales.');
+        failures.push('99 Envíos activo sin base URL, email y password oficiales.');
       }
     }
     if (

@@ -35,10 +35,30 @@ interface QuoteShipmentBody {
   packages?: ShipmentPackage[];
   declaredValue?: string;
   cashOnDelivery?: { enabled?: boolean; amount?: string };
+  service?: {
+    idTipoEntrega?: number;
+    idServicio?: number;
+    carrier?: string;
+    country?: string;
+    creationOrigin?: number;
+  };
+  insurance?: {
+    seguro99?: boolean;
+    seguro99plus?: boolean;
+  };
 }
 
 interface ShipmentBody extends QuoteShipmentBody {
   quoteReference?: string;
+  recipient?: {
+    documentType?: string;
+    documentNumber?: string;
+    firstName?: string;
+    firstLastName?: string;
+    secondLastName?: string;
+    email?: string;
+  };
+  observations?: string;
 }
 
 interface CancelBody {
@@ -117,6 +137,20 @@ export class ShippingController {
 
   @ApiBearerAuth()
   @Permissions('shipping.read')
+  @Get('admin/shipping/login-test')
+  async testLogin() {
+    return this.provider.testConnection();
+  }
+
+  @ApiBearerAuth()
+  @Permissions('shipping.read')
+  @Get('admin/shipping/rate-limit')
+  async getRateLimit() {
+    return this.provider.getRateLimitStatus();
+  }
+
+  @ApiBearerAuth()
+  @Permissions('shipping.read')
   @Post('admin/shipping/quote')
   async quoteShipment(@Body() body: QuoteShipmentBody) {
     const input = await this.buildQuoteInput(body);
@@ -151,6 +185,8 @@ export class ShippingController {
     const result = await this.provider.createShipment({
       ...input,
       quoteReference: body.quoteReference,
+      recipient: body.recipient,
+      observations: body.observations,
     });
 
     const status = toPrismaStatus(result.status);
@@ -172,7 +208,7 @@ export class ShippingController {
         routeNumber: result.routeNumber,
         labelUrl: result.labelUrl,
         providerShipmentId: result.id,
-        providerReference: result.rawStatus,
+        providerReference: result.carrier ?? result.rawStatus,
         estimatedDeliveryDate: result.estimatedDeliveryDate,
         addressSnapshot: this.addressSnapshot(order),
         packageSnapshot: (input.packages as unknown as Prisma.InputJsonValue),
@@ -188,7 +224,7 @@ export class ShippingController {
         routeNumber: result.routeNumber,
         labelUrl: result.labelUrl,
         providerShipmentId: result.id,
-        providerReference: result.rawStatus,
+        providerReference: result.carrier ?? result.rawStatus,
         estimatedDeliveryDate: result.estimatedDeliveryDate,
         packageSnapshot: (input.packages as unknown as Prisma.InputJsonValue),
         rawProviderStatus: result.rawStatus,
@@ -236,11 +272,16 @@ export class ShippingController {
   @ApiBearerAuth()
   @Permissions('shipping.read')
   @Get('admin/shipments/:shipmentId/label')
-  async getLabel(@Param('shipmentId') shipmentId: string) {
+  async getLabel(@Param('shipmentId') shipmentId: string, @Query('tipoPdf') tipoPdf?: string) {
     const shipment = await this.findShipment(shipmentId);
     const label = shipment.labelUrl
       ? { labelUrl: shipment.labelUrl }
-      : await this.provider.generateLabel(shipmentId);
+      : await this.provider.generateLabel({
+          guideNumber: shipment.trackingNumber ?? shipment.providerShipmentId ?? shipmentId,
+          carrier: shipment.provider === '99envios' ? (shipment.providerReference ?? 'servientrega') : shipment.provider,
+          pdfType: tipoPdf === '1' ? 1 : 2,
+          cashOnDelivery: shipment.rawProviderStatus?.includes('contrapago') ?? false,
+        });
     return {
       shipmentId,
       ...label,
@@ -359,6 +400,37 @@ export class ShippingController {
   @Get('admin/shipments/:shipmentId/issues')
   getIssues(@Param('shipmentId') shipmentId: string) {
     return this.provider.getShipmentIssues(shipmentId);
+  }
+
+  @ApiBearerAuth()
+  @Permissions('shipping.read')
+  @Get('admin/shipping/branch-issues')
+  getBranchIssues(@Query('branchCode') branchCode?: string) {
+    const code = branchCode ?? process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE;
+    if (!code) throw new BadRequestException('Código de sucursal requerido para consultar novedades.');
+    return this.provider.getBranchIssues(code);
+  }
+
+  @ApiBearerAuth()
+  @Permissions('shipping.issues.write')
+  @Post('admin/shipping/branch-issues/:issueId')
+  async updateBranchIssue(
+    @Param('issueId') issueId: string,
+    @Body() body: { guideNumber?: string; issue?: string; observations?: string },
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    if (!body.guideNumber || !body.issue) {
+      throw new BadRequestException('numero_guia y novedad_sucursal son obligatorios.');
+    }
+    const result = await this.provider.updateBranchIssue(issueId, {
+      guideNumber: body.guideNumber,
+      issue: body.issue,
+      observations: body.observations,
+    });
+    await this.audit(actor, 'shipping.issue_updated', 'shipment_issue', issueId, null, result, ipAddress, userAgent);
+    return result;
   }
 
   @ApiBearerAuth()
@@ -486,6 +558,9 @@ export class ShippingController {
       country: 'CO',
       department: String(body.destination?.department ?? 'Valle del Cauca'),
       city: String(body.destination?.city ?? order?.shippingCity ?? 'Cali'),
+      daneCode: typeof body.destination?.daneCode === 'string'
+        ? body.destination.daneCode
+        : process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DANE_CODE,
       addressLine1: String(body.destination?.addressLine1 ?? order?.shippingAddress ?? 'Dirección pendiente'),
       recipientName: String(body.destination?.recipientName ?? order?.customerName ?? 'Cliente'),
       recipientPhone: String(body.destination?.recipientPhone ?? order?.customerPhone ?? '3000000000'),
@@ -509,6 +584,8 @@ export class ShippingController {
       cashOnDelivery: body.cashOnDelivery?.enabled
         ? { enabled: true, amount: body.cashOnDelivery.amount ?? order?.grandTotal?.toFixed(2) ?? '0' }
         : { enabled: false, amount: '0' },
+      service: body.service,
+      insurance: body.insurance,
     };
   }
 
@@ -641,11 +718,16 @@ export class ShippingController {
       provider: process.env.SHIPPING_PROVIDER ?? 'internal',
       env: process.env.NINETY_NINE_ENVIOS_ENV ?? 'sandbox',
       hasApiBaseUrl: Boolean(process.env.NINETY_NINE_ENVIOS_API_BASE_URL),
-      hasApiKey: Boolean(process.env.NINETY_NINE_ENVIOS_API_KEY),
-      hasClientCredentials: Boolean(process.env.NINETY_NINE_ENVIOS_CLIENT_ID && process.env.NINETY_NINE_ENVIOS_CLIENT_SECRET),
-      hasWebhookSecret: Boolean(process.env.NINETY_NINE_ENVIOS_WEBHOOK_SECRET),
+      hasAuthEmail: Boolean(process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL),
+      hasAuthPassword: Boolean(process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD),
+      hasIntegrationToken: Boolean(process.env.NINETY_NINE_ENVIOS_INTEGRATION_TOKEN),
+      hasIntegrationId: Boolean(process.env.NINETY_NINE_ENVIOS_INTEGRATION_ID),
+      hasBranchCode: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE),
+      hasOriginDaneCode: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DANE_CODE),
       codEnabled: process.env.NINETY_NINE_ENVIOS_ENABLE_COD === 'true',
-      originConfigured: Boolean(process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_CITY),
+      defaultPdfType: process.env.NINETY_NINE_ENVIOS_DEFAULT_PDF_TYPE ?? '2',
+      seguro99: process.env.NINETY_NINE_ENVIOS_DEFAULT_SEGURO99 === 'true',
+      seguro99plus: process.env.NINETY_NINE_ENVIOS_DEFAULT_SEGURO99PLUS === 'true',
     };
   }
 }

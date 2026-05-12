@@ -32,6 +32,19 @@ export class NullShippingAdapter implements ShippingProviderPort {
     return [];
   }
 
+  async testConnection(): Promise<Awaited<ReturnType<ShippingProviderPort['testConnection']>>> {
+    return {
+      ok: false,
+      status: 'internal_tracking',
+      message: 'Provider interno activo. No requiere login externo.',
+      tokenPresent: false,
+    };
+  }
+
+  async getRateLimitStatus(): Promise<Awaited<ReturnType<ShippingProviderPort['getRateLimitStatus']>>> {
+    return { used: 0, limit: 300, remaining: 300, blockedUntil: null, retryAfter: null };
+  }
+
   async quoteShipment(_input: ShipmentQuoteInput): Promise<ShipmentQuote> {
     return {
       provider: 'internal',
@@ -62,8 +75,14 @@ export class NullShippingAdapter implements ShippingProviderPort {
     };
   }
 
-  async generateLabel(_shipmentId: string): Promise<{ labelUrl: string | null }> {
-    return { labelUrl: null };
+  async generateLabel(_input?: Parameters<ShippingProviderPort['generateLabel']>[0]): Promise<Awaited<ReturnType<ShippingProviderPort['generateLabel']>>> {
+    return {
+      labelUrl: null,
+      pdfBase64: null,
+      contentType: null,
+      labelFormat: 'PDF_NORMAL',
+      status: 'pending_documentation',
+    };
   }
 
   async schedulePickup(_input: SchedulePickupInput): Promise<Awaited<ReturnType<ShippingProviderPort['schedulePickup']>>> {
@@ -127,6 +146,28 @@ export class NullShippingAdapter implements ShippingProviderPort {
 
   async resolveShipmentIssue(issueId: string): Promise<Awaited<ReturnType<ShippingProviderPort['resolveShipmentIssue']>>> {
     throw new ConflictException(`Novedad ${issueId} no puede resolverse sin provider logístico.`);
+  }
+
+  async getBranchIssues(branchCode: string): Promise<Awaited<ReturnType<ShippingProviderPort['getBranchIssues']>>> {
+    return {
+      data: [],
+      branchCode,
+      operationalState: {
+        status: 'pending_provider',
+        message: 'Novedades externas pendientes de provider logístico.',
+      },
+    };
+  }
+
+  async updateBranchIssue(
+    issueId: string,
+    _input?: Parameters<ShippingProviderPort['updateBranchIssue']>[1],
+  ): Promise<Awaited<ReturnType<ShippingProviderPort['updateBranchIssue']>>> {
+    return {
+      id: issueId,
+      status: 'pending_provider',
+      message: 'Actualización de novedades pendiente de provider logístico.',
+    };
   }
 
   async getReturns(shipmentId: string): Promise<Awaited<ReturnType<ShippingProviderPort['getReturns']>>> {

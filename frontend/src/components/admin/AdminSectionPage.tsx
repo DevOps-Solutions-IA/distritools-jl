@@ -342,7 +342,22 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
               ))}
             </div>
             <div className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.07] p-4 text-sm leading-6 text-amber-100">
-              99 Envíos queda API-ready. Si faltan credenciales/documentación oficial, producción permanece bloqueada y no se inventan guías ni tarifas.
+              99 Envíos usa solo OpenAPI documentada: login JWT, cotización, preenvío, PDF y novedades. Tracking directo, webhooks, recolecciones, wallet y devoluciones quedan pending_documentation.
+            </div>
+            <div className="grid gap-3 lg:grid-cols-3">
+              {[
+                ['Login JWT', '/api/v1/admin/shipping/login-test'],
+                ['Cotizar', '/api/v1/admin/shipping/quote'],
+                ['PDF guía', '/api/v1/admin/shipments/:shipmentId/label'],
+                ['Novedades', '/api/v1/admin/shipping/branch-issues'],
+                ['Rate limit', '/api/v1/admin/shipping/rate-limit'],
+                ['Preenvío', '/api/v1/admin/orders/:orderId/shipment'],
+              ].map(([label, endpoint]) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-sm font-semibold text-[var(--color-off-white)]">{label}</p>
+                  <p className="mt-1 break-all text-xs text-[var(--color-text-secondary)]">{endpoint}</p>
+                </div>
+              ))}
             </div>
             <OperationalNotice
               status={operations.shipments.operationalState?.status}

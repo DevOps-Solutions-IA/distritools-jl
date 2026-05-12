@@ -9,6 +9,7 @@ export interface ShipmentAddress {
   country: string;
   department: string;
   city: string;
+  daneCode?: string;
   addressLine1: string;
   addressLine2?: string;
   neighborhood?: string;
@@ -37,23 +38,65 @@ export interface ShipmentQuoteInput {
     enabled: boolean;
     amount: string;
   };
+  service?: {
+    idTipoEntrega?: number;
+    idServicio?: number;
+    carrier?: string;
+    country?: string;
+    creationOrigin?: number;
+  };
+  insurance?: {
+    seguro99?: boolean;
+    seguro99plus?: boolean;
+  };
 }
 
 export interface ShipmentQuote {
   provider: ShippingProviderType;
   status: ShipmentStatus;
   carrier: string | null;
+  carrierLabel?: string | null;
   service: string | null;
   quotedAmount: string | null;
+  cashOnDeliveryAmount?: string | null;
+  internalCommission?: string | null;
+  surcharge?: string | null;
+  insuranceAmount?: string | null;
+  success?: boolean;
+  message?: string | null;
   currency: string;
   estimatedDays: number | null;
+  estimatedDeliveryDate?: Date | null;
   expiresAt: Date | null;
   warnings: string[];
   rawReference: Record<string, unknown> | null;
+  carrierOptions?: Array<{
+    carrier: string;
+    carrierLabel: string;
+    success: boolean;
+    message: string | null;
+    quotedAmount: string | null;
+    cashOnDeliveryAmount: string | null;
+    internalCommission: string | null;
+    surcharge: string | null;
+    insuranceAmount: string | null;
+    estimatedDays: number | null;
+    estimatedDeliveryDate: Date | null;
+    serviceId: string | null;
+  }>;
 }
 
 export interface CreateShipmentInput extends ShipmentQuoteInput {
   quoteReference?: string;
+  recipient?: {
+    documentType?: string;
+    documentNumber?: string;
+    firstName?: string;
+    firstLastName?: string;
+    secondLastName?: string;
+    email?: string;
+  };
+  observations?: string;
 }
 
 export interface ShipmentResult {
@@ -70,6 +113,13 @@ export interface ShipmentResult {
   estimatedDeliveryDate: Date | null;
   rawStatus: string | null;
   warnings: string[];
+}
+
+export interface ShippingLabelInput {
+  guideNumber: string;
+  carrier: string;
+  pdfType?: 1 | 2;
+  cashOnDelivery: boolean;
 }
 
 export interface SchedulePickupInput {
@@ -94,11 +144,19 @@ export interface ShippingProviderPort {
     warnings: string[];
   }>;
   getCarriers(): Promise<Array<{ id: string; name: string; services: string[] }>>;
+  testConnection(): Promise<{ ok: boolean; status: string; message: string; tokenPresent?: boolean }>;
+  getRateLimitStatus(): Promise<{ used: number; limit: number; remaining: number; blockedUntil: string | null; retryAfter: string | null }>;
   quoteShipment(input: ShipmentQuoteInput): Promise<ShipmentQuote>;
   createShipment(input: CreateShipmentInput): Promise<ShipmentResult>;
   getShipmentStatus(trackingNumber: string): Promise<ShipmentResult>;
   cancelShipment(shipmentId: string): Promise<ShipmentResult>;
-  generateLabel(shipmentId: string): Promise<{ labelUrl: string | null }>;
+  generateLabel(input: ShippingLabelInput): Promise<{
+    labelUrl: string | null;
+    pdfBase64?: string | null;
+    contentType?: string | null;
+    labelFormat?: 'PDF_STICKER' | 'PDF_NORMAL';
+    status?: string;
+  }>;
   schedulePickup(input: SchedulePickupInput): Promise<{ pickupStatus: PickupStatus }>;
   getCashOnDeliveryStatus(shipmentId: string): Promise<{ status: CashOnDeliveryStatus; amount: string | null }>;
   getWalletBalance(): Promise<{ status: 'pending_provider' | 'available'; available: string | null; pending: string | null; currency: string }>;
@@ -106,6 +164,8 @@ export interface ShippingProviderPort {
   getSettlements(): Promise<{ data: Array<Record<string, unknown>>; operationalState?: Record<string, string> }>;
   getShipmentIssues(shipmentId: string): Promise<{ data: Array<Record<string, unknown>>; shipmentId: string }>;
   resolveShipmentIssue(issueId: string): Promise<{ id: string; status: string }>;
+  getBranchIssues(branchCode: string): Promise<{ data: Array<Record<string, unknown>>; branchCode: string; operationalState?: Record<string, string> }>;
+  updateBranchIssue(issueId: string, input: { guideNumber: string; issue: string; observations?: string }): Promise<Record<string, unknown>>;
   getReturns(shipmentId: string): Promise<{ data: Array<Record<string, unknown>>; shipmentId: string }>;
   handleWebhook(input: { headers: Record<string, string | string[] | undefined>; body: unknown }): Promise<{
     accepted: boolean;

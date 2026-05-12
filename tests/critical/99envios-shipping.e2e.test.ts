@@ -72,34 +72,15 @@ describe('99 Envios API-ready shipping integration', async () => {
   });
 
   await it('blocks real 99envios provider without official credentials', async () => {
-    delete process.env.NINETY_NINE_ENVIOS_API_BASE_URL;
-    delete process.env.NINETY_NINE_ENVIOS_API_KEY;
+    process.env.NINETY_NINE_ENVIOS_API_BASE_URL = 'https://integration.99envios.app';
+    delete process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL;
+    delete process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD;
     const adapter = new NinetyNineEnviosAdapter();
     const capabilities = await adapter.getCapabilities();
     assert.equal(capabilities.provider, '99envios');
     assert.equal(capabilities.ready, false);
     assert.equal(capabilities.mode, 'pending_provider');
-    const quote = await adapter.quoteShipment({
-      destination: {
-        country: 'CO',
-        department: 'Valle del Cauca',
-        city: 'Cali',
-        addressLine1: 'redacted',
-        recipientName: 'Cliente',
-        recipientPhone: '3000000000',
-      },
-      packages: [{
-        weightKg: 1,
-        lengthCm: 10,
-        widthCm: 10,
-        heightCm: 10,
-        declaredValue: '1000',
-        contentDescription: 'Test',
-      }],
-      idempotencyKey: 'test',
-    });
-    assert.equal(quote.status, 'pending_provider');
-    assert.equal(quote.quotedAmount, null);
+    await assert.rejects(() => adapter.testConnection(), /blocked_missing_credentials/);
   });
 
   await it('quotes and creates mock 99envios guide only in local/test', async () => {
