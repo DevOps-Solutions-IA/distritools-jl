@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminPage() {
-  return <AdminShell>{await AdminDashboard()}</AdminShell>;
+interface AdminPageProps {
+  searchParams?: Promise<{ range?: string }>;
+}
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
+  const resolvedSearchParams = await searchParams;
+  return <AdminShell>{await AdminDashboard({ range: resolvedSearchParams?.range ?? '30d' })}</AdminShell>;
 }

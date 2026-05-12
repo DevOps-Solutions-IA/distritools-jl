@@ -119,6 +119,7 @@ export interface AdminOperationalSnapshot {
   users: { data: AdminUserRow[] };
   roles: { data: AdminRoleRow[] };
   audit: { data: AdminAuditRow[] };
+  notifications: { data: AdminNotificationRow[] };
   inventoryHistory: { data: Array<Record<string, unknown>> };
   priceHistory: { data: Array<Record<string, unknown>> };
   legal: { data: Array<Record<string, unknown>> };
@@ -128,8 +129,12 @@ export interface AdminOperationalSnapshot {
 }
 
 async function getAdminAccessToken() {
-  const cookieStore = await cookies();
-  return cookieStore.get('dt_admin_access')?.value ?? null;
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get('dt_admin_access')?.value ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function adminFetch<T>(path: string): Promise<AdminApiResult<T>> {
@@ -178,6 +183,7 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     users,
     roles,
     audit,
+    notifications,
     inventoryHistory,
     priceHistory,
     legal,
@@ -192,6 +198,7 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     read('/admin/users', { data: [] }, errors, 'users'),
     read('/admin/roles', { data: [] }, errors, 'roles'),
     read('/admin/audit?limit=50', { data: [] }, errors, 'audit'),
+    read('/admin/notifications?limit=50', { data: [] }, errors, 'notifications'),
     read('/admin/inventory/history', { data: [] }, errors, 'inventoryHistory'),
     read('/admin/prices/history', { data: [] }, errors, 'priceHistory'),
     read('/admin/content/legal', { data: [] }, errors, 'legal'),
@@ -208,11 +215,174 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     users,
     roles,
     audit,
+    notifications,
     inventoryHistory,
     priceHistory,
     legal,
     footer,
     settings,
+    errors,
+  };
+}
+
+export interface AdminSalesSummary {
+  orderCount: number;
+  grossRevenue: string;
+  discountTotal: string;
+  netRevenue: string;
+}
+
+export interface AdminTopProduct {
+  variantId: string;
+  variantName: string;
+  quantitySold: number;
+  revenue: string;
+}
+
+export interface AdminOperationalMetrics {
+  orderStatusCounts: Record<string, number>;
+  paymentStatusCounts: Record<string, number>;
+  inventoryStatus: { lowStock: number; totalTracked: number };
+  executive?: {
+    salesTotal: string;
+    orderCount: number;
+    pendingOrders: number;
+    confirmedOrders: number;
+    cancelledOrders: number;
+    averageTicket: string;
+    productsSold: number;
+    activeProducts: number;
+    activeVariants: number;
+    productsWithoutStock: number;
+    lowStockProducts: number;
+    ordersPendingGuide: number;
+    ordersWithInternalTracking: number;
+    notificationsPending: number;
+    notificationsFailed: number;
+    customersCount: number;
+    stockMovementsCount: number;
+    auditEventsCount: number;
+  };
+  catalogHealth?: {
+    totalProducts: number;
+    activeProducts: number;
+    sellableProducts: number;
+    sellableRate: number;
+    productsWithoutVariants: number;
+    variantsWithoutSku: number;
+    variantsWithoutPrice: number;
+    productsWithoutStock: number;
+    lowStockProducts: number;
+    productsWithoutImage: number;
+    incompleteProducts: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      reasons: string[];
+    }>;
+  };
+  orderHealth?: {
+    totalOrders: number;
+    ordersPendingGuide: number;
+    ordersWithCarrierGuide: number;
+    ordersWithInternalTracking: number;
+    ordersByStatus: Record<string, number>;
+    paymentsByStatus: Record<string, number>;
+    paymentMethods: Record<string, number>;
+    topCities: Array<{ city: string; count: number }>;
+  };
+  inventoryIntelligence?: {
+    totalTracked: number;
+    lowStock: number;
+    withoutStock: number;
+    healthyStock: number;
+    topProducts: Array<{
+      productId: string;
+      name: string;
+      brand: string | null;
+      category: string | null;
+      quantitySold: number;
+      availableStock: number;
+    }>;
+    productsWithoutMovement: Array<{
+      id: string;
+      name: string;
+      availableStock: number;
+    }>;
+  };
+  conversion?: {
+    persistedEvents: boolean;
+    message: string;
+    checkoutCompleted: number;
+    checkoutFailed: number;
+  };
+  notifications?: {
+    statusCounts: Record<string, number>;
+  };
+  recommendations?: Array<{
+    severity: 'critical' | 'warning' | 'info';
+    title: string;
+    action: string;
+    count?: number;
+  }>;
+  providerReadiness?: {
+    email: string;
+    payments: { cashOnDelivery: boolean; pse: string };
+    shipping: { internalTracking: boolean; externalCarrier: string };
+  };
+}
+
+export interface AdminNotificationRow {
+  id: string;
+  eventName: string;
+  channel: string;
+  recipient: string;
+  subject: string | null;
+  content: string;
+  provider: string;
+  status: string;
+  attempts: number;
+  lastError: string | null;
+  sentAt: string | null;
+  failedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminDashboardData {
+  sales: AdminSalesSummary | null;
+  topProducts: { data: AdminTopProduct[] } | null;
+  operational: AdminOperationalMetrics | null;
+  notifications: { data: AdminNotificationRow[] } | null;
+  errors: Record<string, string>;
+}
+
+export async function getAdminDashboardData(range: string = '30d'): Promise<AdminDashboardData> {
+  const errors: Record<string, string> = {};
+  const now = new Date();
+  const from = new Date(now);
+  if (range === 'today') {
+    from.setHours(0, 0, 0, 0);
+  } else if (range === '7d') {
+    from.setDate(from.getDate() - 7);
+  } else if (range === 'month') {
+    from.setDate(1);
+    from.setHours(0, 0, 0, 0);
+  } else {
+    from.setDate(from.getDate() - 30);
+  }
+  const windowQuery = `windowFrom=${encodeURIComponent(from.toISOString())}&windowTo=${encodeURIComponent(now.toISOString())}`;
+  const [sales, topProducts, operational, notifications] = await Promise.all([
+    read<AdminSalesSummary | null>(`/admin/analytics/sales-summary?${windowQuery}`, null, errors, 'sales'),
+    read<{ data: AdminTopProduct[] } | null>(`/admin/analytics/top-products?limit=8&${windowQuery}`, null, errors, 'topProducts'),
+    read<AdminOperationalMetrics | null>('/admin/analytics/operational-metrics', null, errors, 'operational'),
+    read<{ data: AdminNotificationRow[] } | null>('/admin/notifications?limit=20', null, errors, 'notifications'),
+  ]);
+
+  return {
+    sales,
+    topProducts,
+    operational,
+    notifications,
     errors,
   };
 }

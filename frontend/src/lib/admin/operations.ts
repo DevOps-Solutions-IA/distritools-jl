@@ -16,6 +16,7 @@ export type AdminModuleKey =
   | 'pagos'
   | 'envios'
   | 'rastreo'
+  | 'notificaciones'
   | 'contenido-legal'
   | 'contenido-footer'
   | 'configuracion'
@@ -175,6 +176,17 @@ export const adminModules: AdminModuleConfig[] = [
     endpoints: ['/rastreo-de-pedido', 'ShippingProviderPort'],
   },
   {
+    key: 'notificaciones',
+    title: 'Notificaciones',
+    href: '/admin/notificaciones',
+    description: 'Emails local/test, estados de entrega, preview seguro y provider productivo pendiente.',
+    permission: 'notifications.read',
+    status: 'operational',
+    primaryActions: ['Ver historial', 'Revisar fallos', 'Validar provider local/test'],
+    validations: ['No fingir envío productivo', 'No exponer secretos', 'Preview sin tokens'],
+    endpoints: ['/api/v1/admin/notifications'],
+  },
+  {
     key: 'contenido-legal',
     title: 'Legal',
     href: '/admin/contenido/legal',
@@ -261,7 +273,7 @@ const moduleGroups: Array<{ title: string; keys: AdminModuleKey[] }> = [
   },
   {
     title: 'Operación',
-    keys: ['pedidos', 'cotizaciones', 'clientes', 'pagos', 'envios', 'rastreo'],
+    keys: ['pedidos', 'cotizaciones', 'clientes', 'pagos', 'envios', 'rastreo', 'notificaciones'],
   },
   { title: 'Contenido', keys: ['contenido-legal', 'contenido-footer'] },
   { title: 'Sistema', keys: ['configuracion', 'usuarios', 'roles', 'auditoria'] },

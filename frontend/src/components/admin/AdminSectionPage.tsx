@@ -408,6 +408,23 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
           />
         ) : null}
 
+        {moduleKey === 'notificaciones' ? (
+          <AdminTable
+            title="Notificaciones local/test"
+            description="Historial real de emails, WhatsApp interno y eventos de notificación sin exponer secretos."
+            rows={operations.notifications.data}
+            columns={[
+              { key: 'event', label: 'Evento', render: (notification) => <span className="font-semibold text-[var(--color-off-white)]">{notification.eventName}</span> },
+              { key: 'channel', label: 'Canal', render: (notification) => <Badge variant="info">{notification.channel}</Badge> },
+              { key: 'status', label: 'Estado', render: (notification) => <Badge variant={notification.status === 'sent' ? 'success' : notification.status === 'failed' ? 'danger' : 'warning'}>{notification.status}</Badge> },
+              { key: 'provider', label: 'Provider', render: (notification) => notification.provider },
+              { key: 'subject', label: 'Asunto', render: (notification) => notification.subject ?? 'Sin asunto' },
+              { key: 'attempts', label: 'Intentos', render: (notification) => notification.attempts },
+              { key: 'date', label: 'Fecha', render: (notification) => new Date(notification.createdAt).toLocaleString('es-CO') },
+            ]}
+          />
+        ) : null}
+
         {moduleKey === 'contenido-legal' ? (
           <AdminTable<Record<string, unknown> & { id: string }>
             title="Workflow legal"
@@ -499,6 +516,7 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
         moduleKey !== 'usuarios' &&
         moduleKey !== 'roles' &&
         moduleKey !== 'auditoria' &&
+        moduleKey !== 'notificaciones' &&
         moduleKey !== 'contenido-legal' &&
         moduleKey !== 'contenido-footer' &&
         moduleKey !== 'configuracion' &&

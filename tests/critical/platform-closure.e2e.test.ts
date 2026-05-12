@@ -419,6 +419,22 @@ describe('Platform closure modules', async () => {
     assert.equal(topProducts.status, 200);
     assert.equal(topProducts.body.data.length >= 1, true);
 
+    const operationalMetrics = await http
+      .get('/api/v1/admin/analytics/operational-metrics')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(operationalMetrics.status, 200);
+    assert.equal(operationalMetrics.body.executive.orderCount >= 1, true);
+    assert.equal(operationalMetrics.body.catalogHealth.sellableProducts >= 1, true);
+    assert.equal(operationalMetrics.body.orderHealth.ordersWithInternalTracking >= 1, true);
+    assert.equal(Array.isArray(operationalMetrics.body.recommendations), true);
+    assert.equal(
+      operationalMetrics.body.recommendations.some(
+        (recommendation: { title: string }) =>
+          recommendation.title === 'Integraciones productivas pendientes',
+      ),
+      true,
+    );
+
     const refresh = await http
       .post('/api/v1/admin/analytics/refresh')
       .set('Authorization', `Bearer ${adminToken}`);

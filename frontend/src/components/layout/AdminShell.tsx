@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { AdminLogoutButton } from '@/components/admin/AdminLogoutButton';
 import { DistriToolsLogo } from '@/components/brand/DistriToolsLogo';
 import { Badge } from '@/components/ui/Badge';
@@ -26,6 +26,7 @@ const iconByModule: Record<AdminModuleConfig['key'], string> = {
   pagos: 'PY',
   envios: 'SH',
   rastreo: 'TR',
+  notificaciones: 'NT',
   'contenido-legal': 'LG',
   'contenido-footer': 'FT',
   configuracion: 'CF',
@@ -136,7 +137,9 @@ function SidebarContent({
 
 export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname() ?? '/admin/dashboard';
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [adminSearch, setAdminSearch] = React.useState('');
   const activeModule = adminModules.find((item) => moduleIsActive(pathname, item)) ?? adminModules[0];
 
   React.useEffect(() => {
@@ -157,6 +160,23 @@ export function AdminShell({ children }: AdminShellProps) {
   React.useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  function submitAdminSearch(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = adminSearch.trim().toLowerCase();
+    if (!query) {
+      return;
+    }
+
+    const targetModule = adminModules.find((item) =>
+      [item.title, item.key, item.description, item.permission]
+        .join(' ')
+        .toLowerCase()
+        .includes(query),
+    );
+
+    router.push(targetModule?.href ?? `/admin/reportes?search=${encodeURIComponent(query)}`);
+  }
 
   return (
     <div className="min-h-screen bg-[var(--color-background)] text-[var(--color-off-white)] lg:grid lg:grid-cols-[19.5rem_1fr]">
@@ -186,7 +206,30 @@ export function AdminShell({ children }: AdminShellProps) {
                 </h1>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <form
+                onSubmit={submitAdminSearch}
+                role="search"
+                className="hidden min-w-[14rem] sm:block"
+              >
+                <label className="sr-only" htmlFor="admin-global-search">
+                  Buscar en admin
+                </label>
+                <input
+                  id="admin-global-search"
+                  value={adminSearch}
+                  onChange={(event) => setAdminSearch(event.target.value)}
+                  placeholder="Buscar módulo"
+                  autoComplete="off"
+                  className="focus-ring h-10 w-full rounded-full border border-white/10 bg-white/[0.04] px-4 text-sm text-[var(--color-off-white)] placeholder:text-[var(--color-text-secondary)]"
+                />
+              </form>
+              <Link
+                href="/admin/dashboard?range=30d"
+                className="hidden rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-[var(--color-text-secondary)] transition hover:border-[var(--color-industrial-yellow)] hover:text-[var(--color-off-white)] md:inline-flex"
+              >
+                30 días
+              </Link>
               <Badge variant={activeModule.status === 'operational' ? 'success' : 'warning'}>
                 {activeModule.status === 'operational' ? 'Operativo' : 'Riesgo'}
               </Badge>
