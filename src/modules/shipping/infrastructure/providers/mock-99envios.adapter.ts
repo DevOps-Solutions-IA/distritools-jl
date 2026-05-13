@@ -10,7 +10,7 @@ import type {
 
 function assertMockAllowed() {
   if (
-    process.env.NODE_ENV === 'production' &&
+    (process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production') &&
     process.env.ALLOW_MOCK_99ENVIOS_IN_PRODUCTION !== 'true'
   ) {
     throw new ConflictException('mock_99envios no está permitido como provider real en producción.');
@@ -22,7 +22,7 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
   async getCapabilities() {
     return {
       provider: 'mock_99envios' as const,
-      ready: process.env.NODE_ENV !== 'production',
+      ready: process.env.APP_ENV !== 'production' && process.env.NODE_ENV !== 'production',
       mode: 'mock' as const,
       supportsQuote: true,
       supportsCreateShipment: true,

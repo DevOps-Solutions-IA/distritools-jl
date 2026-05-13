@@ -312,6 +312,194 @@ export class AdminOperationsController {
     return value instanceof Prisma.Decimal ? value.toFixed(2) : Number(value).toFixed(2);
   }
 
+  private asRecord(value: unknown): Record<string, unknown> {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? value as Record<string, unknown>
+      : {};
+  }
+
+  private appEnv() {
+    return process.env.APP_ENV ?? process.env.NODE_ENV ?? 'local';
+  }
+
+  private isProductionEnv() {
+    return this.appEnv() === 'production';
+  }
+
+  private hasStableDomain() {
+    const value = [
+      process.env.APP_BASE_URL,
+      process.env.STOREFRONT_PUBLIC_URL,
+      process.env.NEXT_PUBLIC_SITE_URL,
+    ].filter(Boolean).join(' ');
+    return Boolean(value) && !/trycloudflare|localhost|127\.0\.0\.1/i.test(value);
+  }
+
+  private shipmentGuideSource(shipment: {
+    provider: string;
+    trackingNumber: string | null;
+    packageSnapshot: Prisma.JsonValue | null;
+  }) {
+    const packageSnapshot = this.asRecord(shipment.packageSnapshot);
+    const guide = this.asRecord(packageSnapshot.guide);
+    const providerMode = typeof guide.providerMode === 'string' ? guide.providerMode : null;
+
+    if (
+      providerMode === 'created_in_mock'
+      || shipment.provider === 'mock_99envios'
+      || shipment.trackingNumber?.startsWith('MOCK99-')
+    ) {
+      return {
+        providerMode: 'mock_local',
+        guideSource: 'mock_99envios',
+        productionState: 'mock_local',
+        warning: 'Guía simulada local/test. No existe en panel real 99 Envíos.',
+      };
+    }
+
+    if (shipment.provider === '99envios' && shipment.trackingNumber) {
+      return {
+        providerMode: 'created_in_99envios_real',
+        guideSource: 'real_99envios',
+        productionState: 'production_ready',
+        warning: 'Guía creada en 99 Envíos.',
+      };
+    }
+
+    if (shipment.provider === 'internal' || shipment.provider === 'none') {
+      return {
+        providerMode: 'internal',
+        guideSource: 'internal',
+        productionState: 'pending_credentials',
+        warning: 'Seguimiento interno. Guía externa pendiente.',
+      };
+    }
+
+    return {
+      providerMode: 'pending_provider',
+      guideSource: 'pending',
+      productionState: 'pending_credentials',
+      warning: 'Guía externa pendiente de provider real.',
+    };
+  }
+
+  private selectedCarrierReason(packageSnapshot: Prisma.JsonValue | null) {
+    const snapshot = this.asRecord(packageSnapshot);
+    const selected = this.asRecord(snapshot.selectedCarrier);
+    const carrier = typeof selected.carrier === 'string' ? selected.carrier : null;
+    const totalComparable = selected.totalComparable;
+
+    if (!carrier) return null;
+
+    return `Más económica disponible: ${carrier}${totalComparable !== undefined ? ` (${totalComparable} COP comparables)` : ''}.`;
+  }
+
+  private buildProductionReadiness() {
+    const appEnv = this.appEnv();
+    const production = this.isProductionEnv();
+    const shippingProvider = process.env.SHIPPING_PROVIDER ?? 'internal';
+    const autoShippingMode = process.env.AUTO_SHIPPING_MODE ?? 'disabled';
+    const adminAuthDisabled = process.env.ADMIN_AUTH_DISABLED === 'true';
+    const has99Credentials = Boolean(
+      process.env.NINETY_NINE_ENVIOS_API_BASE_URL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
+    );
+    const checks = [
+      {
+        key: 'app_env_production',
+        label: 'APP_ENV=production',
+        status: production ? 'pass' : 'fail',
+        message: production ? 'Entorno declarado como producción.' : `Entorno actual: ${appEnv}.`,
+      },
+      {
+        key: 'admin_auth_enabled',
+        label: 'ADMIN_AUTH_DISABLED=false',
+        status: !adminAuthDisabled ? 'pass' : 'fail',
+        message: !adminAuthDisabled ? 'Login admin requerido.' : 'Login admin desactivado; bloquea producción.',
+      },
+      {
+        key: 'stable_domain',
+        label: 'Dominio estable sin trycloudflare/local',
+        status: this.hasStableDomain() ? 'pass' : 'fail',
+        message: this.hasStableDomain() ? 'Dominio estable detectado.' : 'Dominio estable pendiente o URL temporal/local.',
+      },
+      {
+        key: 'no_mock_shipping',
+        label: 'Mock 99 Envíos desactivado en producción',
+        status: shippingProvider !== 'mock_99envios' ? 'pass' : 'fail',
+        message: shippingProvider === 'mock_99envios'
+          ? 'mock_99envios no puede operar como producción.'
+          : `Provider actual: ${shippingProvider}.`,
+      },
+      {
+        key: 'shipping_provider_real',
+        label: 'SHIPPING_PROVIDER=99envios para logística real',
+        status: shippingProvider === '99envios' ? 'pass' : 'fail',
+        message: shippingProvider === '99envios' ? 'Provider real seleccionado.' : 'Logística real bloqueada hasta seleccionar 99envios.',
+      },
+      {
+        key: '99envios_credentials',
+        label: 'Credenciales 99 Envíos configuradas',
+        status: has99Credentials ? 'pass' : 'fail',
+        message: has99Credentials ? 'Credenciales base configuradas.' : 'Faltan base URL, email o password 99 Envíos.',
+      },
+      {
+        key: '99envios_branch',
+        label: 'Branch code configurado',
+        status: process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE ? 'pass' : 'fail',
+        message: process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE ? 'Sucursal configurada.' : 'Sucursal 99 Envíos pendiente.',
+      },
+      {
+        key: 'origin_dane',
+        label: 'Origin DANE configurado',
+        status: process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DANE_CODE ? 'pass' : 'fail',
+        message: process.env.NINETY_NINE_ENVIOS_DEFAULT_ORIGIN_DANE_CODE ? 'DANE origen configurado.' : 'DANE origen pendiente.',
+      },
+      {
+        key: 'auto_shipping_real_provider',
+        label: 'Auto-shipping no usa mock en creación de guía',
+        status: autoShippingMode !== 'quote_and_create_guide' || shippingProvider === '99envios' ? 'pass' : 'fail',
+        message: autoShippingMode === 'quote_and_create_guide' && shippingProvider !== '99envios'
+          ? 'Creación automática de guía requiere provider real.'
+          : `AUTO_SHIPPING_MODE=${autoShippingMode}.`,
+      },
+      {
+        key: 'email_productive',
+        label: 'Email productivo configurado',
+        status: process.env.EMAIL_PROVIDER && process.env.EMAIL_PROVIDER !== 'none' && process.env.EMAIL_PROVIDER !== 'mock' ? 'pass' : 'fail',
+        message: 'Email productivo pendiente si es requisito de salida.',
+      },
+      {
+        key: 'payment_provider',
+        label: 'Payment provider configurado si aplica',
+        status: process.env.PAYMENT_PROVIDER && process.env.PAYMENT_PROVIDER !== 'none' ? 'pass' : 'fail',
+        message: 'PSE/pasarela real pendiente; contraentrega puede seguir operativo.',
+      },
+      {
+        key: 'rbac_audit',
+        label: 'RBAC y audit log activos',
+        status: 'pass',
+        message: 'Endpoints admin usan guards de permisos y auditoría en acciones críticas.',
+      },
+      {
+        key: 'public_tracking_pii',
+        label: 'Tracking público sin PII',
+        status: 'pass',
+        message: 'El rastreo público expone estados, no email/teléfono/dirección.',
+      },
+    ];
+    const failed = checks.filter((check) => check.status === 'fail');
+    return {
+      status: failed.length === 0 ? 'READY_FOR_PRODUCTION' : 'BLOCKED_FOR_PRODUCTION',
+      mode: production
+        ? failed.length === 0 ? 'production_ready' : 'production_blocked'
+        : shippingProvider === 'mock_99envios' ? 'mock_local' : 'sandbox_ready',
+      checks,
+      blockers: failed.map((check) => check.message),
+    };
+  }
+
   private parseMoney(value: string | number | undefined | null, field: string) {
     if (value === undefined || value === null || value === '') {
       return null;
@@ -505,12 +693,23 @@ export class AdminOperationsController {
   private serializeShipment(shipment: Prisma.ShipmentGetPayload<{
     include: { customer: true; order: true; events: true };
   }>) {
+    const guide = this.shipmentGuideSource(shipment);
+    const packageSnapshot = this.asRecord(shipment.packageSnapshot);
     return {
       id: shipment.id,
       orderId: shipment.orderId,
       orderNumber: shipment.order.orderNumber,
       customer: this.publicCustomer(shipment.customer),
       provider: shipment.provider,
+      providerMode: guide.providerMode,
+      guideSource: guide.guideSource,
+      guideNotice: guide.warning,
+      productionState: guide.productionState,
+      autoShippingStatus: typeof packageSnapshot.autoShippingStatus === 'string'
+        ? packageSnapshot.autoShippingStatus
+        : shipment.rawProviderStatus,
+      selectedCarrierReason: this.selectedCarrierReason(shipment.packageSnapshot),
+      labelStatus: this.asRecord(packageSnapshot.guide).labelStatus ?? null,
       status: shipment.status,
       quotedAmount: this.decimalString(shipment.quotedAmount),
       currency: shipment.currency,
@@ -2408,6 +2607,7 @@ export class AdminOperationsController {
       legal: {
         reviewStatus: 'pending_real_company_data',
       },
+      productionReadiness: this.buildProductionReadiness(),
     };
   }
 
@@ -2423,7 +2623,7 @@ export class AdminOperationsController {
       && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
       && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
     );
-    const mock99Allowed = process.env.NODE_ENV !== 'production'
+    const mock99Allowed = !this.isProductionEnv()
       || process.env.ALLOW_MOCK_99ENVIOS_IN_PRODUCTION === 'true';
     const shippingReady = shippingProvider === '99envios'
       ? ninetyNineEnviosConfigured
@@ -2468,8 +2668,9 @@ export class AdminOperationsController {
           whatsapp: Boolean(process.env.WHATSAPP_PROVIDER && process.env.WHATSAPP_PROVIDER !== 'none'),
         },
       },
+      productionReadiness: this.buildProductionReadiness(),
       productionGuards: {
-        nullProvidersBlocked: process.env.NODE_ENV === 'production'
+        nullProvidersBlocked: this.isProductionEnv()
           ? paymentProvider !== 'none' && shippingReady && notificationProvider !== 'none'
           : false,
       },
@@ -2481,7 +2682,7 @@ export class AdminOperationsController {
   validateProviderSettings() {
     const providers = this.getProviderSettings();
     const failures: string[] = [];
-    if (process.env.NODE_ENV === 'production') {
+    if (this.isProductionEnv()) {
       if ((process.env.PAYMENT_PROVIDER ?? 'none') === 'none') failures.push('PAYMENT_PROVIDER none en producción.');
       if ((process.env.SHIPPING_PROVIDER ?? 'none') === 'none') failures.push('SHIPPING_PROVIDER none en producción.');
       if ((process.env.NOTIFICATION_PROVIDER ?? 'none') === 'none') failures.push('NOTIFICATION_PROVIDER none en producción.');
@@ -2509,7 +2710,7 @@ export class AdminOperationsController {
       }
     }
     if (
-      process.env.NODE_ENV === 'production'
+      this.isProductionEnv()
       && (process.env.SHIPPING_PROVIDER ?? 'none') === 'mock_99envios'
       && process.env.ALLOW_MOCK_99ENVIOS_IN_PRODUCTION !== 'true'
     ) {

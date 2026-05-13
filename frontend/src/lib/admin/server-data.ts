@@ -74,10 +74,18 @@ export interface AdminShipmentRow {
   orderId: string;
   orderNumber: string;
   provider: string;
+  providerMode?: string;
+  guideSource?: string;
+  guideNotice?: string;
+  productionState?: string;
+  autoShippingStatus?: string | null;
+  selectedCarrierReason?: string | null;
+  labelStatus?: string | null;
   status: string;
   trackingNumber: string | null;
   routeNumber: string | null;
   quotedAmount: string | null;
+  packageSnapshot?: Record<string, unknown> | null;
   customer: { fullName: string; email: string | null; phone: string | null };
   events: Array<{ id: string; status: string; description: string; occurredAt: string }>;
   createdAt: string;

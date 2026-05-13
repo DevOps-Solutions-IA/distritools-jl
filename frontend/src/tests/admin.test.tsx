@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import AdminLoginPage from '@/app/admin/login/page';
 import AdminNewProductPage from '@/app/admin/productos/nuevo/page';
 import AdminProductsPage from '@/app/admin/productos/page';
+import AdminSettingsPage from '@/app/admin/configuracion/page';
+import AdminShipmentsPage from '@/app/admin/envios/page';
 import { AdminShell } from '@/components/layout/AdminShell';
 
 vi.mock('next/navigation', () => ({
@@ -158,7 +160,28 @@ vi.mock('@/lib/admin/server-data', () => ({
     },
     payments: { data: [], meta: { page: 1, limit: 20, total: 0 } },
     shipments: {
-      data: [],
+      data: [
+        {
+          id: '55555555-5555-4555-8555-555555555555',
+          orderId: '66666666-6666-4666-8666-666666666666',
+          orderNumber: 'DTJL-20260513-871538',
+          provider: 'mock_99envios',
+          providerMode: 'mock_local',
+          guideSource: 'mock_99envios',
+          guideNotice: 'Guía simulada local/test. No existe en panel real 99 Envíos.',
+          productionState: 'mock_local',
+          autoShippingStatus: 'guide_created',
+          selectedCarrierReason: 'Más económica disponible: tcc (11400 COP comparables).',
+          labelStatus: 'generated',
+          status: 'guide_generated',
+          trackingNumber: 'MOCK99-FA1E4626',
+          routeNumber: 'RUTA-MOCK-FA1E4626',
+          quotedAmount: '12400.00',
+          customer: { fullName: 'Cliente Prueba', email: 'cl***@example.com', phone: '300***99' },
+          events: [],
+          createdAt: '2026-05-13T00:00:00.000Z',
+        },
+      ],
       meta: { page: 1, limit: 20, total: 0 },
       operationalState: {
         status: 'provider_not_configured',
@@ -170,11 +193,43 @@ vi.mock('@/lib/admin/server-data', () => ({
     roles: { data: [] },
     audit: { data: [] },
     notifications: { data: [] },
+    shippingCapabilities: {
+      provider: 'mock_99envios',
+      mode: 'mock',
+      ready: true,
+      supportsCashOnDelivery: true,
+      providerConfig: {
+        status: 'mock_local',
+        productionBlocked: false,
+      },
+    },
     inventoryHistory: { data: [] },
     priceHistory: { data: [] },
     legal: { data: [] },
     footer: {},
-    settings: {},
+    settings: {
+      payments: { pseProvider: 'none' },
+      shipping: { provider: 'mock_99envios' },
+      notifications: { emailProvider: 'mock-email' },
+      productionReadiness: {
+        status: 'BLOCKED_FOR_PRODUCTION',
+        mode: 'mock_local',
+        checks: [
+          {
+            key: 'admin_auth_enabled',
+            label: 'ADMIN_AUTH_DISABLED=false',
+            status: 'fail',
+            message: 'Login admin desactivado; bloquea producción.',
+          },
+          {
+            key: 'no_mock_shipping',
+            label: 'Mock 99 Envíos desactivado en producción',
+            status: 'fail',
+            message: 'mock_99envios no puede operar como producción.',
+          },
+        ],
+      },
+    },
     errors: {},
   }),
   getAdminDashboardData: vi.fn().mockResolvedValue({
@@ -299,5 +354,24 @@ describe('admin platform', () => {
     expect(screen.getByRole('heading', { name: /nuevo producto/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Marca')).toHaveTextContent('TOTAL');
     expect(screen.getByLabelText('Categoría')).toHaveTextContent('Perforación');
+  });
+
+  it('envíos admin marca MOCK99 como mock local y no como guía real', async () => {
+    render(await AdminShipmentsPage());
+
+    expect(screen.getByText('Mock local/test activo')).toBeInTheDocument();
+    expect(screen.getByText('Mock local/test')).toBeInTheDocument();
+    expect(screen.getByText('MOCK99-FA1E4626')).toBeInTheDocument();
+    expect(screen.getAllByText(/No existe en panel real 99 Envíos/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('Guía creada en 99 Envíos.')).not.toBeInTheDocument();
+  });
+
+  it('configuración admin bloquea producción con checklist PASS/FAIL explícito', async () => {
+    render(await AdminSettingsPage());
+
+    expect(screen.getByText('Producción — Checklist de salida')).toBeInTheDocument();
+    expect(screen.getByText('BLOCKED_FOR_PRODUCTION')).toBeInTheDocument();
+    expect(screen.getByText('ADMIN_AUTH_DISABLED=false')).toBeInTheDocument();
+    expect(screen.getByText('Mock 99 Envíos desactivado en producción')).toBeInTheDocument();
   });
 });

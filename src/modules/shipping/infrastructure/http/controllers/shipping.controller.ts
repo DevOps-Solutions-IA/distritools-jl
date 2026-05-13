@@ -153,7 +153,7 @@ export class ShippingController {
   }
 
   @ApiBearerAuth()
-  @Permissions('shipping.write')
+  @Permissions('shipping.retry')
   @Post('admin/orders/:orderId/auto-shipping/retry')
   async retryAutoShipping(
     @Param('orderId') orderId: string,
@@ -172,7 +172,7 @@ export class ShippingController {
   }
 
   @ApiBearerAuth()
-  @Permissions('shipping.read')
+  @Permissions('shipping.quote')
   @Post('admin/shipping/quote')
   async quoteShipment(@Body() body: QuoteShipmentBody) {
     const input = await this.buildQuoteInput(body);
@@ -180,7 +180,7 @@ export class ShippingController {
   }
 
   @ApiBearerAuth()
-  @Permissions('shipping.write')
+  @Permissions('shipping.create_guide')
   @Post('admin/orders/:orderId/shipment')
   async createOrderShipment(
     @Param('orderId') orderId: string,
@@ -292,7 +292,7 @@ export class ShippingController {
   }
 
   @ApiBearerAuth()
-  @Permissions('shipping.read')
+  @Permissions('shipping.download_label')
   @Get('admin/shipments/:shipmentId/label')
   async getLabel(@Param('shipmentId') shipmentId: string, @Query('tipoPdf') tipoPdf?: string) {
     const shipment = await this.findShipment(shipmentId);
@@ -418,7 +418,7 @@ export class ShippingController {
   }
 
   @ApiBearerAuth()
-  @Permissions('shipping.issues.write')
+  @Permissions('shipping.issues.read')
   @Get('admin/shipments/:shipmentId/issues')
   getIssues(@Param('shipmentId') shipmentId: string) {
     return this.provider.getShipmentIssues(shipmentId);
@@ -738,9 +738,49 @@ export class ShippingController {
   }
 
   private providerConfigSummary() {
+    const provider = process.env.SHIPPING_PROVIDER ?? 'internal';
+    const appEnv = process.env.APP_ENV ?? process.env.NODE_ENV ?? 'local';
+    const production = appEnv === 'production';
+    const hasCredentials = Boolean(
+      process.env.NINETY_NINE_ENVIOS_API_BASE_URL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
+    );
+    const status = provider === 'mock_99envios'
+      ? 'mock_local'
+      : provider === '99envios' && hasCredentials
+        ? process.env.NINETY_NINE_ENVIOS_ENV === 'production' ? 'production_ready' : 'sandbox_ready'
+        : provider === '99envios'
+          ? 'pending_credentials'
+          : provider === 'internal' || provider === 'none'
+            ? 'pending_credentials'
+            : 'production_blocked';
     return {
-      provider: process.env.SHIPPING_PROVIDER ?? 'internal',
+      provider,
       env: process.env.NINETY_NINE_ENVIOS_ENV ?? 'sandbox',
+      status,
+      productionBlocked: production && (
+        provider === 'mock_99envios'
+        || process.env.ADMIN_AUTH_DISABLED === 'true'
+        || (process.env.AUTO_SHIPPING_MODE === 'quote_and_create_guide' && provider !== '99envios')
+        || (provider === '99envios' && !hasCredentials)
+      ),
+      unsupportedByCurrentDocs: [
+        'tracking directo 99 Envíos',
+        'webhooks reales',
+        'cancelación de guía',
+        'recolecciones API',
+        'wallet',
+        'liquidaciones',
+        'recaudo detallado',
+        'devoluciones',
+        'WhatsApp API',
+        'envíos masivos',
+        'consulta guía/preenvío',
+        'ciudades DANE API',
+        'sucursales API',
+        'transportadoras disponibles API',
+      ],
       hasApiBaseUrl: Boolean(process.env.NINETY_NINE_ENVIOS_API_BASE_URL),
       hasAuthEmail: Boolean(process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL),
       hasAuthPassword: Boolean(process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD),
