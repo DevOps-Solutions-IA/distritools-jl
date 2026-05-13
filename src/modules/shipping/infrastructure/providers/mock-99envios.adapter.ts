@@ -64,14 +64,25 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
   async quoteShipment(input: ShipmentQuoteInput): Promise<ShipmentQuote> {
     assertMockAllowed();
     const packageCount = Math.max(input.packages.length, 1);
-    const quotedAmount = String(8900 + packageCount * 3500);
+    const carrierOptions = [
+      { carrier: 'tcc', carrierLabel: 'tcc', success: true, message: 'cotizacion exitosa mock', quotedAmount: String(8900 + packageCount * 1200), cashOnDeliveryAmount: input.cashOnDelivery?.enabled ? '1000' : '0', internalCommission: '0', surcharge: '300', insuranceAmount: '0', estimatedDays: 2, estimatedDeliveryDate: null, serviceId: '1' },
+      { carrier: 'coordinadora', carrierLabel: 'coordinadora', success: true, message: 'cotizacion exitosa mock', quotedAmount: String(9800 + packageCount * 1400), cashOnDeliveryAmount: input.cashOnDelivery?.enabled ? '1500' : '0', internalCommission: '0', surcharge: '300', insuranceAmount: '0', estimatedDays: 2, estimatedDeliveryDate: null, serviceId: '1' },
+      { carrier: 'servientrega', carrierLabel: 'servientrega', success: true, message: 'cotizacion exitosa mock', quotedAmount: String(10800 + packageCount * 1600), cashOnDeliveryAmount: input.cashOnDelivery?.enabled ? '1800' : '0', internalCommission: '0', surcharge: '400', insuranceAmount: '0', estimatedDays: 1, estimatedDeliveryDate: null, serviceId: '1' },
+      { carrier: 'envia', carrierLabel: 'envia', success: true, message: 'cotizacion exitosa mock', quotedAmount: String(11200 + packageCount * 1700), cashOnDeliveryAmount: input.cashOnDelivery?.enabled ? '2000' : '0', internalCommission: '0', surcharge: '500', insuranceAmount: '0', estimatedDays: 3, estimatedDeliveryDate: null, serviceId: '1' },
+      { carrier: 'interrapidisimo', carrierLabel: 'interrapidisimo', success: false, message: 'sin cobertura mock', quotedAmount: null, cashOnDeliveryAmount: null, internalCommission: '0', surcharge: '0', insuranceAmount: '0', estimatedDays: null, estimatedDeliveryDate: null, serviceId: '1' },
+    ];
+    const selected = carrierOptions[0];
 
     return {
       provider: 'mock_99envios',
       status: 'quoted',
-      carrier: '99 Envíos Mock',
+      carrier: selected.carrier,
+      carrierLabel: selected.carrierLabel,
       service: input.cashOnDelivery?.enabled ? 'standard_cod_mock' : 'standard_mock',
-      quotedAmount,
+      quotedAmount: selected.quotedAmount,
+      cashOnDeliveryAmount: selected.cashOnDeliveryAmount,
+      surcharge: selected.surcharge,
+      insuranceAmount: selected.insuranceAmount,
       currency: 'COP',
       estimatedDays: 2,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000),
@@ -81,6 +92,7 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
         packageCount,
         cod: Boolean(input.cashOnDelivery?.enabled),
       },
+      carrierOptions,
     };
   }
 
@@ -93,7 +105,7 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
       provider: 'mock_99envios',
       status: 'guide_generated',
       quotedAmount: '12400',
-      carrier: '99 Envíos Mock',
+      carrier: input.service?.carrier ?? '99 Envíos Mock',
       trackingNumber: `MOCK99-${suffix}`,
       routeNumber: `RUTA-MOCK-${suffix}`,
       labelUrl: `https://mock.local/99envios/labels/${suffix}.pdf`,

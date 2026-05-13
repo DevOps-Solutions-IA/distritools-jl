@@ -521,6 +521,8 @@ export class AdminOperationsController {
       providerReference: shipment.providerReference,
       estimatedDeliveryDate: shipment.estimatedDeliveryDate,
       rawProviderStatus: shipment.rawProviderStatus,
+      addressSnapshot: shipment.addressSnapshot,
+      packageSnapshot: shipment.packageSnapshot,
       lastSyncAt: shipment.lastSyncAt,
       events: shipment.events.map((event) => ({
         id: event.id,

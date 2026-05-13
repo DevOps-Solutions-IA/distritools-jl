@@ -26,6 +26,9 @@ export default async function ConfirmationPage({
   const tracking = getSingleValue(resolvedSearchParams.tracking);
   const type = getSingleValue(resolvedSearchParams.type);
   const method = getSingleValue(resolvedSearchParams.method);
+  const carrier = getSingleValue(resolvedSearchParams.carrier);
+  const guide = getSingleValue(resolvedSearchParams.guide);
+  const shipping = getSingleValue(resolvedSearchParams.shipping);
   const isQuote = type === 'quote';
   const paymentCopy =
     method === 'cash_on_delivery'
@@ -67,9 +70,15 @@ export default async function ConfirmationPage({
                 <div className="grid gap-2 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-4 py-3 text-sm font-semibold text-[var(--color-off-white)]">
                   <p>Número de pedido: {order}</p>
                   {tracking ? <p>Código de rastreo interno: {tracking}</p> : null}
-                  <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-                    Guía de transportadora pendiente de asignación. No se inventa guía externa.
-                  </p>
+                  {guide ? (
+                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+                      Guía creada: {guide}{carrier ? ` · Transportadora: ${carrier}` : ''}.
+                    </p>
+                  ) : (
+                    <p className="text-xs font-medium text-[var(--color-text-secondary)]">
+                      Pedido recibido. Estamos preparando la guía de envío. No se muestra error técnico al cliente.
+                    </p>
+                  )}
                 </div>
               ) : null}
             </div>
@@ -78,7 +87,7 @@ export default async function ConfirmationPage({
               {[
                 isQuote ? 'Solicitud por cotizar.' : paymentCopy.title,
                 paymentCopy.status,
-                'Envío pendiente de confirmación.',
+                guide ? 'Guía de envío creada.' : shipping === 'missing_dane' ? 'Guía pendiente: datos logísticos por completar.' : 'Envío pendiente de confirmación.',
               ].map((step) => (
                 <div
                   key={step}

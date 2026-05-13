@@ -122,6 +122,19 @@ export class NotificationTemplateService {
             provider: 'internal-log',
           },
         ];
+      case 'shipment.quote_created':
+      case 'shipment.carrier_selected':
+      case 'shipment.guide_created':
+      case 'shipment.auto_shipping_failed':
+        return [
+          {
+            channel: 'internal',
+            recipient: 'ops@internal',
+            subject: `Auto-shipping ${event.eventName}`,
+            content: `Evento ${event.eventName} para pedido ${String(payload.orderNumber ?? payload.orderId)}.`,
+            provider: 'internal-log',
+          },
+        ];
       default:
         return [];
     }

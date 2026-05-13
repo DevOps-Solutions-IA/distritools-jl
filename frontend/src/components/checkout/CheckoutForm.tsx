@@ -28,6 +28,9 @@ interface CheckoutFormProps {
     kind: 'order' | 'quote';
     orderNumber?: string;
     trackingCode?: string;
+    carrier?: string | null;
+    guideNumber?: string | null;
+    autoShippingStatus?: string | null;
     message?: string;
     paymentMethod?: CheckoutSchemaValues['paymentGateway'];
   }): void;
@@ -132,6 +135,9 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
           kind: 'order',
           orderNumber: result.order.orderNumber,
           trackingCode: result.order.trackingCode,
+          carrier: result.order.shipping?.carrier,
+          guideNumber: result.order.shipping?.guideNumber,
+          autoShippingStatus: result.order.shipping?.autoShippingStatus,
           message: result.message,
           paymentMethod: values.paymentGateway,
         });

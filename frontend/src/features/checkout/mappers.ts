@@ -37,6 +37,7 @@ export function mapCheckoutFormToOrderPayload(
     shippingAddress: {
       city: values.city.trim(),
       addressLine1: values.address.trim(),
+      department: values.department.trim() || undefined,
       addressLine2: [
         values.addressDetail.trim(),
         values.neighborhood.trim() ? `Barrio: ${values.neighborhood.trim()}` : '',

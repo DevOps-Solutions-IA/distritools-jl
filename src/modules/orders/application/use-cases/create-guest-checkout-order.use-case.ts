@@ -24,6 +24,7 @@ import {
 import { CreateOrderUseCase } from 'src/modules/orders/application/use-cases/create-order.use-case';
 import { OrderPolicyService } from 'src/modules/orders/domain/services/order-policy.service';
 import { isPaymentMethodType } from 'src/modules/payments/domain/payment-methods';
+import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
 
 export interface CreateGuestCheckoutOrderInput {
   customer: {
@@ -37,6 +38,8 @@ export interface CreateGuestCheckoutOrderInput {
     addressLine1: string;
     addressLine2?: string;
     notes?: string;
+    department?: string;
+    daneCode?: string;
   };
   items: Array<{
     productId: string;
@@ -71,6 +74,8 @@ export class CreateGuestCheckoutOrderUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(AutoShippingService)
+    private readonly autoShippingService: AutoShippingService,
   ) {}
 
   async execute(input: CreateGuestCheckoutOrderInput) {
@@ -185,6 +190,15 @@ export class CreateGuestCheckoutOrderUseCase {
       },
     });
 
+    const autoShipping = await this.autoShippingService.runAfterCheckout({
+      orderId: created.order.id,
+      paymentMethod,
+      customerDocument: input.customer.document,
+      destinationDaneCode: input.shippingAddress.daneCode,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+    });
+
     return {
       orderId: created.order.id,
       orderNumber: created.order.orderNumber,
@@ -202,6 +216,11 @@ export class CreateGuestCheckoutOrderUseCase {
           paymentMethod === 'pse' || allowInternalGatewayTestMethod
             ? `/api/v1/payments/${created.order.orderNumber}/initiate`
             : null,
+      },
+      shipping: {
+        autoShippingStatus: autoShipping.status,
+        carrier: autoShipping.carrier,
+        guideNumber: autoShipping.guideNumber,
       },
     };
   }

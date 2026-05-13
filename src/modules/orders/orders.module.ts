@@ -28,9 +28,10 @@ import {
 } from 'src/modules/order-items/domain/repositories/order-item.repository';
 import { PrismaOrderItemRepository } from 'src/modules/order-items/infrastructure/repositories/prisma-order-item.repository';
 import { PromotionsModule } from 'src/modules/promotions/promotions.module';
+import { ShippingModule } from 'src/modules/shipping/shipping.module';
 
 @Module({
-  imports: [AuthModule, InventoryModule, PromotionsModule],
+  imports: [AuthModule, InventoryModule, PromotionsModule, ShippingModule],
   controllers: [OrdersController, CheckoutController],
   providers: [
     CreateOrderUseCase,

@@ -30,7 +30,7 @@ export class PrismaTrackingProvider implements TrackingProvider {
       trackingNumber: shipment.trackingNumber,
       carrier: shipment.provider === 'internal' || shipment.provider === 'none'
         ? null
-        : shipment.provider,
+        : shipment.providerReference ?? shipment.provider,
       estimatedDeliveryDate: shipment.estimatedDeliveryDate?.toISOString() ?? null,
       rawStatus: shipment.rawProviderStatus ?? shipment.status,
     };

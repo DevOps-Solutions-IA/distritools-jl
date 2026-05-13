@@ -49,6 +49,16 @@ class GuestCheckoutShippingAddressDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  daneCode?: string;
 }
 
 class GuestCheckoutItemDto {

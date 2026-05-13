@@ -28,6 +28,8 @@ export interface CreateGuestCheckoutPayload {
     addressLine1: string;
     addressLine2?: string;
     notes?: string;
+    department?: string;
+    daneCode?: string;
   };
   items: Array<{
     productId: string;
@@ -53,6 +55,11 @@ export interface GuestCheckoutOrderResponse {
   payment: {
     canInitiate: boolean;
     initiateUrl: string | null;
+  };
+  shipping?: {
+    autoShippingStatus: string;
+    carrier: string | null;
+    guideNumber: string | null;
   };
 }
 

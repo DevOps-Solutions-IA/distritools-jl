@@ -12,6 +12,10 @@ export class NotificationsEventSubscriber implements OnModuleInit {
     'payment.approved',
     'payment.rejected',
     'payment.expired',
+    'shipment.quote_created',
+    'shipment.carrier_selected',
+    'shipment.guide_created',
+    'shipment.auto_shipping_failed',
     'inventory.low_stock_detected',
   ];
 

@@ -27,6 +27,7 @@ import {
   ShipmentPackage,
   ShipmentQuoteInput,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
+import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
 import type { ShipmentStatus } from 'src/modules/shipping/domain/shipping-status';
 
 interface QuoteShipmentBody {
@@ -116,6 +117,8 @@ export class ShippingController {
     private readonly provider: ShippingProviderPort,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
+    @Inject(AutoShippingService)
+    private readonly autoShippingService: AutoShippingService,
   ) {}
 
   @ApiBearerAuth()
@@ -147,6 +150,25 @@ export class ShippingController {
   @Get('admin/shipping/rate-limit')
   async getRateLimit() {
     return this.provider.getRateLimitStatus();
+  }
+
+  @ApiBearerAuth()
+  @Permissions('shipping.write')
+  @Post('admin/orders/:orderId/auto-shipping/retry')
+  async retryAutoShipping(
+    @Param('orderId') orderId: string,
+    @Body() body: { paymentMethod?: string; customerDocument?: string; destinationDaneCode?: string },
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.autoShippingService.runAfterCheckout({
+      orderId,
+      paymentMethod: body.paymentMethod,
+      customerDocument: body.customerDocument,
+      destinationDaneCode: body.destinationDaneCode,
+      ipAddress,
+      userAgent,
+    });
   }
 
   @ApiBearerAuth()
@@ -700,6 +722,8 @@ export class ShippingController {
       quotedAmount: shipment.quotedAmount?.toFixed(2) ?? null,
       estimatedDeliveryDate: shipment.estimatedDeliveryDate,
       rawProviderStatus: shipment.rawProviderStatus,
+      addressSnapshot: shipment.addressSnapshot,
+      packageSnapshot: shipment.packageSnapshot,
       lastSyncAt: shipment.lastSyncAt,
       events: shipment.events.map((event) => ({
         id: event.id,

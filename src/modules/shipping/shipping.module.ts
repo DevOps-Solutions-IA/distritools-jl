@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import {
   SHIPPING_PROVIDER_PORT,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
+import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
 import { ShippingController } from 'src/modules/shipping/infrastructure/http/controllers/shipping.controller';
 import { CoordinadoraShippingAdapter } from 'src/modules/shipping/infrastructure/providers/coordinadora-shipping.adapter';
 import { Mock99EnviosAdapter } from 'src/modules/shipping/infrastructure/providers/mock-99envios.adapter';
@@ -13,6 +14,7 @@ import { ServientregaShippingAdapter } from 'src/modules/shipping/infrastructure
   controllers: [ShippingController],
   providers: [
     NullShippingAdapter,
+    AutoShippingService,
     Mock99EnviosAdapter,
     NinetyNineEnviosAdapter,
     CoordinadoraShippingAdapter,
@@ -42,6 +44,6 @@ import { ServientregaShippingAdapter } from 'src/modules/shipping/infrastructure
       ],
     },
   ],
-  exports: [SHIPPING_PROVIDER_PORT],
+  exports: [SHIPPING_PROVIDER_PORT, AutoShippingService],
 })
 export class ShippingModule {}

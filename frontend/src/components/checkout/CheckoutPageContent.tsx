@@ -30,12 +30,21 @@ export function CheckoutPageContent() {
       {items.length ? (
         <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr] lg:gap-6">
           <CheckoutForm
-            onSuccess={({ kind, orderNumber, trackingCode, paymentMethod }) => {
+            onSuccess={({ kind, orderNumber, trackingCode, paymentMethod, carrier, guideNumber, autoShippingStatus }) => {
               clearCart();
-              const query =
-                kind === 'order' && orderNumber
-                  ? `?order=${encodeURIComponent(orderNumber)}&tracking=${encodeURIComponent(trackingCode ?? '')}&method=${encodeURIComponent(paymentMethod ?? 'commercial_confirmation')}`
-                  : `?type=quote&method=${encodeURIComponent(paymentMethod ?? 'commercial_confirmation')}`;
+              const params = new URLSearchParams();
+              if (kind === 'order' && orderNumber) {
+                params.set('order', orderNumber);
+                params.set('tracking', trackingCode ?? '');
+                params.set('method', paymentMethod ?? 'commercial_confirmation');
+                if (carrier) params.set('carrier', carrier);
+                if (guideNumber) params.set('guide', guideNumber);
+                if (autoShippingStatus) params.set('shipping', autoShippingStatus);
+              } else {
+                params.set('type', 'quote');
+                params.set('method', paymentMethod ?? 'commercial_confirmation');
+              }
+              const query = `?${params.toString()}`;
               router.push(`/checkout/confirmacion${query}`);
             }}
           />
