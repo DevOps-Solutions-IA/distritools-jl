@@ -6,7 +6,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AdminLogoutButton } from '@/components/admin/AdminLogoutButton';
 import { DistriToolsLogo } from '@/components/brand/DistriToolsLogo';
 import { Badge } from '@/components/ui/Badge';
-import { adminModules, adminNavigationGroups, type AdminModuleConfig } from '@/lib/admin/operations';
+import {
+  adminModules,
+  adminNavigationGroups,
+  adminStatusLabel,
+  adminStatusVariant,
+  isAdminModuleReady,
+  type AdminModuleConfig,
+} from '@/lib/admin/operations';
 import { cn } from '@/lib/utils/cn';
 
 interface AdminShellProps {
@@ -106,9 +113,9 @@ function SidebarContent({
                         </span>
                         <span className="truncate">{item.title}</span>
                       </span>
-                      {item.status !== 'operational' ? (
+                      {!isAdminModuleReady(item.status) ? (
                         <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-[0.62rem] uppercase tracking-[0.12em] text-[var(--color-amber-highlight)]">
-                          Riesgo
+                          {adminStatusLabel(item.status)}
                         </span>
                       ) : null}
                     </Link>
@@ -230,8 +237,8 @@ export function AdminShell({ children }: AdminShellProps) {
               >
                 30 días
               </Link>
-              <Badge variant={activeModule.status === 'operational' ? 'success' : 'warning'}>
-                {activeModule.status === 'operational' ? 'Operativo' : 'Riesgo'}
+              <Badge variant={adminStatusVariant(activeModule.status)}>
+                {adminStatusLabel(activeModule.status)}
               </Badge>
               <span className="hidden rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)] sm:inline-flex">
                 Local

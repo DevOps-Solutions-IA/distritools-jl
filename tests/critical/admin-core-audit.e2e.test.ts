@@ -1,6 +1,6 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
@@ -85,6 +85,8 @@ const requiredAdminRoutes = [
   ['/envios', 'envios/page.tsx'],
   ['/rastreo', 'rastreo/page.tsx'],
   ['/reportes', 'reportes/page.tsx'],
+  ['/legal', 'legal/page.tsx'],
+  ['/footer', 'footer/page.tsx'],
   ['/configuracion', 'configuracion/page.tsx'],
   ['/notificaciones', 'notificaciones/page.tsx'],
   ['/usuarios', 'usuarios/page.tsx'],
@@ -106,6 +108,39 @@ describe('Enterprise admin core audit guards', () => {
         existsSync(join(adminRoot, file)),
         true,
         `Missing admin route ${route} at ${file}`,
+      );
+    }
+  });
+
+  it('does not protect known mutating admin endpoints with read-only permissions', () => {
+    const controller = readFileSync(
+      'src/modules/admin-operations/infrastructure/http/controllers/admin-operations.controller.ts',
+      'utf8',
+    );
+
+    const forbiddenPairs = [
+      ["@Permissions('orders.read')", "@Patch('orders/:orderId/status')"],
+      ["@Permissions('orders.read')", "@Post('orders/:orderId/internal-note')"],
+      ["@Permissions('orders.read')", "@Post('quotes')"],
+      ["@Permissions('orders.read')", "@Post('quotes/:quoteId/price-items')"],
+      ["@Permissions('payments.read')", "@Post('payments/:paymentId/reconcile-cod')"],
+      ["@Permissions('orders.read')", "@Post('shipments/:orderId/create')"],
+      ["@Permissions('orders.read')", "@Post('customers/:customerId/view-sensitive')"],
+      ["@Permissions('orders.read')", "@Post('customers/export')"],
+      ["@Permissions('variants.manage')", "@Post('prices/update')"],
+      ["@Permissions('content.manage')", "@Patch('settings')"],
+    ];
+
+    for (const [permission, route] of forbiddenPairs) {
+      const permissionIndex = controller.indexOf(permission);
+      const routeIndex = controller.indexOf(route);
+      if (permissionIndex === -1 || routeIndex === -1) {
+        continue;
+      }
+      assert.equal(
+        Math.abs(routeIndex - permissionIndex) > 160,
+        true,
+        `${route} sigue protegido con permiso insuficiente ${permission}`,
       );
     }
   });
@@ -145,6 +180,30 @@ describe('Enterprise admin core audit guards', () => {
       .send({});
     assert.equal(shippingMutation.status, 403);
 
+    const quoteMutation = await http
+      .post('/api/v1/admin/quotes')
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({});
+    assert.equal(quoteMutation.status, 403);
+
+    const sensitiveCustomer = await http
+      .post(`/api/v1/admin/customers/${uuidv7()}/view-sensitive`)
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({});
+    assert.equal(sensitiveCustomer.status, 403);
+
+    const priceMutation = await http
+      .post('/api/v1/admin/prices/update')
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({});
+    assert.equal(priceMutation.status, 403);
+
+    const settingsMutation = await http
+      .patch('/api/v1/admin/settings')
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({ general: { storeName: 'No autorizado' } });
+    assert.equal(settingsMutation.status, 403);
+
     await app.close();
   });
 
@@ -180,6 +239,15 @@ describe('Enterprise admin core audit guards', () => {
       .get('/api/v1/admin/settings')
       .set('Authorization', `Bearer ${adminToken}`);
     assert.equal(settings.status, 200);
+    assert.equal(Array.isArray(settings.body.moduleReadiness), true);
+    assert.equal(Boolean(settings.body.featureFlags), true);
+    assert.equal(
+      settings.body.moduleReadiness.some(
+        (module: { module: string; status: string }) =>
+          module.module === 'shipping' && module.status === 'BLOCKED_PROVIDER',
+      ),
+      true,
+    );
     assert.equal(settings.body.productionReadiness.status, 'BLOCKED_FOR_PRODUCTION');
     assert.equal(settings.body.productionReadiness.mode, 'production_blocked');
     assert.equal(JSON.stringify(settings.body.productionReadiness).includes('Login admin desactivado'), true);

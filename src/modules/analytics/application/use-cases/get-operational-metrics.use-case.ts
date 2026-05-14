@@ -26,7 +26,7 @@ export class GetOperationalMetricsUseCase {
   ) {}
 
   async execute(actor: CurrentUser) {
-    assertHasPermissions(actor.permissions, ['analytics.read']);
+    assertHasPermissions(actor.permissions, ['dashboard.read']);
 
     const [
       orderStatusCounts,

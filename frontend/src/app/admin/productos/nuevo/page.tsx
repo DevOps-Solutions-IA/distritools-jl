@@ -18,7 +18,7 @@ export default async function AdminNewProductPage() {
       <div className="space-y-6">
         <section className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-elevated sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
-            products.manage
+            products.write
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--color-off-white)]">
             Nuevo producto

@@ -4,9 +4,12 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { AdminShell } from '@/components/layout/AdminShell';
 import {
+  adminStatusLabel,
+  adminStatusVariant,
   getAdminCatalogSnapshot,
   getAdminModule,
   type AdminModuleKey,
+  type AdminReadinessStatus,
 } from '@/lib/admin/operations';
 import { getAdminOperationalSnapshot } from '@/lib/admin/server-data';
 
@@ -79,19 +82,8 @@ function AdminTable<T extends { id: string }>({
   );
 }
 
-function StatusBadge({ status }: { status: 'operational' | 'api-ready' | 'needs-provider' | 'needs-backend-list' }) {
-  const statusLabel = {
-    operational: 'Operativo',
-    'api-ready': 'API ready',
-    'needs-provider': 'Provider pendiente',
-    'needs-backend-list': 'Listado pendiente',
-  }[status];
-
-  return (
-    <Badge variant={status === 'operational' ? 'success' : 'warning'}>
-      {statusLabel}
-    </Badge>
-  );
+function StatusBadge({ status }: { status: AdminReadinessStatus }) {
+  return <Badge variant={adminStatusVariant(status)}>{adminStatusLabel(status)}</Badge>;
 }
 
 function ModuleActionLinks({ moduleKey }: { moduleKey: AdminModuleKey }) {
@@ -155,10 +147,10 @@ function textValue(value: unknown, fallback = 'Pendiente') {
 }
 
 function statusVariant(status: unknown): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
-  if (status === 'production_ready' || status === 'READY_FOR_PRODUCTION' || status === 'pass') return 'success';
-  if (status === 'production_blocked' || status === 'BLOCKED_FOR_PRODUCTION' || status === 'fail' || status === 'unsafe_configuration') return 'danger';
-  if (status === 'pending_documentation') return 'neutral';
-  if (status === 'mock_local' || status === 'pending_credentials' || status === 'sandbox_ready') return 'warning';
+  if (status === 'production_ready' || status === 'READY_FOR_PRODUCTION' || status === 'READY' || status === 'pass') return 'success';
+  if (status === 'production_blocked' || status === 'BLOCKED_FOR_PRODUCTION' || status === 'NO_GO' || status === 'BLOCKED_CONFIGURATION' || status === 'fail' || status === 'unsafe_configuration') return 'danger';
+  if (status === 'pending_documentation' || status === 'PENDING_DOCUMENTATION') return 'neutral';
+  if (status === 'mock_local' || status === 'MOCK_ONLY' || status === 'pending_credentials' || status === 'BLOCKED_PROVIDER' || status === 'sandbox_ready') return 'warning';
   return 'info';
 }
 
@@ -217,6 +209,10 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
   const readinessChecks = Array.isArray(readiness.checks)
     ? readiness.checks as Array<Record<string, unknown>>
     : [];
+  const moduleReadiness = Array.isArray(settings.moduleReadiness)
+    ? settings.moduleReadiness as Array<Record<string, unknown>>
+    : [];
+  const featureFlags = asRecord(settings.featureFlags);
 
   return (
     <AdminShell>
@@ -745,6 +741,46 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
                       <Badge variant={statusVariant(check.status)}>{String(check.status ?? 'fail').toUpperCase()}</Badge>
                     </div>
                     <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">{textValue(check.message)}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-[1.5rem] border border-[var(--color-border)] bg-[#0d0d0d] p-5">
+              <h2 className="text-xl font-semibold text-[var(--color-off-white)]">Readiness modular</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Estados permitidos por módulo. Los providers externos quedan bloqueados sin credenciales reales.
+              </p>
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                {moduleReadiness.map((module) => (
+                  <div key={String(module.module)} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[var(--color-off-white)]">
+                        {textValue(module.module)}
+                      </p>
+                      <Badge variant={statusVariant(module.status)}>{textValue(module.status, 'PARTIAL')}</Badge>
+                    </div>
+                    <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
+                      Impacto: {textValue(module.productionImpact, 'operational')} · Próximo paso: {textValue(module.nextAction)}
+                    </p>
+                    {Array.isArray(module.blockers) && module.blockers.length > 0 ? (
+                      <p className="mt-2 text-xs leading-5 text-[var(--color-error-red)]">
+                        Bloquea: {(module.blockers as string[]).join(' | ')}
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-[1.5rem] border border-[var(--color-border)] bg-[#0d0d0d] p-5">
+              <h2 className="text-xl font-semibold text-[var(--color-off-white)]">Feature flags operativos</h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Si una bandera está apagada o bloqueada por provider, el admin no debe ejecutar acción productiva.
+              </p>
+              <div className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {Object.entries(featureFlags).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                    <span className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">{key}</span>
+                    <Badge variant={value === true ? 'success' : 'neutral'}>{value === true ? 'ON' : 'OFF'}</Badge>
                   </div>
                 ))}
               </div>

@@ -500,6 +500,97 @@ export class AdminOperationsController {
     };
   }
 
+  private featureFlag(key: string, fallback = false) {
+    const value = process.env[key];
+    if (value === undefined) return fallback;
+    return value === 'true';
+  }
+
+  private buildFeatureFlags() {
+    return {
+      CATALOG_ADVANCED_ENABLED: this.featureFlag('CATALOG_ADVANCED_ENABLED', true),
+      INVENTORY_ADVANCED_ENABLED: this.featureFlag('INVENTORY_ADVANCED_ENABLED', true),
+      INVENTORY_IMPORT_ENABLED: this.featureFlag('INVENTORY_IMPORT_ENABLED', true),
+      INVENTORY_EXPORT_ENABLED: this.featureFlag('INVENTORY_EXPORT_ENABLED', true),
+      INVENTORY_RETURNS_ENABLED: this.featureFlag('INVENTORY_RETURNS_ENABLED', true),
+      INVENTORY_COUNTS_ENABLED: this.featureFlag('INVENTORY_COUNTS_ENABLED', true),
+      INVENTORY_VALUATION_ENABLED: this.featureFlag('INVENTORY_VALUATION_ENABLED', true),
+      ORDERS_ADVANCED_ENABLED: this.featureFlag('ORDERS_ADVANCED_ENABLED', true),
+      FULFILLMENT_ADVANCED_ENABLED: this.featureFlag('FULFILLMENT_ADVANCED_ENABLED', false),
+      QUOTES_ENABLED: this.featureFlag('QUOTES_ENABLED', true),
+      CUSTOMERS_ADVANCED_ENABLED: this.featureFlag('CUSTOMERS_ADVANCED_ENABLED', true),
+      PAYMENTS_MANUAL_ENABLED: this.featureFlag('PAYMENTS_MANUAL_ENABLED', true),
+      PAYMENTS_REAL_PROVIDER_ENABLED: this.featureFlag('PAYMENTS_REAL_PROVIDER_ENABLED', false),
+      PSE_ENABLED: this.featureFlag('PSE_ENABLED', false),
+      SHIPPING_REAL_PROVIDER_ENABLED: this.featureFlag('SHIPPING_REAL_PROVIDER_ENABLED', false),
+      AUTO_SHIPPING_ENABLED: this.featureFlag('AUTO_SHIPPING_ENABLED', false),
+      TRACKING_EXTERNAL_ENABLED: this.featureFlag('TRACKING_EXTERNAL_ENABLED', false),
+      NOTIFICATIONS_LOCAL_ENABLED: this.featureFlag('NOTIFICATIONS_LOCAL_ENABLED', true),
+      NOTIFICATIONS_REAL_PROVIDER_ENABLED: this.featureFlag('NOTIFICATIONS_REAL_PROVIDER_ENABLED', false),
+      REPORTS_ADVANCED_ENABLED: this.featureFlag('REPORTS_ADVANCED_ENABLED', true),
+      ADMIN_EXPORTS_ENABLED: this.featureFlag('ADMIN_EXPORTS_ENABLED', true),
+      LEGAL_WORKFLOW_ENABLED: this.featureFlag('LEGAL_WORKFLOW_ENABLED', true),
+      FOOTER_EDITOR_ENABLED: this.featureFlag('FOOTER_EDITOR_ENABLED', true),
+    };
+  }
+
+  private buildModuleReadiness() {
+    const shippingProvider = process.env.SHIPPING_PROVIDER ?? 'internal';
+    const has99Credentials = Boolean(
+      process.env.NINETY_NINE_ENVIOS_API_BASE_URL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL
+      && process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD,
+    );
+    const emailProvider = process.env.EMAIL_PROVIDER ?? process.env.NOTIFICATION_PROVIDER ?? 'none';
+    const paymentProvider = process.env.PAYMENT_PROVIDER ?? 'none';
+    const readiness = this.buildProductionReadiness();
+
+    const item = (
+      module: string,
+      status: string,
+      blockers: string[] = [],
+      warnings: string[] = [],
+      productionImpact = 'operational',
+      nextAction = 'Mantener monitoreo y auditoria.',
+    ) => ({
+      module,
+      status,
+      blockers,
+      warnings,
+      requiredConfig: [],
+      providerStatus: status,
+      lastValidationAt: new Date().toISOString(),
+      evidence: 'admin-operational-closure',
+      productionImpact,
+      nextAction,
+    });
+
+    return [
+      item('dashboard', 'READY'),
+      item('reports', 'GO_WITH_RISKS', [], ['Margen no disponible si faltan costos.']),
+      item('catalog', 'GO_WITH_RISKS', [], ['Productos/marcas/categorias operan con permisos legacy y alias granulares.']),
+      item('products', 'GO_WITH_RISKS'),
+      item('brands', 'GO_WITH_RISKS'),
+      item('categories', 'GO_WITH_RISKS'),
+      item('inventory', 'READY'),
+      item('prices', 'PARTIAL', [], ['Historial basico; aprobacion formal queda por flujo de precios avanzado.']),
+      item('orders', 'READY'),
+      item('quotes', 'PARTIAL', [], ['Conversion a pedido queda manual para no inventar checkout.']),
+      item('customers', 'READY', [], ['PII sensible requiere customers.read_sensitive.']),
+      item('payments', paymentProvider === 'none' ? 'BLOCKED_PROVIDER' : 'GO_WITH_RISKS', paymentProvider === 'none' ? ['Proveedor de pagos real pendiente.'] : [], ['COD/manual operativo.'], 'blocks_online_payments', 'Configurar Wompi/PayU/PSE real si se habilitan pagos online.'),
+      item('shipping', shippingProvider === '99envios' && has99Credentials ? 'GO_WITH_RISKS' : 'BLOCKED_PROVIDER', shippingProvider === '99envios' && has99Credentials ? [] : ['99 Envios real pendiente de credenciales/proveedor activo.'], [shippingProvider === 'mock_99envios' ? 'Mock local/test no es produccion.' : `Provider actual: ${shippingProvider}.`], 'blocks_external_guides', 'Configurar credenciales 99 Envios reales/sandbox.'),
+      item('tracking', 'GO_WITH_RISKS', [], ['Tracking interno operativo; tracking externo depende de shipping real.']),
+      item('notifications', emailProvider !== 'none' && emailProvider !== 'mock' ? 'GO_WITH_RISKS' : 'BLOCKED_PROVIDER', emailProvider === 'none' || emailProvider === 'mock' ? ['Email productivo pendiente.'] : [], ['Local/test no equivale a proveedor productivo.'], 'blocks_productive_email', 'Configurar proveedor email real.'),
+      item('legal', 'PARTIAL', [], ['Faltan datos legales finales de empresa.']),
+      item('footer', 'PARTIAL', [], ['Editor operativo con publicacion auditada.']),
+      item('settings', readiness.status === 'READY_FOR_PRODUCTION' ? 'READY' : 'BLOCKED_CONFIGURATION', readiness.blockers, [], 'blocks_production', 'Cerrar blockers de production readiness.'),
+      item('users', 'GO_WITH_RISKS'),
+      item('roles', 'GO_WITH_RISKS'),
+      item('audit', 'READY'),
+      item('production', readiness.status === 'READY_FOR_PRODUCTION' ? 'READY' : 'BLOCKED_CONFIGURATION', readiness.blockers, [], 'blocks_production', 'Completar credenciales, dominio, email y pagos reales.'),
+    ];
+  }
+
   private parseMoney(value: string | number | undefined | null, field: string) {
     if (value === undefined || value === null || value === '') {
       return null;
@@ -914,7 +1005,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('orders.status.write')
   @Patch('orders/:orderId/status')
   async updateOrderStatus(
     @Param('orderId') orderId: string,
@@ -1011,7 +1102,7 @@ export class AdminOperationsController {
     return { id: updated.id, orderNumber: updated.orderNumber, status: updated.status };
   }
 
-  @Permissions('orders.read')
+  @Permissions('orders.notes.write')
   @Post('orders/:orderId/internal-note')
   async addInternalOrderNote(
     @Param('orderId') orderId: string,
@@ -1051,7 +1142,7 @@ export class AdminOperationsController {
     return { id: updated.id, orderNumber: updated.orderNumber, updatedAt: updated.updatedAt };
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.read')
   @Get('quotes')
   async listQuotes(@Query() query: PaginationQuery & { status?: QuoteStatus }) {
     const { page, limit, skip } = this.pagination(query);
@@ -1084,7 +1175,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.read')
   @Get('quotes/:quoteId')
   async getQuote(@Param('quoteId') quoteId: string) {
     const quote = await this.prisma.quote.findUnique({
@@ -1104,7 +1195,7 @@ export class AdminOperationsController {
     return { ...this.serializeQuote(quote), timeline: audit };
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.write')
   @Post('quotes')
   async createQuote(
     @Body() body: CreateQuoteBody,
@@ -1161,7 +1252,7 @@ export class AdminOperationsController {
     return this.serializeQuote(quote);
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.write')
   @Patch('quotes/:quoteId')
   async updateQuote(
     @Param('quoteId') quoteId: string,
@@ -1197,7 +1288,7 @@ export class AdminOperationsController {
     return this.serializeQuote(updated);
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.write')
   @Post('quotes/:quoteId/price-items')
   async priceQuoteItems(
     @Param('quoteId') quoteId: string,
@@ -1283,7 +1374,7 @@ export class AdminOperationsController {
     return this.serializeQuote(updated);
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.write')
   @Post('quotes/:quoteId/submit-review')
   async submitQuoteReview(
     @Param('quoteId') quoteId: string,
@@ -1294,7 +1385,7 @@ export class AdminOperationsController {
     return this.transitionQuote(quoteId, actor, 'in_review', 'quote.submitted_review', ipAddress, userAgent);
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.write')
   @Post('quotes/:quoteId/send')
   async sendQuote(
     @Param('quoteId') quoteId: string,
@@ -1328,7 +1419,7 @@ export class AdminOperationsController {
     return this.transitionQuote(quoteId, actor, 'sent', 'quote.sent', ipAddress, userAgent, { sentAt: new Date() });
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.approve')
   @Post('quotes/:quoteId/accept')
   acceptQuote(
     @Param('quoteId') quoteId: string,
@@ -1339,7 +1430,7 @@ export class AdminOperationsController {
     return this.transitionQuote(quoteId, actor, 'accepted', 'quote.accepted', ipAddress, userAgent, { acceptedAt: new Date() });
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.approve')
   @Post('quotes/:quoteId/reject')
   rejectQuote(
     @Param('quoteId') quoteId: string,
@@ -1354,7 +1445,7 @@ export class AdminOperationsController {
     });
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.convert')
   @Post('quotes/:quoteId/convert-to-order')
   async convertQuote(
     @Param('quoteId') quoteId: string,
@@ -1395,7 +1486,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('quotes.write')
   @Post('quotes/:quoteId/cancel')
   cancelQuote(
     @Param('quoteId') quoteId: string,
@@ -1484,7 +1575,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('payments.read')
+  @Permissions('payments.reconcile')
   @Post('payments/:paymentId/reconcile-cod')
   async reconcileCod(
     @Param('paymentId') paymentId: string,
@@ -1528,7 +1619,7 @@ export class AdminOperationsController {
     return { id: updated.id, status: updated.status, updatedAt: updated.updatedAt };
   }
 
-  @Permissions('payments.read')
+  @Permissions('payments.write')
   @Post('payments/:paymentId/refresh-status')
   async refreshPaymentStatus(@Param('paymentId') paymentId: string) {
     const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
@@ -1572,7 +1663,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('shipping.read')
   @Get('shipments')
   async listShipments(@Query() query: PaginationQuery & { status?: ShipmentStatus }) {
     const { page, limit, skip } = this.pagination(query);
@@ -1610,7 +1701,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('shipping.read')
   @Get('shipments/:shipmentId')
   async getShipment(@Param('shipmentId') shipmentId: string) {
     const shipment = await this.prisma.shipment.findUnique({
@@ -1623,7 +1714,7 @@ export class AdminOperationsController {
     return this.serializeShipment(shipment);
   }
 
-  @Permissions('orders.read')
+  @Permissions('shipping.quote')
   @Post('shipments/:orderId/quote')
   async quoteShipment(
     @Param('orderId') orderId: string,
@@ -1694,7 +1785,7 @@ export class AdminOperationsController {
     return this.serializeShipment(shipment);
   }
 
-  @Permissions('orders.read')
+  @Permissions('shipping.create_guide')
   @Post('shipments/:orderId/create')
   async createShipment(
     @Param('orderId') orderId: string,
@@ -1718,7 +1809,7 @@ export class AdminOperationsController {
     throw new BadRequestException('Provider de envío activo requiere adapter real antes de crear guías.');
   }
 
-  @Permissions('orders.read')
+  @Permissions('shipping.cancel')
   @Post('shipments/:shipmentId/cancel')
   async cancelShipment(
     @Param('shipmentId') shipmentId: string,
@@ -1729,7 +1820,7 @@ export class AdminOperationsController {
     return this.updateShipmentStatus(shipmentId, actor, 'cancelled', 'shipment.cancelled', ipAddress, userAgent);
   }
 
-  @Permissions('orders.read')
+  @Permissions('tracking.write')
   @Post('shipments/:shipmentId/sync-status')
   async syncShipment(
     @Param('shipmentId') shipmentId: string,
@@ -1767,7 +1858,7 @@ export class AdminOperationsController {
     throw new BadRequestException('Sync requiere adapter real del provider configurado.');
   }
 
-  @Permissions('orders.read')
+  @Permissions('tracking.read')
   @Get('shipments/:shipmentId/events')
   async getShipmentEvents(@Param('shipmentId') shipmentId: string) {
     const shipment = await this.prisma.shipment.findUnique({ where: { id: shipmentId } });
@@ -1814,7 +1905,7 @@ export class AdminOperationsController {
     return this.serializeShipment(updated);
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.read')
   @Get('customers')
   async listCustomers(@Query() query: PaginationQuery) {
     const { page, limit, skip } = this.pagination(query);
@@ -1864,7 +1955,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.read')
   @Get('customers/:customerId')
   async getCustomer(@Param('customerId') customerId: string) {
     const customer = await this.prisma.customer.findUnique({
@@ -1902,7 +1993,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.notes.write')
   @Patch('customers/:customerId')
   async updateCustomer(
     @Param('customerId') customerId: string,
@@ -1934,7 +2025,7 @@ export class AdminOperationsController {
     return this.publicCustomer(updated);
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.read')
   @Get('customers/:customerId/orders')
   async getCustomerOrders(@Param('customerId') customerId: string) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
@@ -1956,7 +2047,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.read')
   @Get('customers/:customerId/quotes')
   async getCustomerQuotes(@Param('customerId') customerId: string) {
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
@@ -1971,7 +2062,7 @@ export class AdminOperationsController {
     return { customer: this.publicCustomer(customer), data: quotes.map((quote) => this.serializeQuote(quote)) };
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.read_sensitive')
   @Post('customers/:customerId/view-sensitive')
   async viewSensitiveCustomer(
     @Param('customerId') customerId: string,
@@ -1987,7 +2078,7 @@ export class AdminOperationsController {
     return this.privateCustomer(customer);
   }
 
-  @Permissions('orders.read')
+  @Permissions('customers.export')
   @Post('customers/export')
   async exportCustomers(
     @CurrentUserDecorator() actor: CurrentUser,
@@ -2004,7 +2095,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('variants.read')
+  @Permissions('prices.history.read')
   @Get('prices/history')
   async getPriceHistory(@Query('variantId') variantId?: string) {
     const auditLogs = await this.auditRepository.list({
@@ -2026,7 +2117,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('variants.manage')
+  @Permissions('prices.write')
   @Post('prices/update')
   async updatePrice(
     @Body() body: PriceUpdateBody,
@@ -2092,7 +2183,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.read')
   @Get('content/legal')
   async listLegalContent() {
     await this.ensureDefaultLegalVersions();
@@ -2115,7 +2206,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.read')
   @Get('content/legal/:pageKey')
   async getLegalContent(@Param('pageKey') pageKey: string) {
     await this.ensureDefaultLegalVersions();
@@ -2135,7 +2226,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.write')
   @Post('content/legal')
   async createLegalContent(
     @Body() body: LegalUpdateBody,
@@ -2170,7 +2261,7 @@ export class AdminOperationsController {
     return created;
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.write')
   @Patch('content/legal/:id')
   async updateLegalContent(
     @Param('id') id: string,
@@ -2212,7 +2303,7 @@ export class AdminOperationsController {
     return updated;
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.review')
   @Post('content/legal/:id/submit-review')
   async legalSubmitReview(
     @Param('id') id: string,
@@ -2223,7 +2314,7 @@ export class AdminOperationsController {
     return this.setLegalWorkflow(id, actor, 'pending_legal_review', ipAddress, userAgent);
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.approve')
   @Post('content/legal/:id/approve')
   async legalApprove(
     @Param('id') id: string,
@@ -2234,7 +2325,7 @@ export class AdminOperationsController {
     return this.setLegalWorkflow(id, actor, 'approved', ipAddress, userAgent);
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.publish')
   @Post('content/legal/:id/publish')
   async legalPublish(
     @Param('id') id: string,
@@ -2275,7 +2366,7 @@ export class AdminOperationsController {
     return updated;
   }
 
-  @Permissions('content.manage')
+  @Permissions('legal.write')
   @Post('content/legal/:id/archive')
   async legalArchive(
     @Param('id') id: string,
@@ -2338,7 +2429,7 @@ export class AdminOperationsController {
     }
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.read')
   @Get('content/footer')
   async getFooterContent() {
     await this.ensureDefaultFooterRevision();
@@ -2355,7 +2446,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.read')
   @Get('content/footer/:id')
   async getFooterRevision(@Param('id') id: string) {
     const revision = await this.prisma.footerRevision.findUnique({
@@ -2368,7 +2459,7 @@ export class AdminOperationsController {
     return revision;
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.write')
   @Post('content/footer')
   async createFooterContent(
     @Body() body: FooterUpdateBody,
@@ -2415,7 +2506,7 @@ export class AdminOperationsController {
     return created;
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.write')
   @Patch('content/footer/:id')
   async updateFooterContent(
     @Param('id') id: string,
@@ -2458,7 +2549,7 @@ export class AdminOperationsController {
     return updated;
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.write')
   @Post('content/footer/:id/submit-review')
   async footerSubmitReview(
     @Param('id') id: string,
@@ -2469,7 +2560,7 @@ export class AdminOperationsController {
     return this.setFooterWorkflow(id, actor, 'pending_legal_review', ipAddress, userAgent);
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.publish')
   @Post('content/footer/:id/approve')
   async footerApprove(
     @Param('id') id: string,
@@ -2480,7 +2571,7 @@ export class AdminOperationsController {
     return this.setFooterWorkflow(id, actor, 'approved', ipAddress, userAgent);
   }
 
-  @Permissions('content.manage')
+  @Permissions('footer.publish')
   @Post('content/footer/:id/publish')
   async footerPublish(
     @Param('id') id: string,
@@ -2560,7 +2651,7 @@ export class AdminOperationsController {
     });
   }
 
-  @Permissions('content.manage')
+  @Permissions('settings.read')
   @Get('settings')
   async getSettings() {
     const rows = await this.prisma.adminSetting.findMany({ orderBy: [{ category: 'asc' }, { key: 'asc' }] });
@@ -2607,11 +2698,13 @@ export class AdminOperationsController {
       legal: {
         reviewStatus: 'pending_real_company_data',
       },
+      featureFlags: this.buildFeatureFlags(),
+      moduleReadiness: this.buildModuleReadiness(),
       productionReadiness: this.buildProductionReadiness(),
     };
   }
 
-  @Permissions('content.manage')
+  @Permissions('settings.read')
   @Get('settings/providers')
   getProviderSettings() {
     const paymentProvider = process.env.PAYMENT_PROVIDER ?? 'none';
@@ -2668,6 +2761,8 @@ export class AdminOperationsController {
           whatsapp: Boolean(process.env.WHATSAPP_PROVIDER && process.env.WHATSAPP_PROVIDER !== 'none'),
         },
       },
+      featureFlags: this.buildFeatureFlags(),
+      moduleReadiness: this.buildModuleReadiness(),
       productionReadiness: this.buildProductionReadiness(),
       productionGuards: {
         nullProvidersBlocked: this.isProductionEnv()
@@ -2677,7 +2772,7 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('content.manage')
+  @Permissions('settings.write')
   @Post('settings/providers/validate')
   validateProviderSettings() {
     const providers = this.getProviderSettings();
@@ -2719,7 +2814,7 @@ export class AdminOperationsController {
     return { valid: failures.length === 0, failures, providers };
   }
 
-  @Permissions('content.manage')
+  @Permissions('settings.write')
   @Patch('settings')
   async updateSettings(
     @Body() body: SettingsUpdateBody,

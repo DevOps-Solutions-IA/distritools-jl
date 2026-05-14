@@ -17,7 +17,7 @@ export class GetSalesSummaryUseCase {
   ) {}
 
   async execute(actor: CurrentUser, windowFrom?: string, windowTo?: string) {
-    assertHasPermissions(actor.permissions, ['analytics.read']);
+    assertHasPermissions(actor.permissions, ['reports.read']);
     const window = this.analyticsWindowService.normalizeWindow(windowFrom, windowTo);
     return this.analyticsRepository.getSalesSummary(window.windowFrom, window.windowTo);
   }

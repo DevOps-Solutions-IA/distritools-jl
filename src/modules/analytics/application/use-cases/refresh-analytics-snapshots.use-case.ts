@@ -17,7 +17,7 @@ export class RefreshAnalyticsSnapshotsUseCase {
   ) {}
 
   async execute(actor: CurrentUser, windowFrom?: string, windowTo?: string) {
-    assertHasPermissions(actor.permissions, ['analytics.read']);
+    assertHasPermissions(actor.permissions, ['reports.export']);
     const window = this.analyticsWindowService.normalizeWindow(windowFrom, windowTo);
 
     const [salesSummary, topProducts, orderStatusCounts, paymentStatusCounts, inventoryStatus] =

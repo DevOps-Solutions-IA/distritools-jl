@@ -23,7 +23,7 @@ export class AnalyticsController {
     private readonly refreshAnalyticsSnapshotsUseCase: RefreshAnalyticsSnapshotsUseCase,
   ) {}
 
-  @Permissions('analytics.read')
+  @Permissions('reports.read')
   @Get('sales-summary')
   salesSummary(
     @CurrentUserDecorator() actor: CurrentUser,
@@ -33,7 +33,7 @@ export class AnalyticsController {
     return this.getSalesSummaryUseCase.execute(actor, windowFrom, windowTo);
   }
 
-  @Permissions('analytics.read')
+  @Permissions('reports.read')
   @Get('top-products')
   topProducts(
     @CurrentUserDecorator() actor: CurrentUser,
@@ -49,13 +49,13 @@ export class AnalyticsController {
     );
   }
 
-  @Permissions('analytics.read')
+  @Permissions('dashboard.read')
   @Get('operational-metrics')
   operationalMetrics(@CurrentUserDecorator() actor: CurrentUser) {
     return this.getOperationalMetricsUseCase.execute(actor);
   }
 
-  @Permissions('analytics.read')
+  @Permissions('reports.export')
   @Post('refresh')
   refresh(
     @CurrentUserDecorator() actor: CurrentUser,

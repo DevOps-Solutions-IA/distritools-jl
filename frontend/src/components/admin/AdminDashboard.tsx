@@ -1,7 +1,12 @@
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { KpiCard } from '@/components/ui/KpiCard';
-import { adminModules, getAdminCatalogSnapshot } from '@/lib/admin/operations';
+import {
+  adminModules,
+  adminStatusLabel,
+  adminStatusVariant,
+  getAdminCatalogSnapshot,
+} from '@/lib/admin/operations';
 import { getAdminDashboardData } from '@/lib/admin/server-data';
 
 const rangeOptions = [
@@ -263,8 +268,8 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
                 <h2 className="text-lg font-semibold text-[var(--color-off-white)]">{module.title}</h2>
                 <p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{module.description}</p>
               </div>
-              <Badge variant={module.status === 'operational' ? 'success' : 'warning'}>
-                {module.status === 'operational' ? 'Activo' : 'Riesgo'}
+              <Badge variant={adminStatusVariant(module.status)}>
+                {adminStatusLabel(module.status)}
               </Badge>
             </div>
           </Link>

@@ -15,7 +15,7 @@ export default function AdminNewCategoryPage() {
       <div className="space-y-6">
         <section className="rounded-[2rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-elevated sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">
-            categories.manage
+            categories.write
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--color-off-white)]">
             Nueva categoría

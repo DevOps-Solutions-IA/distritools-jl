@@ -31,10 +31,45 @@ export interface AdminModuleConfig {
   href: string;
   description: string;
   permission: string;
-  status: 'operational' | 'api-ready' | 'needs-provider' | 'needs-backend-list';
+  status: AdminReadinessStatus;
   primaryActions: string[];
   validations: string[];
   endpoints: string[];
+}
+
+export type AdminReadinessStatus =
+  | 'READY'
+  | 'GO_WITH_RISKS'
+  | 'PARTIAL'
+  | 'BLOCKED_PROVIDER'
+  | 'BLOCKED_CONFIGURATION'
+  | 'MOCK_ONLY'
+  | 'PENDING_DOCUMENTATION'
+  | 'NO_GO';
+
+export function adminStatusLabel(status: AdminReadinessStatus) {
+  return {
+    READY: 'READY',
+    GO_WITH_RISKS: 'GO CON RIESGOS',
+    PARTIAL: 'PARTIAL',
+    BLOCKED_PROVIDER: 'BLOCKED_PROVIDER',
+    BLOCKED_CONFIGURATION: 'BLOCKED_CONFIGURATION',
+    MOCK_ONLY: 'MOCK_ONLY',
+    PENDING_DOCUMENTATION: 'PENDING_DOCUMENTATION',
+    NO_GO: 'NO_GO',
+  }[status];
+}
+
+export function adminStatusVariant(status: AdminReadinessStatus) {
+  if (status === 'READY') return 'success' as const;
+  if (status === 'NO_GO' || status === 'BLOCKED_CONFIGURATION') return 'danger' as const;
+  if (status === 'BLOCKED_PROVIDER' || status === 'MOCK_ONLY') return 'warning' as const;
+  if (status === 'PENDING_DOCUMENTATION') return 'neutral' as const;
+  return 'info' as const;
+}
+
+export function isAdminModuleReady(status: AdminReadinessStatus) {
+  return status === 'READY';
 }
 
 export interface AdminNavigationGroup {
@@ -48,8 +83,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Dashboard',
     href: '/admin/dashboard',
     description: 'KPIs reales disponibles y alertas de operación sin métricas inventadas.',
-    permission: 'analytics.read',
-    status: 'operational',
+    permission: 'dashboard.read',
+    status: 'READY',
     primaryActions: ['Revisar alertas', 'Abrir reportes', 'Auditar catálogo'],
     validations: ['Sin ventas falsas', 'Estados pendientes visibles', 'Lecturas desde catálogo real'],
     endpoints: ['/api/v1/admin/analytics/operational-metrics'],
@@ -59,8 +94,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Productos',
     href: '/admin/productos',
     description: 'Gestión de producto, publicación, archivo y validación comercial.',
-    permission: 'products.manage',
-    status: 'operational',
+    permission: 'products.write',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Crear producto', 'Editar producto', 'Publicar/archivar', 'Vista pública'],
     validations: ['Slug único', 'Marca requerida', 'Categoría requerida', 'Sellable exige precio y SKU'],
     endpoints: ['/api/v1/admin/products', '/api/v1/admin/variants'],
@@ -70,8 +105,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Marcas',
     href: '/admin/marcas',
     description: 'Taxonomía de marcas, estado, assets autorizados y SEO.',
-    permission: 'brands.manage',
-    status: 'operational',
+    permission: 'brands.write',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Crear marca', 'Editar marca', 'Activar/desactivar', 'Validar assets'],
     validations: ['Slug único', 'No borrar con productos', 'No afirmar distribución oficial'],
     endpoints: ['/api/v1/admin/brands'],
@@ -81,8 +116,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Categorías',
     href: '/admin/categorias',
     description: 'Jerarquía comercial, slugs, SEO y categorías activas.',
-    permission: 'categories.manage',
-    status: 'operational',
+    permission: 'categories.write',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Crear categoría', 'Editar categoría', 'Ordenar jerarquía'],
     validations: ['Slug único', 'Evitar duplicados', 'No romper productos asociados'],
     endpoints: ['/api/v1/admin/categories'],
@@ -93,7 +128,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/inventario',
     description: 'Stock, reservas, compromisos y ajustes auditados.',
     permission: 'inventory.adjust',
-    status: 'operational',
+    status: 'READY',
     primaryActions: ['Ajustar stock', 'Ver kardex', 'Conteo físico', 'Import/export', 'Valorización'],
     validations: ['No stock negativo', 'Motivo requerido', 'Audit log obligatorio', 'Mutaciones sin inventory.read'],
     endpoints: ['/api/v1/admin/inventory/overview', '/api/v1/admin/inventory/history', '/api/v1/admin/inventory/imports/dry-run', '/api/v1/admin/inventory/export'],
@@ -103,8 +138,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Precios',
     href: '/admin/precios',
     description: 'Control de precios por variante y productos pendientes de precio.',
-    permission: 'variants.manage',
-    status: 'operational',
+    permission: 'prices.write',
+    status: 'PARTIAL',
     primaryActions: ['Editar precio', 'Revisar sin precio', 'Validar SKU'],
     validations: ['No precio negativo', 'Sellable no puede quedar sin precio', 'Cambio auditado'],
     endpoints: ['/api/v1/admin/variants'],
@@ -115,7 +150,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/pedidos',
     description: 'Detalle, cancelación y estados de pedidos protegidos por permiso.',
     permission: 'orders.read',
-    status: 'operational',
+    status: 'READY',
     primaryActions: ['Ver detalle', 'Cancelar con permiso', 'Revisar pago/envío'],
     validations: ['No transición inválida', 'No marcar pagado sin permiso', 'PII mínima'],
     endpoints: ['/api/v1/admin/orders', '/api/v1/admin/orders/:orderId', '/api/v1/admin/orders/:orderId/status'],
@@ -125,8 +160,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Cotizaciones',
     href: '/admin/cotizaciones',
     description: 'Solicitudes por asesoría y productos sin precio confirmable.',
-    permission: 'orders.read',
-    status: 'api-ready',
+    permission: 'quotes.read',
+    status: 'PARTIAL',
     primaryActions: ['Revisar solicitud', 'Asignar precio', 'Convertir a pedido'],
     validations: ['No precio automático', 'Usuario y fecha requeridos', 'Canal configurado para enviar'],
     endpoints: ['/api/v1/admin/quotes'],
@@ -136,8 +171,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Clientes',
     href: '/admin/clientes',
     description: 'Consulta operativa con PII enmascarada por defecto.',
-    permission: 'orders.read',
-    status: 'operational',
+    permission: 'customers.read',
+    status: 'READY',
     primaryActions: ['Buscar cliente', 'Ver pedidos', 'Exportar con permiso'],
     validations: ['PII enmascarada', 'Exportación auditada', 'Sin analytics con PII'],
     endpoints: ['/api/v1/admin/customers'],
@@ -148,7 +183,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/pagos',
     description: 'Estados de pago, PSE cerrado sin provider y COD conciliable.',
     permission: 'payments.read',
-    status: 'operational',
+    status: 'BLOCKED_PROVIDER',
     primaryActions: ['Consultar pago', 'Reconciliar COD', 'Revisar errores provider'],
     validations: ['No fingir PSE', 'No providerReference inventado', 'Cash collected solo autorizado'],
     endpoints: ['/api/v1/admin/payments', '/api/v1/admin/payments/:paymentId/events'],
@@ -159,7 +194,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/envios',
     description: '99 Envíos documentado: login JWT, cotización, preenvío, PDF y novedades. Lo no documentado queda bloqueado sin fingir producción.',
     permission: 'shipping.read',
-    status: 'operational',
+    status: 'BLOCKED_PROVIDER',
     primaryActions: ['Probar login', 'Cotizar envío', 'Crear preenvío', 'Descargar PDF', 'Sincronizar novedades'],
     validations: ['Provider real bloqueado sin credenciales', 'DANE requerido para guía', 'Tracking directo/webhooks/recolecciones pending_documentation'],
     endpoints: ['/api/v1/admin/shipping/login-test', '/api/v1/admin/shipping/quote', '/api/v1/admin/orders/:orderId/shipment', '/api/v1/admin/shipments/:shipmentId/label', '/api/v1/admin/shipping/branch-issues'],
@@ -170,7 +205,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/rastreo',
     description: 'Control operativo de búsqueda de pedidos y estado logístico.',
     permission: 'tracking.read',
-    status: 'operational',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Buscar pedido', 'Sincronizar provider', 'Ver eventos', 'Abrir rastreo público'],
     validations: ['No mostrar PII innecesaria', 'No inventar tracking', 'Estado desconocido no rompe'],
     endpoints: ['/api/v1/admin/shipments/:shipmentId/tracking', '/api/v1/orders/track?query='],
@@ -181,7 +216,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/notificaciones',
     description: 'Emails local/test, estados de entrega, preview seguro y provider productivo pendiente.',
     permission: 'notifications.read',
-    status: 'operational',
+    status: 'BLOCKED_PROVIDER',
     primaryActions: ['Ver historial', 'Revisar fallos', 'Validar provider local/test'],
     validations: ['No fingir envío productivo', 'No exponer secretos', 'Preview sin tokens'],
     endpoints: ['/api/v1/admin/notifications'],
@@ -189,10 +224,10 @@ export const adminModules: AdminModuleConfig[] = [
   {
     key: 'contenido-legal',
     title: 'Legal',
-    href: '/admin/contenido/legal',
+    href: '/admin/legal',
     description: 'Administración de contenido legal con revisión obligatoria.',
-    permission: 'content.manage',
-    status: 'operational',
+    permission: 'legal.read',
+    status: 'PARTIAL',
     primaryActions: ['Editar borrador', 'Previsualizar', 'Marcar revisión', 'Publicar'],
     validations: ['Sin lorem ipsum', 'Sin datos legales inventados', 'HTML sanitizado'],
     endpoints: ['/api/v1/admin/content/legal'],
@@ -200,10 +235,10 @@ export const adminModules: AdminModuleConfig[] = [
   {
     key: 'contenido-footer',
     title: 'Footer',
-    href: '/admin/contenido/footer',
+    href: '/admin/footer',
     description: 'Links, contacto y navegación pública sin enlaces muertos.',
-    permission: 'content.manage',
-    status: 'operational',
+    permission: 'footer.read',
+    status: 'PARTIAL',
     primaryActions: ['Editar enlaces', 'Validar rutas', 'Publicar footer'],
     validations: ['No href #', 'Rutas 200', 'Mobile sin saturación'],
     endpoints: ['/api/v1/admin/content/footer'],
@@ -213,8 +248,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Configuración',
     href: '/admin/configuracion',
     description: 'Providers, datos generales, pagos, envíos, notificaciones y legal.',
-    permission: 'content.manage',
-    status: 'api-ready',
+    permission: 'settings.read',
+    status: 'BLOCKED_CONFIGURATION',
     primaryActions: ['Revisar providers', 'Actualizar datos públicos', 'Validar secretos'],
     validations: ['No exponer secrets', 'Mostrar configurado/no configurado', 'Cambios auditados'],
     endpoints: ['/api/v1/admin/settings', 'ENV backend', 'provider ports'],
@@ -225,7 +260,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/usuarios',
     description: 'Usuarios internos, estado y acceso al panel.',
     permission: 'users.read',
-    status: 'operational',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Crear usuario', 'Editar usuario', 'Desactivar usuario'],
     validations: ['No dejar sistema sin admin', '2FA requerido', 'Audit log'],
     endpoints: ['/api/v1/admin/users'],
@@ -235,8 +270,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Roles',
     href: '/admin/roles',
     description: 'Roles y permisos de operación interna.',
-    permission: 'roles.update',
-    status: 'operational',
+    permission: 'roles.write',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Crear rol', 'Asignar permisos', 'Asignar usuario'],
     validations: ['SUPER_ADMIN protegido', 'Permisos server-side', 'Audit log'],
     endpoints: ['/api/v1/admin/roles', '/api/v1/admin/permissions/matrix'],
@@ -247,7 +282,7 @@ export const adminModules: AdminModuleConfig[] = [
     href: '/admin/auditoria',
     description: 'Registro de acciones críticas y eventos de seguridad.',
     permission: 'audit.read',
-    status: 'operational',
+    status: 'GO_WITH_RISKS',
     primaryActions: ['Filtrar eventos', 'Ver cambios', 'Revisar usuario/acción'],
     validations: ['Solo lectura', 'No secrets', 'PII mínima'],
     endpoints: ['/api/v1/admin/audit'],
@@ -257,8 +292,8 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Reportes',
     href: '/admin/reportes',
     description: 'Reportes de catálogo y operación sin datos inventados.',
-    permission: 'analytics.read',
-    status: 'operational',
+    permission: 'reports.read',
+    status: 'READY',
     primaryActions: ['Productos incompletos', 'Pedidos por estado', 'Pagos/envíos por estado'],
     validations: ['Sin tracking falso', 'Sin ventas inventadas', 'Tablas antes que gráficas pesadas'],
     endpoints: ['/api/v1/admin/analytics/*'],
