@@ -66,7 +66,7 @@ export class VariantsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('variants.manage')
+  @Permissions('products.write')
   @Post('admin/variants')
   create(
     @Body() body: CreateVariantRequestDto,
@@ -83,7 +83,7 @@ export class VariantsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('variants.manage')
+  @Permissions('products.write')
   @Patch('admin/variants/:id')
   update(
     @Param('id') variantId: string,
@@ -102,7 +102,7 @@ export class VariantsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('variants.manage')
+  @Permissions('products.publish')
   @Patch('admin/variants/:id/activate')
   activate(
     @Param('id') variantId: string,
@@ -120,7 +120,7 @@ export class VariantsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('variants.manage')
+  @Permissions('products.write')
   @Patch('admin/variants/:id/deactivate')
   deactivate(
     @Param('id') variantId: string,

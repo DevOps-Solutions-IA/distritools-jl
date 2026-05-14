@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import {
   DOMAIN_EVENT_PUBLISHER,
   DomainEventPublisher,
@@ -14,7 +14,9 @@ import {
   PRODUCT_REPOSITORY,
   ProductRepository,
 } from 'src/modules/products/domain/repositories/product.repository';
+import { evaluateProductSellability } from 'src/modules/products/domain/services/catalog-sellability.service';
 import { ProductPolicyService } from 'src/modules/products/domain/services/product-policy.service';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 
 export interface SetProductStatusInput {
   actor: CurrentUser;
@@ -27,6 +29,8 @@ export interface SetProductStatusInput {
 @Injectable()
 export class SetProductStatusUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepository,
     @Inject(ProductPolicyService)
@@ -43,6 +47,31 @@ export class SetProductStatusUseCase {
     const current = this.productPolicyService.ensureExists(
       await this.productRepository.findById(input.productId),
     );
+
+    if (input.isActive) {
+      const product = await this.prisma.product.findUnique({
+        where: { id: input.productId },
+        include: {
+          brand: { select: { id: true, name: true, slug: true, isActive: true } },
+          category: { select: { id: true, name: true, slug: true, isActive: true } },
+          variants: { include: { inventoryItems: true } },
+        },
+      });
+      const evaluation = product
+        ? evaluateProductSellability({ ...product, isActive: true })
+        : null;
+      const publishBlockers = [
+        ...(evaluation?.blockers ?? []),
+        ...(evaluation?.warnings ?? []).filter((warning) =>
+          ['MISSING_DIMENSIONS', 'MISSING_MAIN_IMAGE'].includes(warning),
+        ),
+      ];
+      if (publishBlockers.length) {
+        throw new BadRequestException(
+          `No se puede activar un producto incompleto: ${publishBlockers.join(', ')}`,
+        );
+      }
+    }
 
     const updated = await this.productRepository.update({
       id: current.id,

@@ -133,8 +133,8 @@ function ReportTable({
   );
 }
 
-function exportHref(range: string, type: string) {
-  return `/api/admin/reports/export?range=${encodeURIComponent(range)}&type=${encodeURIComponent(type)}`;
+function exportHref(range: string, type: string, format: 'csv' | 'pdf') {
+  return `/api/admin/reports/export?range=${encodeURIComponent(range)}&type=${encodeURIComponent(type)}&format=${format}`;
 }
 
 export async function AdminReports({ range = '30d', tab = 'sales' }: { range?: string; tab?: string } = {}) {
@@ -179,12 +179,20 @@ export async function AdminReports({ range = '30d', tab = 'sales' }: { range?: s
               </Link>
             ))}
             {reports.export.enabled ? (
-              <Link
-                href={exportHref(reports.range.key, activeTab)}
-                className="rounded-full border border-[var(--color-industrial-yellow)] px-3 py-2 text-sm font-semibold text-[var(--color-industrial-yellow)]"
-              >
-                Export CSV
-              </Link>
+              <>
+                <Link
+                  href={exportHref(reports.range.key, activeTab, 'csv')}
+                  className="rounded-full border border-[var(--color-industrial-yellow)] px-3 py-2 text-sm font-semibold text-[var(--color-industrial-yellow)]"
+                >
+                  Export CSV
+                </Link>
+                <Link
+                  href={exportHref(reports.range.key, activeTab, 'pdf')}
+                  className="rounded-full border border-[var(--color-industrial-yellow)] px-3 py-2 text-sm font-semibold text-[var(--color-industrial-yellow)]"
+                >
+                  Export PDF
+                </Link>
+              </>
             ) : (
               <span className="rounded-full border border-white/10 px-3 py-2 text-sm text-[var(--color-text-secondary)]">
                 Export bloqueado: reports.export

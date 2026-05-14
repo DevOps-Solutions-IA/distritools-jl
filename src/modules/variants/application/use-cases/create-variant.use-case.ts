@@ -46,7 +46,7 @@ export class CreateVariantUseCase {
   ) {}
 
   async execute(input: CreateVariantInput) {
-    assertHasPermissions(input.actor.permissions, ['variants.manage']);
+    assertHasPermissions(input.actor.permissions, ['products.write']);
 
     const sku = this.variantPolicyService.normalizeSku(input.sku);
     this.variantPolicyService.ensureSkuAvailable(

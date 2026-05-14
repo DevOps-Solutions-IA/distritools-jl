@@ -588,7 +588,11 @@ describe('admin platform', () => {
     expect(screen.getByText('MARGIN_UNAVAILABLE_MISSING_COSTS')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /export csv/i })).toHaveAttribute(
       'href',
-      '/api/admin/reports/export?range=30d&type=sales',
+      '/api/admin/reports/export?range=30d&type=sales&format=csv',
+    );
+    expect(screen.getByRole('link', { name: /export pdf/i })).toHaveAttribute(
+      'href',
+      '/api/admin/reports/export?range=30d&type=sales&format=pdf',
     );
     expect(screen.queryByText(/300555/i)).not.toBeInTheDocument();
   });

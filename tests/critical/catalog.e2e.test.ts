@@ -121,6 +121,81 @@ describe('Catalog modules', async () => {
     assert.equal(search.body.data.some((entry: { sku: string }) => entry.sku === 'MK-900'), true);
   });
 
+  await it('crea producto operativo completo y solo lo activa cuando pasa vendibilidad', async () => {
+    const product = await http
+      .post('/api/v1/admin/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        name: 'Producto completo E2E',
+        slug: 'producto-completo-e2e',
+        brandId: seeded.inventory.brandId,
+        categoryId: seeded.inventory.categoryId,
+        description: 'Producto completo validado desde flujo humano de catálogo.',
+        isActive: false,
+        metadata: {
+          image: { status: 'approved', assetPath: '/products/e2e-completo.jpg', source: 'test' },
+          shipping: { weightKg: 1.2, lengthCm: 30, widthCm: 20, heightCm: 10 },
+          dimensions: { weightKg: 1.2, lengthCm: 30, widthCm: 20, heightCm: 10 },
+        },
+      });
+    assert.equal(product.status, 201);
+
+    const variant = await http
+      .post('/api/v1/admin/variants')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        productId: product.body.id,
+        sku: 'E2E-COMPLETE-001',
+        name: 'Variante completa',
+        price: '129900',
+        taxRate: '0',
+      });
+    assert.equal(variant.status, 201);
+
+    const stock = await http
+      .patch('/api/v1/admin/inventory/adjust')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        variantId: variant.body.id,
+        warehouseId: seeded.inventory.warehouseId,
+        quantityDelta: 3,
+        reason: 'Stock inicial para producto completo E2E',
+        referenceId: 'catalog-complete-e2e',
+      });
+    assert.equal(stock.status, 200);
+
+    const validation = await http
+      .post(`/api/v1/admin/products/${product.body.id}/validate-sellability`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+    assert.equal(validation.status, 201);
+    assert.equal(validation.body.sellable, false);
+    assert.deepEqual(validation.body.blockers, ['INACTIVE']);
+    assert.deepEqual(validation.body.warnings, []);
+
+    const activation = await http
+      .patch(`/api/v1/admin/products/${product.body.id}/activate`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+    assert.equal(activation.status, 200);
+
+    const activeValidation = await http
+      .post(`/api/v1/admin/products/${product.body.id}/validate-sellability`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({});
+    assert.equal(activeValidation.status, 201);
+    assert.equal(activeValidation.body.sellable, true);
+    assert.deepEqual(activeValidation.body.blockers, []);
+
+    const audit = await prisma.auditLog.findMany({
+      where: {
+        entityId: { in: [product.body.id, variant.body.id] },
+        action: { in: ['product.created', 'variant.created', 'product.sellability_validated', 'product.activated'] },
+      },
+    });
+    assert.equal(audit.length >= 4, true);
+  });
+
   await it('expone las 7 marcas obligatorias con metadata pública útil y seed idempotente', async () => {
     const initialBrands = await http.get('/api/v1/brands');
     assert.equal(initialBrands.status, 200);

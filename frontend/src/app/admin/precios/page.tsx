@@ -1,4 +1,4 @@
-import { AdminCatalog } from '@/components/admin/AdminCatalog';
+import { AdminPricesScreen } from '@/components/admin/AdminCatalogScreens';
 import { AdminShell } from '@/components/layout/AdminShell';
 
 export const dynamic = 'force-dynamic';
@@ -10,10 +10,10 @@ interface PageProps {
 
 export default async function AdminPricesPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const catalog = await AdminCatalog({ mode: 'prices', search: params?.search ?? '', status: params?.status ?? 'all' });
+  const prices = await AdminPricesScreen({ search: params?.search ?? '', status: params?.status ?? 'all' });
   return (
     <AdminShell>
-      {catalog}
+      {prices}
     </AdminShell>
   );
 }

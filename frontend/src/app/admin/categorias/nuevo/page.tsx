@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AdminTaxonomyForm } from '@/components/admin/forms/AdminTaxonomyForm';
 import { AdminShell } from '@/components/layout/AdminShell';
+import { getAdminCatalogOperationsData } from '@/lib/admin/server-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function AdminNewCategoryPage() {
+export default async function AdminNewCategoryPage() {
+  const data = await getAdminCatalogOperationsData('30d');
   return (
     <AdminShell>
       <div className="space-y-6">
@@ -21,7 +23,7 @@ export default function AdminNewCategoryPage() {
             Nueva categoría
           </h1>
         </section>
-        <AdminTaxonomyForm kind="category" />
+        <AdminTaxonomyForm kind="category" categories={data.categories} />
       </div>
     </AdminShell>
   );

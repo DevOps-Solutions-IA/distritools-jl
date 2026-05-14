@@ -1,4 +1,4 @@
-import { AdminCatalog } from '@/components/admin/AdminCatalog';
+import { AdminBrandsScreen } from '@/components/admin/AdminCatalogScreens';
 import { AdminShell } from '@/components/layout/AdminShell';
 
 export const dynamic = 'force-dynamic';
@@ -6,10 +6,10 @@ export const metadata = { title: 'Marcas admin | DistriTools JL', robots: { inde
 
 export default async function AdminBrandsPage({ searchParams }: { searchParams: Promise<{ search?: string; status?: string }> }) {
   const params = await searchParams;
-  const catalog = await AdminCatalog({ mode: 'brands', search: params.search ?? '', status: params.status ?? 'all' });
+  const brands = await AdminBrandsScreen({ search: params.search ?? '', status: params.status ?? 'all' });
   return (
     <AdminShell>
-      {catalog}
+      {brands}
     </AdminShell>
   );
 }

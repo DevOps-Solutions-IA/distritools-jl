@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     module: url.searchParams.get('module') ?? undefined,
     paymentStatus: url.searchParams.get('paymentStatus') ?? undefined,
     shippingStatus: url.searchParams.get('shippingStatus') ?? undefined,
-    format: 'csv',
+    format: url.searchParams.get('format') === 'pdf' ? 'pdf' : 'csv',
   };
 
   const response = await fetch(`${env.apiBaseUrl}/api/v1/admin/reports/export`, {
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     return NextResponse.json(body, { status: response.status });
   }
 
-  const body = await response.text();
+  const body = payload.format === 'pdf' ? await response.arrayBuffer() : await response.text();
   return new Response(body, {
     status: response.status,
     headers: {

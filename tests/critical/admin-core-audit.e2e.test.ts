@@ -363,6 +363,26 @@ describe('Enterprise admin core audit guards', () => {
     assert.equal(exported.text.includes('admin-core-audit-'), false);
     assert.equal(exported.text.includes('3005557733'), false);
 
+    const exportedPdf = await http
+      .post('/api/v1/admin/reports/export')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .send({ type: 'orders', range: '30d', format: 'pdf' });
+    assert.equal(exportedPdf.status, 200);
+    assert.match(exportedPdf.headers['content-type'], /application\/pdf/);
+    const pdfText = (exportedPdf.body as Buffer).toString('utf8');
+    assert.match(pdfText, /%PDF-1\.4/);
+    assert.match(pdfText, /DistriTools JL - reporte orders/);
+    assert.match(pdfText, /Rango: Ultimos 30 dias/);
+    assert.match(pdfText, /PII: redacted_by_default/);
+    assert.equal(pdfText.includes('3005557733'), false);
+    assert.equal(pdfText.includes('Carrera 44'), false);
+
     const exportAudit = await prisma.auditLog.findFirst({
       where: {
         action: 'reports.exported',

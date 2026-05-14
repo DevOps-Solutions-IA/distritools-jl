@@ -170,6 +170,12 @@ export class AdminReportsController {
       userAgent,
     });
 
+    if (result.format === 'pdf' && result.pdf) {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="distritools-report-${result.type}.pdf"`);
+      return res.send(result.pdf);
+    }
+
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="distritools-report-${result.type}.csv"`);
     return res.send(result.csv);

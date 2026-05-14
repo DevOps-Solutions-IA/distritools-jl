@@ -815,7 +815,7 @@ function emptyReports(range: string): AdminReportsData {
       blockers: [],
     },
     export: {
-      formats: ['csv'],
+      formats: ['csv', 'pdf'],
       maxRows: 0,
       standardExportContainsPii: false,
       piiExportRequires: 'customers.read_sensitive',

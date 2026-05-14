@@ -38,7 +38,9 @@ export class SetVariantStatusUseCase {
   ) {}
 
   async execute(input: SetVariantStatusInput) {
-    assertHasPermissions(input.actor.permissions, ['variants.manage']);
+    assertHasPermissions(input.actor.permissions, [
+      input.isActive ? 'products.publish' : 'products.write',
+    ]);
 
     const current = this.variantPolicyService.ensureExists(
       await this.variantRepository.findById(input.variantId),

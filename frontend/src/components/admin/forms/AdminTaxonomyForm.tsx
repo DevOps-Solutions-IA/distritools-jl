@@ -12,6 +12,7 @@ const taxonomySchema = z.object({
   slug: z.string().min(2, 'Slug requerido.').max(140),
   description: z.string().max(500).optional(),
   isActive: z.boolean(),
+  parentId: z.string().nullable().optional(),
 });
 
 function slugify(value: string) {
@@ -23,22 +24,48 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, '');
 }
 
-export function AdminTaxonomyForm({ kind }: { kind: 'brand' | 'category' }) {
+export function AdminTaxonomyForm({
+  kind,
+  mode = 'create',
+  initial,
+  categories = [],
+}: {
+  kind: 'brand' | 'category';
+  mode?: 'create' | 'edit';
+  initial?: {
+    id: string;
+    name: string;
+    slug: string;
+    description?: string | null;
+    isActive?: boolean;
+    parentId?: string | null;
+  } | null;
+  categories?: Array<{ id: string; name: string; parentId?: string | null }>;
+}) {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-  const [isActive, setIsActive] = useState(true);
+  const [name, setName] = useState(initial?.name ?? '');
+  const [slug, setSlug] = useState(initial?.slug ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [isActive, setIsActive] = useState(initial?.isActive ?? true);
+  const [parentId, setParentId] = useState(initial?.parentId ?? '');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const endpoint = kind === 'brand' ? '/api/admin/brands' : '/api/admin/categories';
+  const endpoint = kind === 'brand'
+    ? mode === 'edit' && initial ? `/api/admin/brands/${initial.id}` : '/api/admin/brands'
+    : mode === 'edit' && initial ? `/api/admin/categories/${initial.id}` : '/api/admin/categories';
   const label = kind === 'brand' ? 'marca' : 'categoría';
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    const parsed = taxonomySchema.safeParse({ name, slug, description, isActive });
+    const parsed = taxonomySchema.safeParse({
+      name,
+      slug,
+      description,
+      isActive,
+      parentId: kind === 'category' ? parentId || null : undefined,
+    });
 
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? 'Revisa los campos.');
@@ -47,7 +74,7 @@ export function AdminTaxonomyForm({ kind }: { kind: 'brand' | 'category' }) {
 
     setIsSubmitting(true);
     const response = await fetch(endpoint, {
-      method: 'POST',
+      method: mode === 'edit' ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(parsed.data),
     });
@@ -59,7 +86,7 @@ export function AdminTaxonomyForm({ kind }: { kind: 'brand' | 'category' }) {
       return;
     }
 
-    router.push(kind === 'brand' ? '/admin/marcas' : '/admin/categorias');
+    router.push(kind === 'brand' ? `/admin/marcas${mode === 'edit' && initial ? `/${initial.id}` : ''}` : `/admin/categorias${mode === 'edit' && initial ? `/${initial.id}` : ''}`);
     router.refresh();
   }
 
@@ -95,6 +122,21 @@ export function AdminTaxonomyForm({ kind }: { kind: 'brand' | 'category' }) {
           maxLength={500}
         />
       </label>
+      {kind === 'category' ? (
+        <label className="grid gap-2 text-sm font-semibold text-[var(--color-off-white)]">
+          Categoría padre
+          <select
+            className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)]"
+            value={parentId}
+            onChange={(event) => setParentId(event.target.value)}
+          >
+            <option value="">Sin padre</option>
+            {categories.filter((category) => category.id !== initial?.id).map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </label>
+      ) : null}
       <label className="flex items-center gap-3 text-sm font-semibold text-[var(--color-off-white)]">
         <input
           type="checkbox"
@@ -107,7 +149,7 @@ export function AdminTaxonomyForm({ kind }: { kind: 'brand' | 'category' }) {
       {error ? <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
       <div className="flex flex-wrap gap-3">
         <Button type="submit" loading={isSubmitting}>
-          Crear {label}
+          {mode === 'edit' ? 'Guardar' : 'Crear'} {label}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Volver

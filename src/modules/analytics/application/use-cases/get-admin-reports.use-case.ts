@@ -206,7 +206,7 @@ export class GetAdminReportsUseCase {
         blockers,
       },
       export: {
-        formats: ['csv'],
+        formats: ['csv', 'pdf'],
         maxRows: 1000,
         standardExportContainsPii: false,
         piiExportRequires: 'customers.read_sensitive',
@@ -227,10 +227,28 @@ export class GetAdminReportsUseCase {
 
     const report = await this.execute(actor, query);
     const rows = this.exportRows(type, report).slice(0, 1000);
+    const format = query.format === 'pdf' ? 'pdf' : 'csv';
     return {
       type,
       rows,
-      csv: this.toCsv(rows),
+      format,
+      csv: this.toCsv(rows, {
+        title: `DistriTools JL - reporte ${type}`,
+        range: report.range.label,
+        filters: report.filters,
+        actor: this.maskEmail(actor.email),
+      }),
+      pdf: format === 'pdf'
+        ? this.toPdf({
+          title: `DistriTools JL - reporte ${type}`,
+          range: report.range.label,
+          generatedAt: new Date().toISOString(),
+          actor: this.maskEmail(actor.email),
+          filters: report.filters,
+          summary: report.summary,
+          rows,
+        })
+        : null,
       filters: report.filters,
       range: report.range,
     };
@@ -556,16 +574,89 @@ export class GetAdminReportsUseCase {
     return allowed.includes(value as ReportType) ? value as ReportType : 'summary';
   }
 
-  private toCsv(rows: Array<Record<string, unknown>>) {
+  private toCsv(rows: Array<Record<string, unknown>>, metadata?: {
+    title: string;
+    range: string;
+    actor: string;
+    filters: Record<string, unknown>;
+  }) {
     const generatedAt = new Date().toISOString();
     const normalized = rows.length ? rows : [{ empty: 'NO_DATA' }];
     const headers = Array.from(new Set(normalized.flatMap((row) => Object.keys(row))));
     const lines = [
-      `generatedAt,${generatedAt}`,
+      ...(metadata ? [
+        `title,${this.csvCell(metadata.title)}`,
+        `range,${this.csvCell(metadata.range)}`,
+        `generatedAt,${this.csvCell(generatedAt)}`,
+        `user,${this.csvCell(metadata.actor)}`,
+        `filters,${this.csvCell(JSON.stringify(metadata.filters))}`,
+      ] : []),
       headers.join(','),
       ...normalized.map((row) => headers.map((header) => this.csvCell(row[header])).join(',')),
     ];
     return lines.join('\n');
+  }
+
+  private toPdf(input: {
+    title: string;
+    range: string;
+    generatedAt: string;
+    actor: string;
+    filters: Record<string, unknown>;
+    summary: Record<string, unknown>;
+    rows: Array<Record<string, unknown>>;
+  }) {
+    const rows = input.rows.length ? input.rows.slice(0, 18) : [{ empty: 'NO_DATA' }];
+    const lines = [
+      input.title,
+      `Rango: ${input.range}`,
+      `Generado: ${input.generatedAt}`,
+      `Usuario: ${input.actor}`,
+      `Filtros: ${JSON.stringify(input.filters)}`,
+      `Resumen: ${JSON.stringify(input.summary)}`,
+      'Datos:',
+      ...rows.map((row, index) => `${index + 1}. ${JSON.stringify(row)}`),
+      'PII: redacted_by_default',
+    ].map((line) => this.pdfSafe(this.safeText(line)).slice(0, 190));
+    const content = [
+      'BT',
+      '/F1 9 Tf',
+      '48 792 Td',
+      ...lines.flatMap((line, index) => [
+        index === 0 ? '' : '0 -16 Td',
+        `(${line}) Tj`,
+      ]).filter(Boolean),
+      'ET',
+    ].join('\n');
+    const objects = [
+      '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj',
+      '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
+      '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj',
+      '4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj',
+      `5 0 obj << /Length ${Buffer.byteLength(content, 'utf8')} >> stream\n${content}\nendstream endobj`,
+    ];
+    let body = '%PDF-1.4\n';
+    const offsets = [0];
+    for (const object of objects) {
+      offsets.push(Buffer.byteLength(body, 'utf8'));
+      body += `${object}\n`;
+    }
+    const xrefOffset = Buffer.byteLength(body, 'utf8');
+    body += `xref\n0 ${objects.length + 1}\n`;
+    body += '0000000000 65535 f \n';
+    for (let i = 1; i < offsets.length; i += 1) {
+      body += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+    }
+    body += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+    return Buffer.from(body, 'utf8');
+  }
+
+  private pdfSafe(value: string) {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[()\\]/g, (char) => `\\${char}`)
+      .replace(/[^\x20-\x7E]/g, ' ');
   }
 
   private salesByDay(orders: OrderForReports[]) {

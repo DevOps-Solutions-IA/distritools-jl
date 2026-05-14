@@ -25,6 +25,7 @@ export interface UpdateVariantInput {
   name?: string;
   price?: string;
   taxRate?: string;
+  isActive?: boolean;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -45,7 +46,7 @@ export class UpdateVariantUseCase {
   ) {}
 
   async execute(input: UpdateVariantInput) {
-    assertHasPermissions(input.actor.permissions, ['variants.manage']);
+    assertHasPermissions(input.actor.permissions, ['products.write']);
 
     const current = this.variantPolicyService.ensureExists(
       await this.variantRepository.findById(input.variantId),
@@ -93,6 +94,10 @@ export class UpdateVariantUseCase {
         input.taxRate !== undefined
           ? this.variantPolicyService.ensureTaxRate(input.taxRate)
           : current.taxRate,
+      isActive:
+        input.isActive !== undefined
+          ? input.isActive
+          : current.isActive,
     });
 
     await this.auditRepository.write({
