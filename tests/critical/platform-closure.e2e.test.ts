@@ -435,6 +435,15 @@ describe('Platform closure modules', async () => {
       true,
     );
 
+    const adminDashboard = await http
+      .get('/api/v1/admin/dashboard?range=30d')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(adminDashboard.status, 200);
+    assert.equal(adminDashboard.body.kpis.sales.orderCount >= 1, true);
+    assert.equal(Array.isArray(adminDashboard.body.charts.salesByDay), true);
+    assert.equal(Array.isArray(adminDashboard.body.recentActivity.orders), true);
+    assert.equal(JSON.stringify(adminDashboard.body).includes('300555'), false);
+
     const refresh = await http
       .post('/api/v1/admin/analytics/refresh')
       .set('Authorization', `Bearer ${adminToken}`);

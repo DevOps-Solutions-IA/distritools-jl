@@ -151,6 +151,14 @@ describe('Enterprise admin core audit guards', () => {
     const unauthenticatedOrders = await http.get('/api/v1/admin/orders');
     assert.equal(unauthenticatedOrders.status, 401);
 
+    const unauthenticatedDashboard = await http.get('/api/v1/admin/dashboard');
+    assert.equal(unauthenticatedDashboard.status, 401);
+
+    const viewerDashboard = await http
+      .get('/api/v1/admin/dashboard')
+      .set('Authorization', `Bearer ${viewerToken}`);
+    assert.equal(viewerDashboard.status, 403);
+
     const inventoryAdjust = await http
       .patch('/api/v1/admin/inventory/adjust')
       .set('Authorization', `Bearer ${viewerToken}`)
@@ -234,6 +242,29 @@ describe('Enterprise admin core audit guards', () => {
     assert.equal(publicBody.includes('admin-core-audit-'), false);
     assert.equal(publicBody.includes('3005557733'), false);
     assert.equal(publicBody.includes('Carrera 44'), false);
+
+    const dashboard = await http
+      .get('/api/v1/admin/dashboard?range=30d')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(dashboard.status, 200);
+    assert.equal(dashboard.body.range.key, '30d');
+    assert.equal(dashboard.body.kpis.sales.orderCount >= 1, true);
+    assert.equal(dashboard.body.kpis.sales.totalSalesAmount !== undefined, true);
+    assert.equal(Array.isArray(dashboard.body.charts.salesByDay), true);
+    assert.equal(Array.isArray(dashboard.body.alerts), true);
+    assert.equal(Array.isArray(dashboard.body.quickActions), true);
+    assert.equal(dashboard.body.readiness.globalStatus, 'NO_GO');
+    assert.equal(
+      dashboard.body.alerts.some(
+        (alert: { module: string; status: string }) =>
+          alert.module === 'Pagos' && alert.status === 'BLOCKED_PROVIDER',
+      ),
+      true,
+    );
+    const dashboardBody = JSON.stringify(dashboard.body);
+    assert.equal(dashboardBody.includes('admin-core-audit-'), false);
+    assert.equal(dashboardBody.includes('3005557733'), false);
+    assert.equal(dashboardBody.includes('Carrera 44'), false);
 
     const settings = await http
       .get('/api/v1/admin/settings')

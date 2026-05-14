@@ -385,41 +385,249 @@ export interface AdminNotificationRow {
   createdAt: string;
 }
 
+export interface AdminDashboardKpiGroup {
+  [key: string]: string | number;
+}
+
+export interface AdminDashboardChartPoint {
+  label?: string;
+  date?: string;
+  value?: number;
+  amount?: number;
+  orders?: number;
+  status?: string;
+}
+
+export interface AdminDashboardAlert {
+  severity: 'critical' | 'warning' | 'info';
+  module: string;
+  message: string;
+  actionLabel: string;
+  href: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdminDashboardQuickAction {
+  label: string;
+  href: string;
+  permission: string;
+  status: 'enabled' | 'disabled';
+  reason: string | null;
+}
+
+export interface AdminDashboardModuleReadiness {
+  key: string;
+  label: string;
+  status: string;
+  blockers: string[];
+  href: string;
+}
+
 export interface AdminDashboardData {
-  sales: AdminSalesSummary | null;
-  topProducts: { data: AdminTopProduct[] } | null;
-  operational: AdminOperationalMetrics | null;
-  notifications: { data: AdminNotificationRow[] } | null;
+  range: { key: string; label: string; from: string; to: string };
+  refreshedAt: string;
+  readiness: {
+    globalStatus: string;
+    counts: Record<string, number>;
+    modules: AdminDashboardModuleReadiness[];
+    blockedModules: AdminDashboardModuleReadiness[];
+  };
+  kpis: {
+    sales: {
+      totalSalesAmount: string;
+      orderCount: number;
+      averageOrderValue: string;
+      ordersToday: number;
+      pendingOrders: number;
+      confirmedOrders: number;
+      cancelledOrders: number;
+      ordersWithoutGuide: number;
+      ordersWithAlerts: number;
+    };
+    payments: {
+      pendingPayments: number;
+      paidPayments: number;
+      failedPayments: number;
+      manualReviewPayments: number;
+      codPendingReconciliation: number;
+      paymentProviderStatus: string;
+    };
+    inventory: {
+      activeProducts: number;
+      activeVariants: number;
+      sellableProducts: number;
+      incompleteProducts: number;
+      outOfStockProducts: number;
+      lowStockProducts: number;
+      missingCostProducts: number;
+      healthyStockProducts: number;
+      inventoryReadiness: string;
+    };
+    shipping: {
+      shipmentsCreated: number;
+      shipmentsPendingGuide: number;
+      autoShippingFailed: number;
+      shippingProviderStatus: string;
+      mockGuidesCount: number;
+      realGuidesCount: number;
+      trackingPublicStatus: string;
+    };
+    customers: {
+      totalCustomers: number;
+      customersWithOrders: number;
+      newCustomersInPeriod: number;
+    };
+    notifications: {
+      queuedNotifications: number;
+      sentNotifications: number;
+      failedNotifications: number;
+      pendingProviderNotifications: number;
+    };
+    system: {
+      globalReadinessStatus: string;
+      blockedModulesCount: number;
+      partialModulesCount: number;
+      readyModulesCount: number;
+      productionBlockersCount: number;
+      lastAuditEventsCount: number;
+    };
+  };
+  charts: {
+    salesByDay: AdminDashboardChartPoint[];
+    ordersByStatus: AdminDashboardChartPoint[];
+    paymentsByStatus: AdminDashboardChartPoint[];
+    inventoryByStatus: AdminDashboardChartPoint[];
+    readinessByStatus: AdminDashboardChartPoint[];
+  };
+  alerts: AdminDashboardAlert[];
+  quickActions: AdminDashboardQuickAction[];
+  recentActivity: {
+    orders: Array<{
+      orderNumber: string;
+      status: string;
+      paymentStatus: string;
+      shippingStatus: string;
+      total: string;
+      createdAt: string;
+      href: string;
+    }>;
+    payments: Array<{
+      orderNumber: string;
+      status: string;
+      method: string;
+      amount: string;
+      createdAt: string;
+      href: string;
+    }>;
+    audit: Array<{
+      actor: string;
+      module: string;
+      action: string;
+      createdAt: string;
+      href: string;
+    }>;
+    failedNotifications: Array<{
+      type: string;
+      reference: string;
+      reason: string;
+      createdAt: string;
+      href: string;
+    }>;
+  };
   errors: Record<string, string>;
+}
+
+function emptyDashboard(range: string): AdminDashboardData {
+  const now = new Date().toISOString();
+  return {
+    range: { key: range, label: 'Sin datos', from: now, to: now },
+    refreshedAt: now,
+    readiness: { globalStatus: 'NO_GO', counts: {}, modules: [], blockedModules: [] },
+    kpis: {
+      sales: {
+        totalSalesAmount: '0.00',
+        orderCount: 0,
+        averageOrderValue: '0.00',
+        ordersToday: 0,
+        pendingOrders: 0,
+        confirmedOrders: 0,
+        cancelledOrders: 0,
+        ordersWithoutGuide: 0,
+        ordersWithAlerts: 0,
+      },
+      payments: {
+        pendingPayments: 0,
+        paidPayments: 0,
+        failedPayments: 0,
+        manualReviewPayments: 0,
+        codPendingReconciliation: 0,
+        paymentProviderStatus: 'NO_DATA',
+      },
+      inventory: {
+        activeProducts: 0,
+        activeVariants: 0,
+        sellableProducts: 0,
+        incompleteProducts: 0,
+        outOfStockProducts: 0,
+        lowStockProducts: 0,
+        missingCostProducts: 0,
+        healthyStockProducts: 0,
+        inventoryReadiness: 'NO_DATA',
+      },
+      shipping: {
+        shipmentsCreated: 0,
+        shipmentsPendingGuide: 0,
+        autoShippingFailed: 0,
+        shippingProviderStatus: 'NO_DATA',
+        mockGuidesCount: 0,
+        realGuidesCount: 0,
+        trackingPublicStatus: 'NO_DATA',
+      },
+      customers: {
+        totalCustomers: 0,
+        customersWithOrders: 0,
+        newCustomersInPeriod: 0,
+      },
+      notifications: {
+        queuedNotifications: 0,
+        sentNotifications: 0,
+        failedNotifications: 0,
+        pendingProviderNotifications: 0,
+      },
+      system: {
+        globalReadinessStatus: 'NO_GO',
+        blockedModulesCount: 0,
+        partialModulesCount: 0,
+        readyModulesCount: 0,
+        productionBlockersCount: 0,
+        lastAuditEventsCount: 0,
+      },
+    },
+    charts: {
+      salesByDay: [],
+      ordersByStatus: [],
+      paymentsByStatus: [],
+      inventoryByStatus: [],
+      readinessByStatus: [],
+    },
+    alerts: [],
+    quickActions: [],
+    recentActivity: { orders: [], payments: [], audit: [], failedNotifications: [] },
+    errors: {},
+  };
 }
 
 export async function getAdminDashboardData(range: string = '30d'): Promise<AdminDashboardData> {
   const errors: Record<string, string> = {};
-  const now = new Date();
-  const from = new Date(now);
-  if (range === 'today') {
-    from.setHours(0, 0, 0, 0);
-  } else if (range === '7d') {
-    from.setDate(from.getDate() - 7);
-  } else if (range === 'month') {
-    from.setDate(1);
-    from.setHours(0, 0, 0, 0);
-  } else {
-    from.setDate(from.getDate() - 30);
-  }
-  const windowQuery = `windowFrom=${encodeURIComponent(from.toISOString())}&windowTo=${encodeURIComponent(now.toISOString())}`;
-  const [sales, topProducts, operational, notifications] = await Promise.all([
-    read<AdminSalesSummary | null>(`/admin/analytics/sales-summary?${windowQuery}`, null, errors, 'sales'),
-    read<{ data: AdminTopProduct[] } | null>(`/admin/analytics/top-products?limit=8&${windowQuery}`, null, errors, 'topProducts'),
-    read<AdminOperationalMetrics | null>('/admin/analytics/operational-metrics', null, errors, 'operational'),
-    read<{ data: AdminNotificationRow[] } | null>('/admin/notifications?limit=20', null, errors, 'notifications'),
-  ]);
-
-  return {
-    sales,
-    topProducts,
-    operational,
-    notifications,
+  const data = await read<AdminDashboardData | null>(
+    `/admin/dashboard?range=${encodeURIComponent(range)}`,
+    null,
     errors,
-  };
+    'dashboard',
+  );
+  if (!data) {
+    return { ...emptyDashboard(range), errors };
+  }
+  return { ...data, errors };
 }

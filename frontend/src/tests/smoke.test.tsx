@@ -74,8 +74,9 @@ describe('smoke frontend base', () => {
   it('renderiza el dashboard admin sin métricas inventadas', async () => {
     render(await AdminDashboard());
     expect(screen.getByText(/centro operativo/i)).toBeInTheDocument();
-    expect(screen.getByText(/productos vendibles/i)).toBeInTheDocument();
-    expect(screen.getByText(/fuentes admin pendientes/i)).toBeInTheDocument();
+    expect(screen.getByText(/ventas del periodo/i)).toBeInTheDocument();
+    expect(screen.getByText(/alertas críticas/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/readiness/i).length).toBeGreaterThanOrEqual(1);
   });
 
   it('renderiza button y respeta disabled', () => {
