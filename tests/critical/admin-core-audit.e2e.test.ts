@@ -154,10 +154,24 @@ describe('Enterprise admin core audit guards', () => {
     const unauthenticatedDashboard = await http.get('/api/v1/admin/dashboard');
     assert.equal(unauthenticatedDashboard.status, 401);
 
+    const unauthenticatedReports = await http.get('/api/v1/admin/reports/summary');
+    assert.equal(unauthenticatedReports.status, 401);
+
     const viewerDashboard = await http
       .get('/api/v1/admin/dashboard')
       .set('Authorization', `Bearer ${viewerToken}`);
     assert.equal(viewerDashboard.status, 403);
+
+    const viewerReports = await http
+      .get('/api/v1/admin/reports/summary')
+      .set('Authorization', `Bearer ${viewerToken}`);
+    assert.equal(viewerReports.status, 403);
+
+    const viewerExport = await http
+      .post('/api/v1/admin/reports/export')
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({ type: 'orders', range: '30d' });
+    assert.equal(viewerExport.status, 403);
 
     const inventoryAdjust = await http
       .patch('/api/v1/admin/inventory/adjust')
@@ -265,6 +279,50 @@ describe('Enterprise admin core audit guards', () => {
     assert.equal(dashboardBody.includes('admin-core-audit-'), false);
     assert.equal(dashboardBody.includes('3005557733'), false);
     assert.equal(dashboardBody.includes('Carrera 44'), false);
+
+    const reports = await http
+      .get('/api/v1/admin/reports/summary?range=30d')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(reports.status, 200);
+    assert.equal(reports.body.range.key, '30d');
+    assert.equal(reports.body.summary.orderCount >= 1, true);
+    assert.equal(reports.body.summary.marginStatus, 'MARGIN_UNAVAILABLE_MISSING_COSTS');
+    assert.equal(Array.isArray(reports.body.reports.sales.chart), true);
+    assert.equal(Array.isArray(reports.body.reports.orders.rows), true);
+    assert.equal(
+      reports.body.reports.blockers.some(
+        (blocker: { module: string; status: string }) =>
+          blocker.module === 'Pagos' && blocker.status === 'BLOCKED_PROVIDER',
+      ),
+      true,
+    );
+    const reportsBody = JSON.stringify(reports.body);
+    assert.equal(reportsBody.includes('admin-core-audit-'), false);
+    assert.equal(reportsBody.includes('3005557733'), false);
+    assert.equal(reportsBody.includes('Carrera 44'), false);
+
+    const salesReport = await http
+      .get('/api/v1/admin/reports/sales?range=30d')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(salesReport.status, 200);
+    assert.equal(salesReport.body.kpis.marginStatus, 'MARGIN_UNAVAILABLE_MISSING_COSTS');
+
+    const exported = await http
+      .post('/api/v1/admin/reports/export')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ type: 'orders', range: '30d' });
+    assert.equal(exported.status, 200);
+    assert.match(exported.text, /orderNumber/);
+    assert.equal(exported.text.includes('admin-core-audit-'), false);
+    assert.equal(exported.text.includes('3005557733'), false);
+
+    const exportAudit = await prisma.auditLog.findFirst({
+      where: {
+        action: 'reports.exported',
+        entityType: 'reports_export',
+      },
+    });
+    assert.ok(exportAudit);
 
     const settings = await http
       .get('/api/v1/admin/settings')

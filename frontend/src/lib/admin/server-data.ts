@@ -631,3 +631,133 @@ export async function getAdminDashboardData(range: string = '30d'): Promise<Admi
   }
   return { ...data, errors };
 }
+
+export interface AdminReportsData {
+  range: { key: string; label: string; from: string; to: string };
+  filters: {
+    status: string | null;
+    module: string | null;
+    paymentStatus: string | null;
+    shippingStatus: string | null;
+  };
+  refreshedAt: string;
+  summary: Record<string, string | number>;
+  reports: {
+    sales: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number>>;
+      empty: boolean;
+    };
+    orders: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number>>;
+      empty: boolean;
+    };
+    payments: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number>>;
+      empty: boolean;
+    };
+    inventory: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number | string[] | boolean>>;
+      empty: boolean;
+    };
+    shipping: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number>>;
+      empty: boolean;
+    };
+    notifications: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number>>;
+      empty: boolean;
+    };
+    readiness: {
+      globalStatus: string;
+      counts: Record<string, number>;
+      modules: Array<{
+        key: string;
+        label: string;
+        status: string;
+        blockers: string[];
+        productionImpact: string;
+        nextAction: string;
+        href: string;
+      }>;
+      chart: Array<Record<string, string | number>>;
+    };
+    audit: {
+      kpis: Record<string, string | number>;
+      chart: Array<Record<string, string | number>>;
+      rows: Array<Record<string, string | number>>;
+      empty: boolean;
+    };
+    blockers: Array<{
+      module: string;
+      status: string;
+      blocker: string;
+      nextAction: string;
+      impact: string;
+      href: string;
+    }>;
+  };
+  export: {
+    formats: string[];
+    maxRows: number;
+    standardExportContainsPii: boolean;
+    piiExportRequires: string;
+    enabled: boolean;
+  };
+  errors: Record<string, string>;
+}
+
+function emptyReports(range: string): AdminReportsData {
+  const now = new Date().toISOString();
+  const emptyReport = { kpis: {}, chart: [], rows: [], empty: true };
+  return {
+    range: { key: range, label: 'Sin datos', from: now, to: now },
+    filters: { status: null, module: null, paymentStatus: null, shippingStatus: null },
+    refreshedAt: now,
+    summary: {},
+    reports: {
+      sales: emptyReport,
+      orders: emptyReport,
+      payments: emptyReport,
+      inventory: emptyReport,
+      shipping: emptyReport,
+      notifications: emptyReport,
+      readiness: { globalStatus: 'NO_GO', counts: {}, modules: [], chart: [] },
+      audit: emptyReport,
+      blockers: [],
+    },
+    export: {
+      formats: ['csv'],
+      maxRows: 0,
+      standardExportContainsPii: false,
+      piiExportRequires: 'customers.read_sensitive',
+      enabled: false,
+    },
+    errors: {},
+  };
+}
+
+export async function getAdminReportsData(range: string = '30d'): Promise<AdminReportsData> {
+  const errors: Record<string, string> = {};
+  const data = await read<AdminReportsData | null>(
+    `/admin/reports/summary?range=${encodeURIComponent(range)}`,
+    null,
+    errors,
+    'reports',
+  );
+  if (!data) {
+    return { ...emptyReports(range), errors };
+  }
+  return { ...data, errors };
+}

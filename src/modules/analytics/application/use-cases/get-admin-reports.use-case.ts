@@ -1,0 +1,650 @@
+import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { OrderStatus, PaymentStatus, Prisma, ShipmentStatus } from '@prisma/client';
+import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { assertHasPermissions } from 'src/common/utils/authorization.util';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+
+type RangeKey = 'today' | '7d' | '30d' | 'month';
+type ModuleStatus =
+  | 'READY'
+  | 'GO_WITH_RISKS'
+  | 'PARTIAL'
+  | 'BLOCKED_PROVIDER'
+  | 'BLOCKED_CONFIGURATION'
+  | 'MOCK_ONLY'
+  | 'NO_GO';
+type ReportType =
+  | 'summary'
+  | 'sales'
+  | 'orders'
+  | 'payments'
+  | 'inventory'
+  | 'shipping'
+  | 'notifications'
+  | 'readiness'
+  | 'audit';
+
+interface ReportQuery {
+  range?: string;
+  status?: string;
+  module?: string;
+  paymentStatus?: string;
+  shippingStatus?: string;
+}
+
+interface ExportQuery extends ReportQuery {
+  type?: string;
+  format?: string;
+  includePii?: boolean;
+}
+
+type OrderForReports = Prisma.OrderGetPayload<{
+  include: {
+    orderItems: {
+      include: {
+        variant: {
+          include: {
+            product: { include: { brand: true; category: true } };
+            inventoryItems: true;
+          };
+        };
+      };
+    };
+    payments: true;
+    shipments: true;
+  };
+}>;
+
+type ProductForReports = Prisma.ProductGetPayload<{
+  include: {
+    brand: true;
+    category: true;
+    variants: {
+      include: {
+        inventoryItems: true;
+        orderItems: true;
+      };
+    };
+  };
+}>;
+
+@Injectable()
+export class GetAdminReportsUseCase {
+  constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async execute(actor: CurrentUser, query: ReportQuery = {}) {
+    assertHasPermissions(actor.permissions, ['reports.read']);
+
+    const range = this.resolveRange(query.range);
+    const from = new Date(range.from);
+    const to = new Date(range.to);
+    const [
+      orders,
+      products,
+      notificationsByStatus,
+      notificationsFailed,
+      audit,
+      shipments,
+    ] = await Promise.all([
+      this.prisma.order.findMany({
+        where: { createdAt: { gte: from, lte: to } },
+        include: {
+          orderItems: {
+            include: {
+              variant: {
+                include: {
+                  product: { include: { brand: true, category: true } },
+                  inventoryItems: true,
+                },
+              },
+            },
+          },
+          payments: true,
+          shipments: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.product.findMany({
+        include: {
+          brand: true,
+          category: true,
+          variants: {
+            include: {
+              inventoryItems: true,
+              orderItems: true,
+            },
+          },
+        },
+      }),
+      this.prisma.notification.groupBy({
+        by: ['status'],
+        _count: { status: true },
+      }),
+      this.prisma.notification.findMany({
+        where: { status: 'failed', createdAt: { gte: from, lte: to } },
+        orderBy: { createdAt: 'desc' },
+        take: 80,
+      }),
+      this.prisma.auditLog.findMany({
+        where: {
+          createdAt: { gte: from, lte: to },
+          ...(query.module ? { entityType: query.module } : {}),
+        },
+        include: { actor: true },
+        orderBy: { createdAt: 'desc' },
+        take: 80,
+      }),
+      this.prisma.shipment.findMany({
+        where: { createdAt: { gte: from, lte: to } },
+        include: { order: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    const filteredOrders = orders.filter((order) => {
+      if (query.status && order.status !== query.status) return false;
+      if (query.paymentStatus && !order.payments.some((payment) => payment.status === query.paymentStatus)) return false;
+      if (query.shippingStatus && !order.shipments.some((shipment) => shipment.status === query.shippingStatus)) return false;
+      return true;
+    });
+    const payments = filteredOrders.flatMap((order) =>
+      order.payments.map((payment) => ({ ...payment, orderNumber: order.orderNumber })),
+    );
+    const readiness = this.buildReadiness();
+    const inventory = this.buildInventoryReport(products);
+    const sales = this.buildSalesReport(filteredOrders, actor.permissions);
+    const ordersReport = this.buildOrdersReport(filteredOrders);
+    const paymentsReport = this.buildPaymentsReport(payments);
+    const shipping = this.buildShippingReport(filteredOrders, shipments);
+    const notifications = this.buildNotificationsReport(notificationsByStatus, notificationsFailed);
+    const auditReport = this.buildAuditReport(audit);
+    const blockers = readiness.modules
+      .filter((module) =>
+        ['BLOCKED_PROVIDER', 'BLOCKED_CONFIGURATION', 'MOCK_ONLY', 'NO_GO'].includes(module.status),
+      )
+      .map((module) => ({
+        module: module.label,
+        status: module.status,
+        blocker: module.blockers[0] ?? 'Bloqueado.',
+        nextAction: module.nextAction,
+        impact: module.productionImpact,
+        href: module.href,
+      }));
+
+    return {
+      range,
+      filters: {
+        status: query.status ?? null,
+        module: query.module ?? null,
+        paymentStatus: query.paymentStatus ?? null,
+        shippingStatus: query.shippingStatus ?? null,
+      },
+      refreshedAt: new Date().toISOString(),
+      summary: {
+        totalSalesAmount: sales.kpis.totalSalesAmount,
+        orderCount: sales.kpis.orderCount,
+        averageOrderValue: sales.kpis.averageOrderValue,
+        pendingPayments: paymentsReport.kpis.pendingPayments,
+        ordersWithoutGuide: shipping.kpis.ordersWithoutGuide,
+        nonSellableProducts: inventory.kpis.nonSellableProducts,
+        failedNotifications: notifications.kpis.failedNotifications,
+        productionBlockers: blockers.length,
+        marginStatus: sales.kpis.marginStatus,
+      },
+      reports: {
+        sales,
+        orders: ordersReport,
+        payments: paymentsReport,
+        inventory,
+        shipping,
+        notifications,
+        readiness,
+        audit: auditReport,
+        blockers,
+      },
+      export: {
+        formats: ['csv'],
+        maxRows: 1000,
+        standardExportContainsPii: false,
+        piiExportRequires: 'customers.read_sensitive',
+        enabled: actor.permissions.includes('reports.export'),
+      },
+    };
+  }
+
+  async buildExport(actor: CurrentUser, query: ExportQuery = {}) {
+    assertHasPermissions(actor.permissions, ['reports.export']);
+    if (query.includePii && !actor.permissions.includes('customers.read_sensitive')) {
+      throw new ForbiddenException('Exportar PII requiere customers.read_sensitive.');
+    }
+    const type = this.reportType(query.type);
+    if (type === 'sales' && !actor.permissions.includes('reports.financial.read')) {
+      throw new ForbiddenException('El reporte financiero requiere reports.financial.read.');
+    }
+
+    const report = await this.execute(actor, query);
+    const rows = this.exportRows(type, report).slice(0, 1000);
+    return {
+      type,
+      rows,
+      csv: this.toCsv(rows),
+      filters: report.filters,
+      range: report.range,
+    };
+  }
+
+  private buildSalesReport(orders: OrderForReports[], permissions: string[]) {
+    const financialAllowed = permissions.includes('reports.financial.read');
+    const totalSales = orders.reduce((sum, order) => sum + Number(order.grandTotal), 0);
+    const items = orders.flatMap((order) => order.orderItems);
+    const missingCostLines = items.filter((item) =>
+      item.variant.inventoryItems.every((inventoryItem) => inventoryItem.costPrice === null),
+    );
+    const canCalculateMargin = financialAllowed && items.length > 0 && missingCostLines.length === 0;
+    const totalCost = canCalculateMargin
+      ? items.reduce((sum, item) => {
+        const cost = Number(item.variant.inventoryItems[0]?.costPrice ?? 0);
+        return sum + cost * item.quantity;
+      }, 0)
+      : null;
+    const grossMargin = totalCost === null ? null : totalSales - totalCost;
+    const productSales = new Map<string, { product: string; sku: string; quantity: number; revenue: number }>();
+    for (const item of items) {
+      const key = item.variantId;
+      const current = productSales.get(key) ?? {
+        product: item.variant.product?.name ?? item.variantNameSnapshot,
+        sku: item.skuSnapshot,
+        quantity: 0,
+        revenue: 0,
+      };
+      current.quantity += item.quantity;
+      current.revenue += Number(item.lineGrandTotal);
+      productSales.set(key, current);
+    }
+
+    return {
+      kpis: {
+        totalSalesAmount: financialAllowed ? this.money(totalSales) : 'NO_PERMISSION',
+        orderCount: orders.length,
+        averageOrderValue: financialAllowed && orders.length > 0 ? this.money(totalSales / orders.length) : financialAllowed ? '0.00' : 'NO_PERMISSION',
+        grossMargin: grossMargin === null ? 'NO_DATA' : this.money(grossMargin),
+        marginStatus: missingCostLines.length > 0 ? 'MARGIN_UNAVAILABLE_MISSING_COSTS' : canCalculateMargin ? 'READY' : 'NO_DATA',
+        missingCostLines: missingCostLines.length,
+      },
+      chart: this.salesByDay(orders),
+      rows: Array.from(productSales.values())
+        .sort((left, right) => right.revenue - left.revenue)
+        .slice(0, 20)
+        .map((row) => ({
+          product: row.product,
+          sku: row.sku,
+          quantity: row.quantity,
+          revenue: financialAllowed ? this.money(row.revenue) : 'NO_PERMISSION',
+        })),
+      empty: orders.length === 0,
+    };
+  }
+
+  private buildOrdersReport(orders: OrderForReports[]) {
+    return {
+      kpis: {
+        totalOrders: orders.length,
+        pendingOrders: orders.filter((order) =>
+          ([OrderStatus.draft, OrderStatus.pending_payment] as OrderStatus[]).includes(order.status),
+        ).length,
+        confirmedOrders: orders.filter((order) =>
+          ([OrderStatus.paid, OrderStatus.packed, OrderStatus.shipped, OrderStatus.delivered] as OrderStatus[]).includes(order.status),
+        ).length,
+        cancelledOrders: orders.filter((order) =>
+          ([OrderStatus.cancelled, OrderStatus.refunded] as OrderStatus[]).includes(order.status),
+        ).length,
+      },
+      chart: this.countValues(orders.map((order) => order.status)),
+      rows: orders.slice(0, 80).map((order) => ({
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.payments[0]?.status ?? 'pending',
+        shippingStatus: order.shipments[0]?.status ?? 'pending_provider',
+        total: this.money(Number(order.grandTotal)),
+        createdAt: order.createdAt.toISOString(),
+        href: `/admin/pedidos?search=${encodeURIComponent(order.orderNumber)}`,
+      })),
+      empty: orders.length === 0,
+    };
+  }
+
+  private buildPaymentsReport(payments: Array<Prisma.PaymentGetPayload<{}> & { orderNumber: string }>) {
+    return {
+      kpis: {
+        pendingPayments: payments.filter((payment) => payment.status === PaymentStatus.pending).length,
+        approvedPayments: payments.filter((payment) => payment.status === PaymentStatus.approved).length,
+        failedPayments: payments.filter((payment) =>
+          ([PaymentStatus.rejected, PaymentStatus.expired] as PaymentStatus[]).includes(payment.status),
+        ).length,
+        codPendingReconciliation: payments.filter(
+          (payment) => payment.gateway === 'cash_on_delivery' && payment.status === PaymentStatus.pending,
+        ).length,
+        providerStatus: process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true' ? 'READY' : 'BLOCKED_PROVIDER',
+      },
+      chart: this.countValues(payments.map((payment) => payment.status)),
+      rows: payments.slice(0, 80).map((payment) => ({
+        orderNumber: payment.orderNumber,
+        status: payment.status,
+        method: payment.gateway,
+        amount: this.money(Number(payment.amount)),
+        createdAt: payment.createdAt.toISOString(),
+      })),
+      empty: payments.length === 0,
+    };
+  }
+
+  private buildInventoryReport(products: ProductForReports[]) {
+    const rows = products.flatMap((product) =>
+      product.variants.map((variant) => {
+        const availableStock = variant.inventoryItems.reduce(
+          (sum, item) => sum + Math.max(item.onHandQty - item.reservedQty - item.committedQty, 0),
+          0,
+        );
+        const hasSku = Boolean(variant.sku.trim());
+        const hasPrice = Number(variant.price) > 0;
+        const hasCost = variant.inventoryItems.some((item) => item.costPrice !== null);
+        const reasons = [
+          !product.isActive ? 'Producto inactivo' : null,
+          !variant.isActive ? 'Variante inactiva' : null,
+          !hasSku ? 'Sin SKU' : null,
+          !hasPrice ? 'Sin precio' : null,
+          availableStock <= 0 ? 'Sin stock' : null,
+          !hasCost && availableStock > 0 ? 'Costo faltante' : null,
+        ].filter((reason): reason is string => Boolean(reason));
+        return {
+          product: product.name,
+          sku: variant.sku,
+          brand: product.brand?.name ?? 'Sin marca',
+          category: product.category?.name ?? 'Sin categoría',
+          availableStock,
+          status: reasons.length ? 'PARTIAL' : 'READY',
+          reasons,
+          missingCost: !hasCost && availableStock > 0,
+        };
+      }),
+    );
+
+    return {
+      kpis: {
+        variants: rows.length,
+        nonSellableProducts: rows.filter((row) => row.reasons.length > 0).length,
+        outOfStockProducts: rows.filter((row) => row.availableStock <= 0).length,
+        lowStockProducts: rows.filter((row) => row.availableStock > 0 && row.availableStock <= 2).length,
+        missingCostProducts: rows.filter((row) => row.missingCost).length,
+      },
+      chart: [
+        { label: 'Sin stock', value: rows.filter((row) => row.availableStock <= 0).length },
+        { label: 'Bajo stock', value: rows.filter((row) => row.availableStock > 0 && row.availableStock <= 2).length },
+        { label: 'Costo faltante', value: rows.filter((row) => row.missingCost).length },
+        { label: 'Listo', value: rows.filter((row) => row.reasons.length === 0).length },
+      ],
+      rows: rows
+        .filter((row) => row.reasons.length > 0 || row.availableStock <= 2)
+        .slice(0, 80),
+      empty: rows.length === 0,
+    };
+  }
+
+  private buildShippingReport(orders: OrderForReports[], shipments: Prisma.ShipmentGetPayload<{ include: { order: true } }>[]) {
+    const ordersWithoutGuide = orders.filter((order) =>
+      !([OrderStatus.cancelled, OrderStatus.refunded, OrderStatus.delivered] as OrderStatus[]).includes(order.status) &&
+      !order.shipments.some((shipment) => shipment.trackingNumber || shipment.providerShipmentId),
+    );
+    const issueStatuses = [ShipmentStatus.delivery_failed, ShipmentStatus.returned, ShipmentStatus.cancelled] as ShipmentStatus[];
+    return {
+      kpis: {
+        ordersWithoutGuide: ordersWithoutGuide.length,
+        shipmentsCreated: shipments.length,
+        shipmentsWithIssue: shipments.filter((shipment) => issueStatuses.includes(shipment.status)).length,
+        mockGuides: shipments.filter((shipment) =>
+          shipment.provider === 'mock_99envios' ||
+          shipment.trackingNumber?.startsWith('MOCK99') ||
+          shipment.providerShipmentId?.startsWith('MOCK99'),
+        ).length,
+        providerStatus: this.shippingProviderStatus(),
+      },
+      chart: this.countValues(shipments.map((shipment) => shipment.status)),
+      rows: [
+        ...ordersWithoutGuide.map((order) => ({
+          orderNumber: order.orderNumber,
+          provider: 'pending',
+          guideSource: 'pending',
+          trackingNumber: 'Pendiente',
+          status: 'pending_guide',
+          createdAt: order.createdAt.toISOString(),
+          href: `/admin/envios?search=${encodeURIComponent(order.orderNumber)}`,
+        })),
+        ...shipments.map((shipment) => ({
+          orderNumber: shipment.order.orderNumber,
+          provider: shipment.provider,
+          guideSource: shipment.trackingNumber?.startsWith('MOCK99') ? 'MOCK_LOCAL' : shipment.provider,
+          trackingNumber: shipment.trackingNumber ?? shipment.providerShipmentId ?? 'Pendiente',
+          status: shipment.status,
+          createdAt: shipment.createdAt.toISOString(),
+          href: `/admin/envios?search=${encodeURIComponent(shipment.order.orderNumber)}`,
+        })),
+      ].slice(0, 80),
+      empty: shipments.length === 0 && ordersWithoutGuide.length === 0,
+    };
+  }
+
+  private buildNotificationsReport(
+    statusRows: Array<{ status: string; _count: { status: number } }>,
+    failedNotifications: Prisma.NotificationGetPayload<{}>[],
+  ) {
+    const counts = Object.fromEntries(statusRows.map((row) => [row.status, row._count.status]));
+    return {
+      kpis: {
+        queuedNotifications: counts.queued ?? 0,
+        sentNotifications: counts.sent ?? 0,
+        failedNotifications: counts.failed ?? 0,
+        providerStatus: process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' ? 'READY' : 'BLOCKED_PROVIDER',
+      },
+      chart: Object.entries(counts).map(([label, value]) => ({ label, value })),
+      rows: failedNotifications.map((notification) => ({
+        eventName: notification.eventName,
+        status: notification.status,
+        provider: notification.provider,
+        attempts: notification.attempts,
+        lastError: this.safeText(notification.lastError ?? 'Sin detalle'),
+        createdAt: notification.createdAt.toISOString(),
+      })),
+      empty: statusRows.length === 0,
+    };
+  }
+
+  private buildAuditReport(audit: Array<Prisma.AuditLogGetPayload<{ include: { actor: true } }>>) {
+    return {
+      kpis: {
+        auditEvents: audit.length,
+        reportsExports: audit.filter((entry) => entry.action === 'reports.exported').length,
+      },
+      chart: this.countValues(audit.map((entry) => entry.action)),
+      rows: audit.slice(0, 80).map((entry) => ({
+        actor: entry.actor?.email ? this.maskEmail(entry.actor.email) : 'sistema',
+        action: entry.action,
+        entityType: entry.entityType,
+        entityId: entry.entityId,
+        createdAt: entry.createdAt.toISOString(),
+      })),
+      empty: audit.length === 0,
+    };
+  }
+
+  private buildReadiness() {
+    const shippingProvider = process.env.SHIPPING_PROVIDER ?? 'internal';
+    const appEnv = process.env.APP_ENV ?? 'local';
+    const authDisabled = process.env.ADMIN_AUTH_DISABLED === 'true';
+    const has99Credentials = Boolean(
+      process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL &&
+      process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD &&
+      process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE,
+    );
+    const paymentsReady = process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true';
+    const emailReady = process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' &&
+      Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY);
+    const stableDomain = Boolean(process.env.PUBLIC_APP_URL) &&
+      !String(process.env.PUBLIC_APP_URL).includes('trycloudflare');
+
+    const modules = [
+      this.module('dashboard', 'Dashboard', 'READY', [], 'Operación ejecutiva.', 'Sin acción.', '/admin/dashboard'),
+      this.module('reports', 'Reportes', 'READY', [], 'Análisis operativo.', 'Mantener filtros/export.', '/admin/reportes'),
+      this.module('catalog', 'Catálogo', 'GO_WITH_RISKS', ['Precios avanzados parciales.'], 'Productos vendibles dependen de precio/stock.', 'Cerrar precios.', '/admin/productos'),
+      this.module('inventory', 'Inventario', 'READY', [], 'Stock y kardex operativos.', 'Mantener conteos.', '/admin/inventario'),
+      this.module('orders', 'Pedidos', 'READY', [], 'Ordenes operativas.', 'Cerrar fulfillment avanzado.', '/admin/pedidos'),
+      this.module('payments', 'Pagos', paymentsReady ? 'READY' : 'BLOCKED_PROVIDER', paymentsReady ? [] : ['PSE/pagos reales pendientes.'], 'No hay pagos online reales.', 'Configurar provider real.', '/admin/pagos'),
+      this.module('shipping', 'Envíos', has99Credentials && shippingProvider === '99envios' ? 'GO_WITH_RISKS' : shippingProvider === 'mock_99envios' ? 'MOCK_ONLY' : 'BLOCKED_PROVIDER', ['99 Envíos real/sandbox pendiente.'], 'Guías reales bloqueadas.', 'Probar credenciales 99 Envíos.', '/admin/envios'),
+      this.module('notifications', 'Notificaciones', emailReady ? 'READY' : 'BLOCKED_PROVIDER', emailReady ? [] : ['Email productivo pendiente.'], 'Correos reales bloqueados.', 'Configurar provider email.', '/admin/notificaciones'),
+      this.module('settings', 'Configuración', appEnv === 'production' && !authDisabled && stableDomain ? 'GO_WITH_RISKS' : 'BLOCKED_CONFIGURATION', ['Producción bloqueada por entorno/dominio/providers.'], 'No se puede salir a producción.', 'Completar readiness.', '/admin/configuracion'),
+      this.module('security', 'Seguridad', authDisabled && appEnv === 'production' ? 'NO_GO' : 'READY', authDisabled && appEnv === 'production' ? ['ADMIN_AUTH_DISABLED activo en producción.'] : [], 'Acceso admin protegido.', 'Mantener RBAC.', '/admin/roles'),
+    ];
+    const counts = modules.reduce<Record<string, number>>((acc, module) => {
+      acc[module.status] = (acc[module.status] ?? 0) + 1;
+      return acc;
+    }, {});
+    return {
+      globalStatus: this.globalStatus(modules),
+      counts,
+      modules,
+      chart: Object.entries(counts).map(([label, value]) => ({ label, value })),
+    };
+  }
+
+  private module(
+    key: string,
+    label: string,
+    status: ModuleStatus,
+    blockers: string[],
+    productionImpact: string,
+    nextAction: string,
+    href: string,
+  ) {
+    return { key, label, status, blockers, productionImpact, nextAction, href };
+  }
+
+  private globalStatus(modules: Array<{ status: ModuleStatus }>): ModuleStatus {
+    if (modules.some((module) => module.status === 'NO_GO')) return 'NO_GO';
+    if (modules.some((module) => module.status === 'BLOCKED_CONFIGURATION')) return 'BLOCKED_CONFIGURATION';
+    if (modules.some((module) => module.status === 'BLOCKED_PROVIDER')) return 'BLOCKED_PROVIDER';
+    if (modules.some((module) => module.status === 'MOCK_ONLY')) return 'MOCK_ONLY';
+    if (modules.some((module) => module.status === 'GO_WITH_RISKS' || module.status === 'PARTIAL')) return 'GO_WITH_RISKS';
+    return 'READY';
+  }
+
+  private exportRows(type: ReportType, report: Awaited<ReturnType<GetAdminReportsUseCase['execute']>>) {
+    if (type === 'sales') return report.reports.sales.chart;
+    if (type === 'orders') return report.reports.orders.rows;
+    if (type === 'payments') return report.reports.payments.rows;
+    if (type === 'inventory') return report.reports.inventory.rows;
+    if (type === 'shipping') return report.reports.shipping.rows;
+    if (type === 'notifications') return report.reports.notifications.rows;
+    if (type === 'readiness') return report.reports.readiness.modules;
+    if (type === 'audit') return report.reports.audit.rows;
+    return Object.entries(report.summary).map(([metric, value]) => ({ metric, value }));
+  }
+
+  private reportType(value?: string): ReportType {
+    const allowed: ReportType[] = ['summary', 'sales', 'orders', 'payments', 'inventory', 'shipping', 'notifications', 'readiness', 'audit'];
+    return allowed.includes(value as ReportType) ? value as ReportType : 'summary';
+  }
+
+  private toCsv(rows: Array<Record<string, unknown>>) {
+    const generatedAt = new Date().toISOString();
+    const normalized = rows.length ? rows : [{ empty: 'NO_DATA' }];
+    const headers = Array.from(new Set(normalized.flatMap((row) => Object.keys(row))));
+    const lines = [
+      `generatedAt,${generatedAt}`,
+      headers.join(','),
+      ...normalized.map((row) => headers.map((header) => this.csvCell(row[header])).join(',')),
+    ];
+    return lines.join('\n');
+  }
+
+  private salesByDay(orders: OrderForReports[]) {
+    const grouped = new Map<string, { date: string; orders: number; amount: number }>();
+    for (const order of orders) {
+      const date = order.createdAt.toISOString().slice(0, 10);
+      const current = grouped.get(date) ?? { date, orders: 0, amount: 0 };
+      current.orders += 1;
+      current.amount += Number(order.grandTotal);
+      grouped.set(date, current);
+    }
+    return Array.from(grouped.values()).sort((left, right) => left.date.localeCompare(right.date));
+  }
+
+  private countValues(values: string[]) {
+    const counts = values.reduce<Record<string, number>>((acc, value) => {
+      acc[value] = (acc[value] ?? 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([label, value]) => ({ label, value }));
+  }
+
+  private resolveRange(range?: string) {
+    const now = new Date();
+    const from = new Date(now);
+    let key: RangeKey = '30d';
+    let label = 'Últimos 30 días';
+    if (range === 'today') {
+      key = 'today';
+      label = 'Hoy';
+      from.setHours(0, 0, 0, 0);
+    } else if (range === '7d') {
+      key = '7d';
+      label = 'Últimos 7 días';
+      from.setDate(from.getDate() - 7);
+    } else if (range === 'month') {
+      key = 'month';
+      label = 'Mes actual';
+      from.setDate(1);
+      from.setHours(0, 0, 0, 0);
+    } else {
+      from.setDate(from.getDate() - 30);
+    }
+    return { key, label, from: from.toISOString(), to: now.toISOString() };
+  }
+
+  private shippingProviderStatus() {
+    const provider = process.env.SHIPPING_PROVIDER ?? 'internal';
+    if (provider === 'mock_99envios') return 'MOCK_ONLY';
+    if (
+      provider === '99envios' &&
+      process.env.NINETY_NINE_ENVIOS_AUTH_EMAIL &&
+      process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD &&
+      process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE
+    ) {
+      return 'GO_WITH_RISKS';
+    }
+    return 'BLOCKED_PROVIDER';
+  }
+
+  private money(value: number) {
+    return value.toFixed(2);
+  }
+
+  private safeText(value: string) {
+    return value
+      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
+      .replace(/\b\d{7,}\b/g, '[numero]')
+      .slice(0, 140);
+  }
+
+  private maskEmail(email: string) {
+    const [local, domain] = email.split('@');
+    if (!local || !domain) return 'usuario';
+    return `${local.slice(0, 2)}***@${domain}`;
+  }
+
+  private csvCell(value: unknown) {
+    const text = Array.isArray(value) ? value.join(' | ') : String(value ?? '');
+    return `"${this.safeText(text).replace(/"/g, '""')}"`;
+  }
+}

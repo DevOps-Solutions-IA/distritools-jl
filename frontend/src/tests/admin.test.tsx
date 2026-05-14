@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import AdminLoginPage from '@/app/admin/login/page';
 import AdminNewProductPage from '@/app/admin/productos/nuevo/page';
 import AdminProductsPage from '@/app/admin/productos/page';
+import AdminReportsPage from '@/app/admin/reportes/page';
 import AdminSettingsPage from '@/app/admin/configuracion/page';
 import AdminShipmentsPage from '@/app/admin/envios/page';
 import { AdminShell } from '@/components/layout/AdminShell';
@@ -352,6 +353,55 @@ vi.mock('@/lib/admin/server-data', () => ({
     },
     errors: {},
   }),
+  getAdminReportsData: vi.fn().mockResolvedValue({
+    range: { key: '30d', label: 'Últimos 30 días', from: '2026-04-14T00:00:00.000Z', to: '2026-05-14T00:00:00.000Z' },
+    filters: { status: null, module: null, paymentStatus: null, shippingStatus: null },
+    refreshedAt: '2026-05-14T12:00:00.000Z',
+    summary: {
+      totalSalesAmount: '259900.00',
+      orderCount: 1,
+      averageOrderValue: '259900.00',
+      pendingPayments: 1,
+      ordersWithoutGuide: 1,
+      nonSellableProducts: 1,
+      failedNotifications: 0,
+      productionBlockers: 3,
+      marginStatus: 'MARGIN_UNAVAILABLE_MISSING_COSTS',
+    },
+    reports: {
+      sales: {
+        kpis: { totalSalesAmount: '259900.00', orderCount: 1, marginStatus: 'MARGIN_UNAVAILABLE_MISSING_COSTS' },
+        chart: [{ date: '2026-05-14', orders: 1, amount: 259900 }],
+        rows: [{ product: 'Taladro percutor TOTAL', sku: 'TOTAL-001', quantity: 1, revenue: '259900.00' }],
+        empty: false,
+      },
+      orders: {
+        kpis: { totalOrders: 1 },
+        chart: [{ label: 'pending_payment', value: 1 }],
+        rows: [{ orderNumber: 'DTJL-20260514-000001', status: 'pending_payment', paymentStatus: 'pending', shippingStatus: 'pending_provider', total: '259900.00' }],
+        empty: false,
+      },
+      payments: { kpis: { pendingPayments: 1, providerStatus: 'BLOCKED_PROVIDER' }, chart: [{ label: 'pending', value: 1 }], rows: [], empty: false },
+      inventory: { kpis: { nonSellableProducts: 1 }, chart: [{ label: 'Costo faltante', value: 1 }], rows: [{ product: 'Taladro percutor TOTAL', sku: 'TOTAL-001', availableStock: 3, status: 'PARTIAL', reasons: ['Costo faltante'] }], empty: false },
+      shipping: { kpis: { ordersWithoutGuide: 1, providerStatus: 'MOCK_ONLY' }, chart: [{ label: 'pending_provider', value: 1 }], rows: [], empty: false },
+      notifications: { kpis: { failedNotifications: 0, providerStatus: 'BLOCKED_PROVIDER' }, chart: [], rows: [], empty: true },
+      readiness: {
+        globalStatus: 'BLOCKED_PROVIDER',
+        counts: { READY: 3, BLOCKED_PROVIDER: 2 },
+        modules: [
+          { key: 'reports', label: 'Reportes', status: 'READY', blockers: [], productionImpact: 'Análisis operativo.', nextAction: 'Mantener filtros/export.', href: '/admin/reportes' },
+          { key: 'payments', label: 'Pagos', status: 'BLOCKED_PROVIDER', blockers: ['PSE/pagos reales pendientes.'], productionImpact: 'No hay pagos online reales.', nextAction: 'Configurar provider real.', href: '/admin/pagos' },
+        ],
+        chart: [{ label: 'READY', value: 3 }],
+      },
+      audit: { kpis: { auditEvents: 1 }, chart: [{ label: 'reports.exported', value: 1 }], rows: [{ actor: 'ad***@distritools.local', action: 'reports.exported', entityType: 'reports_export' }], empty: false },
+      blockers: [
+        { module: 'Pagos', status: 'BLOCKED_PROVIDER', blocker: 'PSE/pagos reales pendientes.', nextAction: 'Configurar provider real.', impact: 'No hay pagos online reales.', href: '/admin/pagos' },
+      ],
+    },
+    export: { formats: ['csv'], maxRows: 1000, standardExportContainsPii: false, piiExportRequires: 'customers.read_sensitive', enabled: true },
+    errors: {},
+  }),
   adminFetch: vi.fn().mockResolvedValue({ ok: true, status: 200, data: {}, error: null }),
 }));
 
@@ -412,5 +462,18 @@ describe('admin platform', () => {
     expect(screen.getByText('BLOCKED_FOR_PRODUCTION')).toBeInTheDocument();
     expect(screen.getByText('ADMIN_AUTH_DISABLED=false')).toBeInTheDocument();
     expect(screen.getByText('Mock 99 Envíos desactivado en producción')).toBeInTheDocument();
+  });
+
+  it('reportes admin renderiza datos reales, tabs y export protegido', async () => {
+    render(await AdminReportsPage({ searchParams: Promise.resolve({ range: '30d', tab: 'sales' }) }));
+
+    expect(screen.getByRole('heading', { name: /reportes admin/i })).toBeInTheDocument();
+    expect(screen.getAllByText(/ventas/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('MARGIN_UNAVAILABLE_MISSING_COSTS')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /export csv/i })).toHaveAttribute(
+      'href',
+      '/api/admin/reports/export?range=30d&type=sales',
+    );
+    expect(screen.queryByText(/300555/i)).not.toBeInTheDocument();
   });
 });
