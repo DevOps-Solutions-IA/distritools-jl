@@ -1,23 +1,37 @@
 import {
+  BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Get,
   Headers,
   Inject,
   Ip,
+  NotFoundException,
   Param,
   Patch,
   Post,
+  Query,
+  Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { StockMovementType } from '@prisma/client';
+import type { Response } from 'express';
+import { v7 as uuidv7 } from 'uuid';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import {
+  AUDIT_REPOSITORY,
+  AuditRepository,
+} from 'src/modules/auth/domain/repositories/audit.repository';
 import { AdjustStockUseCase } from 'src/modules/inventory/application/use-cases/adjust-stock.use-case';
 import { CommitStockUseCase } from 'src/modules/inventory/application/use-cases/commit-stock.use-case';
 import { ReleaseStockUseCase } from 'src/modules/inventory/application/use-cases/release-stock.use-case';
 import { ReserveStockUseCase } from 'src/modules/inventory/application/use-cases/reserve-stock.use-case';
 import { GetInventoryItemUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-item.use-case';
+import { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { AdjustStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/adjust-stock.request.dto';
 import { CommitStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/commit-stock.request.dto';
 import { ReleaseStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/release-stock.request.dto';
@@ -38,7 +52,203 @@ export class InventoryController {
     private readonly adjustStockUseCase: AdjustStockUseCase,
     @Inject(GetInventoryItemUseCase)
     private readonly getInventoryItemUseCase: GetInventoryItemUseCase,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
+    @Inject(AUDIT_REPOSITORY)
+    private readonly auditRepository: AuditRepository,
   ) {}
+
+  @Permissions('inventory.read')
+  @Get('overview')
+  async overview(@Query('search') search?: string) {
+    const where = search?.trim()
+      ? {
+          OR: [
+            { variant: { sku: { contains: search.trim(), mode: 'insensitive' as const } } },
+            { variant: { name: { contains: search.trim(), mode: 'insensitive' as const } } },
+            { warehouse: { name: { contains: search.trim(), mode: 'insensitive' as const } } },
+          ],
+        }
+      : {};
+    const rows = await this.prisma.inventoryItem.findMany({
+      where,
+      include: {
+        variant: { include: { product: { include: { brand: true, category: true } } } },
+        warehouse: true,
+      },
+      orderBy: [{ updatedAt: 'desc' }],
+      take: 250,
+    });
+    const mapped = rows.map((row) => this.serializeInventoryRow(row));
+    return {
+      summary: this.inventorySummary(mapped),
+      data: mapped,
+    };
+  }
+
+  @Permissions('inventory.read')
+  @Get('warehouses')
+  async warehouses() {
+    const rows = await this.prisma.warehouse.findMany({
+      include: { _count: { select: { inventoryItems: true, stockMovements: true } } },
+      orderBy: [{ isDefault: 'desc' }, { priority: 'asc' }, { name: 'asc' }],
+    });
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        code: row.code,
+        name: row.name,
+        location: row.location,
+        address: row.address,
+        isDefault: row.isDefault,
+        priority: row.priority,
+        isActive: row.isActive,
+        inventoryItems: row._count.inventoryItems,
+        stockMovements: row._count.stockMovements,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })),
+    };
+  }
+
+  @Permissions('inventory.read')
+  @Get('history')
+  async history(
+    @Query('variantId') variantId?: string,
+    @Query('sku') sku?: string,
+    @Query('warehouseId') warehouseId?: string,
+    @Query('movementType') movementType?: StockMovementType,
+    @Query('referenceType') referenceType?: string,
+    @Query('referenceId') referenceId?: string,
+  ) {
+    const rows = await this.prisma.stockMovement.findMany({
+      where: { variantId, sku, warehouseId, movementType, referenceType, referenceId },
+      include: {
+        variant: { include: { product: true } },
+        warehouse: true,
+        createdByUser: { select: { id: true, email: true, fullName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 250,
+    });
+    return {
+      data: rows.map((row) => ({
+        id: row.id,
+        type: row.movementType,
+        productId: row.productId,
+        product: row.variant.product?.name ?? null,
+        variantId: row.variantId,
+        sku: row.sku ?? row.variant.sku,
+        warehouseId: row.warehouseId,
+        warehouse: row.warehouse.name,
+        quantity: row.quantity,
+        quantityDelta: row.quantityDelta,
+        quantityBefore: row.quantityBefore,
+        quantityAfter: row.quantityAfter,
+        reasonCode: row.reasonCode,
+        reasonText: row.reasonText ?? row.reason,
+        referenceType: row.referenceType,
+        referenceId: row.referenceId,
+        orderId: row.orderId,
+        source: row.source,
+        actor: row.createdByUser
+          ? { id: row.createdByUser.id, email: row.createdByUser.email, fullName: row.createdByUser.fullName }
+          : null,
+        createdAt: row.createdAt,
+      })),
+    };
+  }
+
+  @Permissions('inventory.alerts.read')
+  @Get('alerts')
+  async alerts() {
+    const rows = await this.prisma.inventoryItem.findMany({
+      include: { variant: { include: { product: true } }, warehouse: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    return {
+      data: rows
+        .map((row) => {
+          const available = this.available(row);
+          if (available <= 0) {
+            return this.inventoryAlert(row, 'inventory.out_of_stock', 'Sin stock disponible', 'danger');
+          }
+          const threshold = row.reorderPoint ?? row.minStock;
+          if (threshold !== null && threshold !== undefined && available <= threshold) {
+            return this.inventoryAlert(row, 'inventory.low_stock', 'Stock bajo', 'warning');
+          }
+          if (row.reservedQty > Math.max(1, Math.floor(row.onHandQty * 0.7))) {
+            return this.inventoryAlert(row, 'inventory.high_reserved_stock', 'Reserva alta frente al físico', 'warning');
+          }
+          if (row.minStock === null && row.reorderPoint === null) {
+            return this.inventoryAlert(row, 'inventory.missing_minimum', 'Sin mínimo configurado', 'info');
+          }
+          return null;
+        })
+        .filter(Boolean),
+    };
+  }
+
+  @Permissions('inventory.cost.read')
+  @Get('valuation')
+  async valuation() {
+    const rows = await this.prisma.inventoryItem.findMany({
+      include: { variant: { include: { product: { include: { category: true } } } }, warehouse: true },
+    });
+    let total = 0;
+    const byWarehouse = new Map<string, number>();
+    const byCategory = new Map<string, number>();
+    const items = rows.map((row) => {
+      const available = this.available(row);
+      const cost = row.costPrice ? Number(row.costPrice) : null;
+      const value = cost === null ? null : available * cost;
+      if (value !== null) {
+        total += value;
+        byWarehouse.set(row.warehouse.name, (byWarehouse.get(row.warehouse.name) ?? 0) + value);
+        byCategory.set(row.variant.product?.category?.name ?? 'Sin categoría', (byCategory.get(row.variant.product?.category?.name ?? 'Sin categoría') ?? 0) + value);
+      }
+      return {
+        variantId: row.variantId,
+        sku: row.variant.sku,
+        product: row.variant.product?.name ?? row.variant.name,
+        warehouse: row.warehouse.name,
+        availableStock: available,
+        costPrice: cost,
+        inventoryValue: value,
+        valuationStatus: cost === null ? 'missing_cost' : 'valued',
+      };
+    });
+    return {
+      totalValue: total,
+      byWarehouse: Object.fromEntries(byWarehouse),
+      byCategory: Object.fromEntries(byCategory),
+      missingCost: items.filter((item) => item.valuationStatus === 'missing_cost' && item.availableStock > 0).length,
+      data: items,
+    };
+  }
+
+  @Permissions('inventory.read')
+  @Get('reservations')
+  async reservations() {
+    const rows = await this.prisma.inventoryItem.findMany({
+      where: { OR: [{ reservedQty: { gt: 0 } }, { committedQty: { gt: 0 } }] },
+      include: { variant: { include: { product: true } }, warehouse: true },
+      orderBy: [{ reservedQty: 'desc' }, { committedQty: 'desc' }],
+    });
+    return {
+      data: rows.map((row) => ({
+        variantId: row.variantId,
+        sku: row.variant.sku,
+        product: row.variant.product?.name ?? row.variant.name,
+        warehouseId: row.warehouseId,
+        warehouse: row.warehouse.name,
+        physicalStock: row.onHandQty,
+        reservedStock: row.reservedQty,
+        committedStock: row.committedQty,
+        availableStock: this.available(row),
+      })),
+    };
+  }
 
   @Permissions('inventory.read')
   @Get(':variantId/:warehouseId')
@@ -112,5 +322,647 @@ export class InventoryController {
       ipAddress,
       userAgent,
     });
+  }
+
+  @Permissions('inventory.settings.write', 'inventory.cost.write')
+  @Patch('settings/:variantId/:warehouseId')
+  async updateSettings(
+    @Param('variantId') variantId: string,
+    @Param('warehouseId') warehouseId: string,
+    @Body() body: Record<string, unknown>,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const current = await this.prisma.inventoryItem.findUnique({
+      where: { variantId_warehouseId: { variantId, warehouseId } },
+    });
+    if (!current) throw new NotFoundException('Inventario no encontrado.');
+
+    const data = {
+      minStock: this.optionalInteger(body.minStock, 'minStock'),
+      maxStock: this.optionalInteger(body.maxStock, 'maxStock'),
+      reorderPoint: this.optionalInteger(body.reorderPoint, 'reorderPoint'),
+      reorderQty: this.optionalInteger(body.reorderQty, 'reorderQty'),
+      costPrice: body.costPrice === undefined || body.costPrice === null || body.costPrice === ''
+        ? undefined
+        : this.nonNegativeNumber(body.costPrice, 'costPrice'),
+    };
+    const updated = await this.prisma.inventoryItem.update({
+      where: { variantId_warehouseId: { variantId, warehouseId } },
+      data,
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.settings_updated',
+      entityType: 'inventory_item',
+      entityId: `${variantId}:${warehouseId}`,
+      beforeData: this.redactInventoryItem(current),
+      afterData: this.redactInventoryItem(updated),
+      ipAddress,
+      userAgent,
+    });
+    return this.redactInventoryItem(updated);
+  }
+
+  @Permissions('inventory.return')
+  @Post('returns')
+  async returnStock(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const orderItemId = this.requiredString(body.orderItemId, 'orderItemId');
+    const warehouseId = this.requiredString(body.warehouseId, 'warehouseId');
+    const quantity = this.positiveInteger(body.quantity, 'quantity');
+    const condition = this.requiredString(body.condition, 'condition');
+    const reason = this.requiredString(body.reason, 'reason');
+    const comment = body.comment ? String(body.comment) : null;
+    if (!['sellable', 'damaged', 'warranty_review', 'discarded'].includes(condition)) {
+      throw new BadRequestException('Condición de devolución inválida.');
+    }
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const orderItem = await tx.orderItem.findUnique({
+        where: { id: orderItemId },
+        include: { variant: true, order: true },
+      });
+      if (!orderItem) throw new NotFoundException('Item de pedido no encontrado.');
+
+      const alreadyReturned = await tx.inventoryReturnLine.aggregate({
+        where: { orderItemId },
+        _sum: { quantity: true },
+      });
+      if ((alreadyReturned._sum.quantity ?? 0) + quantity > orderItem.quantity) {
+        throw new ConflictException('No se puede devolver más cantidad que la vendida.');
+      }
+
+      const locked = await this.lockInventory(tx, orderItem.variantId, warehouseId);
+      const delta = condition === 'sellable' ? quantity : 0;
+      const updated = await tx.inventoryItem.update({
+        where: { variantId_warehouseId: { variantId: orderItem.variantId, warehouseId } },
+        data: { onHandQty: locked.onHandQty + delta },
+      });
+      const movement = await tx.stockMovement.create({
+        data: {
+          id: uuidv7(),
+          movementType: StockMovementType.return_received,
+          productId: orderItem.variant.productId,
+          variantId: orderItem.variantId,
+          sku: orderItem.variant.sku,
+          warehouseId,
+          quantity,
+          quantityDelta: delta,
+          quantityBefore: locked.onHandQty,
+          quantityAfter: updated.onHandQty,
+          referenceType: 'return',
+          referenceId: `${orderItem.orderId}:${orderItemId}:${condition}:${(alreadyReturned._sum.quantity ?? 0) + quantity}`,
+          orderId: orderItem.orderId,
+          reasonCode: condition,
+          reasonText: reason,
+          reason,
+          source: 'admin',
+          rawMetadata: { condition, comment },
+          createdByUserId: actor.sub,
+        },
+      });
+      const returnLine = await tx.inventoryReturnLine.create({
+        data: {
+          id: uuidv7(),
+          orderId: orderItem.orderId,
+          orderItemId,
+          variantId: orderItem.variantId,
+          warehouseId,
+          quantity,
+          condition,
+          reason,
+          comment,
+          stockMovementId: movement.id,
+          createdByUserId: actor.sub,
+        },
+      });
+      return { returnLine, movement, inventory: updated };
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.return_received',
+      entityType: 'inventory_return_line',
+      entityId: result.returnLine.id,
+      afterData: result,
+      ipAddress,
+      userAgent,
+    });
+    return result;
+  }
+
+  @Permissions('inventory.count.write')
+  @Post('count-sessions')
+  async createCountSession(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const warehouseId = this.requiredString(body.warehouseId, 'warehouseId');
+    const notes = body.notes ? String(body.notes) : null;
+    const linesInput = Array.isArray(body.lines) ? body.lines as Array<Record<string, unknown>> : [];
+    const session = await this.prisma.$transaction(async (tx) => {
+      const warehouse = await tx.warehouse.findUnique({ where: { id: warehouseId } });
+      if (!warehouse || !warehouse.isActive) throw new NotFoundException('Bodega no encontrada o inactiva.');
+      const created = await tx.inventoryCountSession.create({
+        data: {
+          id: uuidv7(),
+          warehouseId,
+          status: 'in_progress',
+          startedBy: actor.sub,
+          notes,
+        },
+      });
+      const inventoryRows = await tx.inventoryItem.findMany({
+        where: { warehouseId },
+        include: { variant: true },
+      });
+      const countedByVariant = new Map(linesInput.map((line) => [
+        String(line.variantId),
+        line.countedQuantity === undefined ? null : this.nonNegativeInteger(line.countedQuantity, 'countedQuantity'),
+      ]));
+      await tx.inventoryCountLine.createMany({
+        data: inventoryRows.map((row) => {
+          const counted = countedByVariant.has(row.variantId) ? countedByVariant.get(row.variantId) ?? null : null;
+          return {
+            id: uuidv7(),
+            sessionId: created.id,
+            variantId: row.variantId,
+            sku: row.variant.sku,
+            systemQuantity: row.onHandQty,
+            countedQuantity: counted,
+            difference: counted === null ? null : counted - row.onHandQty,
+          };
+        }),
+      });
+      return created;
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.count_started',
+      entityType: 'inventory_count_session',
+      entityId: session.id,
+      afterData: session,
+      ipAddress,
+      userAgent,
+    });
+    return this.getCountSession(session.id);
+  }
+
+  @Permissions('inventory.count.write')
+  @Patch('count-sessions/:sessionId/lines')
+  async updateCountLines(@Param('sessionId') sessionId: string, @Body() body: Record<string, unknown>) {
+    const lines = Array.isArray(body.lines) ? body.lines as Array<Record<string, unknown>> : [];
+    if (!lines.length) throw new BadRequestException('Debe enviar líneas de conteo.');
+    const session = await this.prisma.inventoryCountSession.findUnique({ where: { id: sessionId } });
+    if (!session || session.status === 'closed') throw new ConflictException('Sesión de conteo no editable.');
+    for (const line of lines) {
+      const variantId = this.requiredString(line.variantId, 'variantId');
+      const counted = this.nonNegativeInteger(line.countedQuantity, 'countedQuantity');
+      const current = await this.prisma.inventoryCountLine.findUnique({
+        where: { sessionId_variantId: { sessionId, variantId } },
+      });
+      if (!current) throw new NotFoundException('Línea de conteo no encontrada.');
+      await this.prisma.inventoryCountLine.update({
+        where: { sessionId_variantId: { sessionId, variantId } },
+        data: { countedQuantity: counted, difference: counted - current.systemQuantity },
+      });
+    }
+    return this.getCountSession(sessionId);
+  }
+
+  @Permissions('inventory.count.close')
+  @Post('count-sessions/:sessionId/close')
+  async closeCountSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const session = await tx.inventoryCountSession.findUnique({
+        where: { id: sessionId },
+        include: { lines: { include: { variant: true } } },
+      });
+      if (!session) throw new NotFoundException('Sesión de conteo no encontrada.');
+      if (session.status === 'closed') throw new ConflictException('La sesión ya está cerrada.');
+      if (session.lines.every((line) => line.countedQuantity === null)) {
+        throw new ConflictException('No se puede cerrar conteo sin ninguna línea contada.');
+      }
+      const movements = [];
+      for (const line of session.lines) {
+        if (line.countedQuantity === null) continue;
+        const counted = line.countedQuantity ?? line.systemQuantity;
+        const delta = counted - line.systemQuantity;
+        if (delta === 0) continue;
+        const locked = await this.lockInventory(tx, line.variantId, session.warehouseId);
+        const next = locked.onHandQty + delta;
+        if (next < 0 || locked.reservedQty + locked.committedQty > next) {
+          throw new ConflictException('La corrección de conteo dejaría inventario inválido.');
+        }
+        const updated = await tx.inventoryItem.update({
+          where: { variantId_warehouseId: { variantId: line.variantId, warehouseId: session.warehouseId } },
+          data: { onHandQty: next },
+        });
+        const movement = await tx.stockMovement.create({
+          data: {
+            id: uuidv7(),
+            movementType: StockMovementType.physical_count_correction,
+            productId: line.variant.productId,
+            variantId: line.variantId,
+            sku: line.sku,
+            warehouseId: session.warehouseId,
+            quantity: Math.abs(delta),
+            quantityDelta: delta,
+            quantityBefore: locked.onHandQty,
+            quantityAfter: updated.onHandQty,
+            referenceType: 'inventory_count',
+            referenceId: session.id,
+            reasonCode: 'PHYSICAL_COUNT_CORRECTION',
+            reasonText: session.notes,
+            reason: session.notes,
+            source: 'admin',
+            rawMetadata: { countedQuantity: counted, systemQuantity: line.systemQuantity },
+            createdByUserId: actor.sub,
+          },
+        });
+        await tx.inventoryCountLine.update({
+          where: { id: line.id },
+          data: { adjustmentMovementId: movement.id },
+        });
+        movements.push(movement);
+      }
+      const closed = await tx.inventoryCountSession.update({
+        where: { id: sessionId },
+        data: { status: 'closed', closedBy: actor.sub, closedAt: new Date() },
+      });
+      return { session: closed, movements };
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.count_closed',
+      entityType: 'inventory_count_session',
+      entityId: sessionId,
+      afterData: result,
+      ipAddress,
+      userAgent,
+    });
+    return result;
+  }
+
+  @Permissions('inventory.import')
+  @Post('imports/dry-run')
+  async importDryRun(
+    @Body() body: Record<string, unknown>,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const csv = this.requiredString(body.csv, 'csv');
+    const filename = body.filename ? String(body.filename) : 'inventory-import.csv';
+    const parsed = await this.parseImportRows(csv);
+    const batch = await this.prisma.inventoryImportBatch.create({
+      data: {
+        id: uuidv7(),
+        status: parsed.errorRows > 0 ? 'dry_run_errors' : 'dry_run_valid',
+        filename,
+        totalRows: parsed.rows.length,
+        validRows: parsed.rows.filter((row) => row.valid).length,
+        errorRows: parsed.errorRows,
+        createdBy: actor.sub,
+        rows: {
+          createMany: {
+            data: parsed.rows.map((row) => ({ ...row, id: uuidv7() })),
+          },
+        },
+      },
+      include: { rows: true },
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.import_dry_run',
+      entityType: 'inventory_import_batch',
+      entityId: batch.id,
+      afterData: { id: batch.id, totalRows: batch.totalRows, validRows: batch.validRows, errorRows: batch.errorRows },
+      ipAddress,
+      userAgent,
+    });
+    return batch;
+  }
+
+  @Permissions('inventory.import')
+  @Post('imports/:batchId/apply')
+  async applyImport(
+    @Param('batchId') batchId: string,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const result = await this.prisma.$transaction(async (tx) => {
+      const batch = await tx.inventoryImportBatch.findUnique({ where: { id: batchId }, include: { rows: true } });
+      if (!batch) throw new NotFoundException('Import batch no encontrado.');
+      if (!batch.status.startsWith('dry_run')) throw new ConflictException('Este import ya no está en dry-run.');
+      if (batch.errorRows > 0) throw new ConflictException('No se puede aplicar import con errores críticos.');
+      const movements = [];
+      for (const row of batch.rows) {
+        const variant = await tx.variant.findUnique({ where: { sku: row.sku } });
+        const warehouse = await tx.warehouse.findUnique({ where: { code: row.warehouseCode } });
+        if (!variant || !warehouse) throw new ConflictException('El import cambió de validez antes de aplicar.');
+        const locked = await this.lockInventory(tx, variant.id, warehouse.id, true);
+        const delta = row.mode === 'set'
+          ? row.quantity - locked.onHandQty
+          : row.mode === 'increment'
+            ? row.quantity
+            : -row.quantity;
+        const next = locked.onHandQty + delta;
+        if (next < 0 || locked.reservedQty + locked.committedQty > next) {
+          throw new ConflictException(`Import dejaría stock inválido para SKU ${row.sku}.`);
+        }
+        const updated = await tx.inventoryItem.update({
+          where: { variantId_warehouseId: { variantId: variant.id, warehouseId: warehouse.id } },
+          data: { onHandQty: next },
+        });
+        const movement = await tx.stockMovement.create({
+          data: {
+            id: uuidv7(),
+            movementType: StockMovementType.import_adjustment,
+            productId: variant.productId,
+            variantId: variant.id,
+            sku: variant.sku,
+            warehouseId: warehouse.id,
+            quantity: Math.abs(delta),
+            quantityDelta: delta,
+            quantityBefore: locked.onHandQty,
+            quantityAfter: updated.onHandQty,
+            referenceType: 'inventory_import',
+            referenceId: batch.id,
+            reasonCode: row.reason,
+            reasonText: row.reason,
+            reason: row.reason,
+            source: 'import',
+            rawMetadata: { rowNumber: row.rowNumber, mode: row.mode },
+            createdByUserId: actor.sub,
+          },
+        });
+        await tx.inventoryImportRow.update({ where: { id: row.id }, data: { movementId: movement.id } });
+        movements.push(movement);
+      }
+      const applied = await tx.inventoryImportBatch.update({
+        where: { id: batch.id },
+        data: { status: 'applied', appliedBy: actor.sub, appliedAt: new Date() },
+      });
+      return { batch: applied, movements };
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.import_applied',
+      entityType: 'inventory_import_batch',
+      entityId: batchId,
+      afterData: { batchId, movements: result.movements.length },
+      ipAddress,
+      userAgent,
+    });
+    return result;
+  }
+
+  @Permissions('inventory.export')
+  @Get('export')
+  async exportInventory(@CurrentUserDecorator() actor: CurrentUser, @Res() res: Response) {
+    const rows = await this.prisma.inventoryItem.findMany({
+      include: { variant: { include: { product: true } }, warehouse: true },
+      orderBy: [{ warehouse: { code: 'asc' } }, { variant: { sku: 'asc' } }],
+    });
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action: 'inventory.exported',
+      entityType: 'inventory_export',
+      entityId: `export-${Date.now()}`,
+      afterData: { rows: rows.length },
+    });
+    const header = 'sku,product,variant,warehouseCode,warehouse,physicalStock,reservedStock,committedStock,availableStock,minStock,costPrice,inventoryValue';
+    const lines = rows.map((row) => {
+      const available = this.available(row);
+      const cost = row.costPrice ? Number(row.costPrice) : null;
+      const value = cost === null ? '' : String(available * cost);
+      return [
+        row.variant.sku,
+        row.variant.product?.name ?? '',
+        row.variant.name,
+        row.warehouse.code,
+        row.warehouse.name,
+        row.onHandQty,
+        row.reservedQty,
+        row.committedQty,
+        available,
+        row.minStock ?? '',
+        cost ?? '',
+        value,
+      ].map((cell) => this.csvCell(cell)).join(',');
+    });
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=\"inventory-export.csv\"');
+    return res.send([header, ...lines].join('\n'));
+  }
+
+  private async getCountSession(sessionId: string) {
+    const session = await this.prisma.inventoryCountSession.findUnique({
+      where: { id: sessionId },
+      include: { warehouse: true, lines: { orderBy: { sku: 'asc' } } },
+    });
+    if (!session) throw new NotFoundException('Sesión de conteo no encontrada.');
+    return session;
+  }
+
+  private serializeInventoryRow(row: {
+    id: string;
+    variantId: string;
+    warehouseId: string;
+    onHandQty: number;
+    reservedQty: number;
+    committedQty: number;
+    minStock: number | null;
+    maxStock: number | null;
+    reorderPoint: number | null;
+    reorderQty: number | null;
+    costPrice: unknown;
+    updatedAt: Date;
+    variant: { sku: string; name: string; price: unknown; product: { name: string; brand?: { name: string } | null; category?: { name: string } | null } | null };
+    warehouse: { code: string; name: string; isDefault: boolean; isActive: boolean };
+  }) {
+    const available = this.available(row);
+    const cost = row.costPrice ? Number(row.costPrice) : null;
+    return {
+      id: row.id,
+      product: row.variant.product?.name ?? row.variant.name,
+      brand: row.variant.product?.brand?.name ?? null,
+      category: row.variant.product?.category?.name ?? null,
+      variantId: row.variantId,
+      sku: row.variant.sku,
+      variant: row.variant.name,
+      warehouseId: row.warehouseId,
+      warehouseCode: row.warehouse.code,
+      warehouse: row.warehouse.name,
+      warehouseDefault: row.warehouse.isDefault,
+      physicalStock: row.onHandQty,
+      reservedStock: row.reservedQty,
+      committedStock: row.committedQty,
+      availableStock: available,
+      minStock: row.minStock,
+      maxStock: row.maxStock,
+      reorderPoint: row.reorderPoint,
+      reorderQty: row.reorderQty,
+      costPrice: cost,
+      inventoryValue: cost === null ? null : available * cost,
+      stockStatus: available <= 0 ? 'out_of_stock' : row.minStock !== null && available <= row.minStock ? 'low_stock' : 'healthy',
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  private inventorySummary(rows: Array<{ physicalStock: number; reservedStock: number; committedStock: number; availableStock: number; inventoryValue: number | null; stockStatus: string; costPrice: number | null }>) {
+    return {
+      skuCount: rows.length,
+      physicalStock: rows.reduce((sum, row) => sum + row.physicalStock, 0),
+      reservedStock: rows.reduce((sum, row) => sum + row.reservedStock, 0),
+      committedStock: rows.reduce((sum, row) => sum + row.committedStock, 0),
+      availableStock: rows.reduce((sum, row) => sum + row.availableStock, 0),
+      lowStock: rows.filter((row) => row.stockStatus === 'low_stock').length,
+      outOfStock: rows.filter((row) => row.stockStatus === 'out_of_stock').length,
+      missingCost: rows.filter((row) => row.costPrice === null && row.availableStock > 0).length,
+      inventoryValue: rows.reduce((sum, row) => sum + (row.inventoryValue ?? 0), 0),
+    };
+  }
+
+  private available(row: { onHandQty: number; reservedQty: number; committedQty?: number | null }) {
+    return row.onHandQty - row.reservedQty - (row.committedQty ?? 0);
+  }
+
+  private inventoryAlert(row: { variantId: string; onHandQty: number; reservedQty: number; committedQty: number; variant: { sku: string; name: string; product?: { name: string } | null }; warehouse: { code: string; name: string } }, code: string, message: string, severity: string) {
+    return {
+      code,
+      severity,
+      message,
+      variantId: row.variantId,
+      sku: row.variant.sku,
+      product: row.variant.product?.name ?? row.variant.name,
+      warehouseCode: row.warehouse.code,
+      warehouse: row.warehouse.name,
+      physicalStock: row.onHandQty,
+      reservedStock: row.reservedQty,
+      committedStock: row.committedQty,
+      availableStock: this.available(row),
+    };
+  }
+
+  private async lockInventory(tx: PrismaTransactionClient, variantId: string, warehouseId: string, createIfMissing = false) {
+    const rows = (await tx.$queryRaw`
+      SELECT id, variant_id, warehouse_id, on_hand_qty, reserved_qty, committed_qty
+      FROM inventory_items
+      WHERE variant_id = ${variantId}::uuid AND warehouse_id = ${warehouseId}::uuid
+      FOR UPDATE
+    `) as Array<{ id: string; variant_id: string; warehouse_id: string; on_hand_qty: number; reserved_qty: number; committed_qty: number }>;
+    const [row] = rows;
+    if (!row && createIfMissing) {
+      const created = await tx.inventoryItem.create({
+        data: { id: uuidv7(), variantId, warehouseId, onHandQty: 0, reservedQty: 0, committedQty: 0 },
+      });
+      return created;
+    }
+    if (!row) throw new NotFoundException('Inventario no encontrado para variante/bodega.');
+    return {
+      id: row.id,
+      variantId: row.variant_id,
+      warehouseId: row.warehouse_id,
+      onHandQty: Number(row.on_hand_qty),
+      reservedQty: Number(row.reserved_qty),
+      committedQty: Number(row.committed_qty),
+    };
+  }
+
+  private async parseImportRows(csv: string) {
+    const lines = csv.trim().split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) throw new BadRequestException('El CSV debe incluir encabezado y al menos una fila.');
+    const headers = lines[0].split(',').map((header) => header.trim());
+    const required = ['sku', 'warehouseCode', 'quantity', 'mode', 'reason'];
+    for (const requiredHeader of required) {
+      if (!headers.includes(requiredHeader)) throw new BadRequestException(`Falta columna ${requiredHeader}.`);
+    }
+    const variants = await this.prisma.variant.findMany({ select: { sku: true } });
+    const warehouses = await this.prisma.warehouse.findMany({ select: { code: true } });
+    const variantSet = new Set(variants.map((variant) => variant.sku));
+    const warehouseSet = new Set(warehouses.map((warehouse) => warehouse.code));
+    const rows = lines.slice(1).map((line, index) => {
+      const values = line.split(',').map((value) => value.trim());
+      const record = Object.fromEntries(headers.map((header, headerIndex) => [header, values[headerIndex] ?? '']));
+      const errors = [];
+      const quantity = Number(record.quantity);
+      if (!variantSet.has(record.sku)) errors.push('SKU no existe.');
+      if (!warehouseSet.has(record.warehouseCode)) errors.push('Bodega no existe.');
+      if (!Number.isInteger(quantity) || quantity < 0) errors.push('Cantidad inválida.');
+      if (!['set', 'increment', 'decrement'].includes(record.mode)) errors.push('Modo inválido.');
+      if (!record.reason) errors.push('Motivo obligatorio.');
+      return {
+        rowNumber: index + 2,
+        sku: record.sku,
+        warehouseCode: record.warehouseCode,
+        quantity: Number.isInteger(quantity) ? quantity : 0,
+        mode: record.mode,
+        reason: record.reason,
+        valid: errors.length === 0,
+        errors,
+      };
+    });
+    return { rows, errorRows: rows.filter((row) => !row.valid).length };
+  }
+
+  private requiredString(value: unknown, field: string) {
+    if (typeof value !== 'string' || !value.trim()) throw new BadRequestException(`${field} es obligatorio.`);
+    return value.trim();
+  }
+
+  private positiveInteger(value: unknown, field: string) {
+    const numeric = Number(value);
+    if (!Number.isInteger(numeric) || numeric <= 0) throw new BadRequestException(`${field} debe ser entero positivo.`);
+    return numeric;
+  }
+
+  private nonNegativeInteger(value: unknown, field: string) {
+    const numeric = Number(value);
+    if (!Number.isInteger(numeric) || numeric < 0) throw new BadRequestException(`${field} debe ser entero no negativo.`);
+    return numeric;
+  }
+
+  private optionalInteger(value: unknown, field: string) {
+    if (value === undefined) return undefined;
+    if (value === null || value === '') return null;
+    return this.nonNegativeInteger(value, field);
+  }
+
+  private nonNegativeNumber(value: unknown, field: string) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric < 0) throw new BadRequestException(`${field} debe ser número no negativo.`);
+    return numeric;
+  }
+
+  private redactInventoryItem(item: { variantId: string; warehouseId: string; onHandQty: number; reservedQty: number; committedQty?: number | null; minStock?: number | null; costPrice?: unknown }) {
+    return {
+      variantId: item.variantId,
+      warehouseId: item.warehouseId,
+      physicalStock: item.onHandQty,
+      reservedStock: item.reservedQty,
+      committedStock: item.committedQty ?? 0,
+      minStock: item.minStock ?? null,
+      costConfigured: item.costPrice !== null && item.costPrice !== undefined,
+    };
+  }
+
+  private csvCell(value: unknown) {
+    const text = String(value ?? '');
+    return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
   }
 }

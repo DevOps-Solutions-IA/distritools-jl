@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { StockMovementType } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
@@ -54,6 +54,9 @@ export class AdjustStockUseCase {
 
   async execute(input: AdjustStockInput) {
     assertHasPermissions(input.actor.permissions, ['inventory.adjust']);
+    if (!input.reason?.trim()) {
+      throw new BadRequestException('El motivo del ajuste de inventario es obligatorio.');
+    }
 
     const [variant, warehouse] = await Promise.all([
       this.inventoryReferenceRepository.findVariantById(input.variantId),
@@ -89,10 +92,13 @@ export class AdjustStockUseCase {
 
       const inventoryEntity = InventoryItemEntity.fromState(inventoryRecord);
       inventoryEntity.ensureAdjustmentResult(input.quantityDelta);
+      const adjustmentMovementType = input.quantityDelta >= 0
+        ? StockMovementType.manual_adjustment_in
+        : StockMovementType.manual_adjustment_out;
 
       const existingMovement =
         await this.stockMovementRepository.findByUniqueReference(tx, {
-          movementType: StockMovementType.adjustment,
+          movementType: adjustmentMovementType,
           variantId: input.variantId,
           warehouseId: input.warehouseId,
           referenceType: 'adjustment',
@@ -122,13 +128,21 @@ export class AdjustStockUseCase {
 
       const movement = await this.stockMovementRepository.create(tx, {
         id: uuidv7(),
-        movementType: StockMovementType.adjustment,
+        movementType: adjustmentMovementType,
+        productId: variant.productId,
         variantId: input.variantId,
+        sku: variant.sku,
         warehouseId: input.warehouseId,
         quantity: Math.abs(input.quantityDelta),
+        quantityDelta: input.quantityDelta,
+        quantityBefore: inventoryEntity.onHandQty,
+        quantityAfter: updatedItem.onHandQty,
         referenceType: 'adjustment',
         referenceId: input.referenceId,
+        reasonCode: input.reason,
+        reasonText: input.reason,
         reason: input.reason,
+        source: 'admin',
         createdByUserId: input.actor.sub,
       });
 

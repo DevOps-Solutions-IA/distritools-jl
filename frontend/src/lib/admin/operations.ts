@@ -94,9 +94,9 @@ export const adminModules: AdminModuleConfig[] = [
     description: 'Stock, reservas, compromisos y ajustes auditados.',
     permission: 'inventory.adjust',
     status: 'operational',
-    primaryActions: ['Ajustar stock', 'Ver movimientos', 'Detectar stock bajo'],
-    validations: ['No stock negativo', 'Motivo requerido', 'Audit log obligatorio'],
-    endpoints: ['/api/v1/admin/inventory', '/api/v1/admin/inventory/movements'],
+    primaryActions: ['Ajustar stock', 'Ver kardex', 'Conteo físico', 'Import/export', 'Valorización'],
+    validations: ['No stock negativo', 'Motivo requerido', 'Audit log obligatorio', 'Mutaciones sin inventory.read'],
+    endpoints: ['/api/v1/admin/inventory/overview', '/api/v1/admin/inventory/history', '/api/v1/admin/inventory/imports/dry-run', '/api/v1/admin/inventory/export'],
   },
   {
     key: 'precios',

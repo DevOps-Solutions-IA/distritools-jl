@@ -129,7 +129,12 @@ export interface AdminOperationalSnapshot {
   audit: { data: AdminAuditRow[] };
   notifications: { data: AdminNotificationRow[] };
   shippingCapabilities: Record<string, unknown>;
+  inventoryOverview: { summary?: Record<string, unknown>; data: Array<Record<string, unknown>> };
+  inventoryWarehouses: { data: Array<Record<string, unknown>> };
   inventoryHistory: { data: Array<Record<string, unknown>> };
+  inventoryAlerts: { data: Array<Record<string, unknown>> };
+  inventoryValuation: Record<string, unknown> & { data?: Array<Record<string, unknown>> };
+  inventoryReservations: { data: Array<Record<string, unknown>> };
   priceHistory: { data: Array<Record<string, unknown>> };
   legal: { data: Array<Record<string, unknown>> };
   footer: Record<string, unknown>;
@@ -199,7 +204,12 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     audit,
     notifications,
     shippingCapabilities,
+    inventoryOverview,
+    inventoryWarehouses,
     inventoryHistory,
+    inventoryAlerts,
+    inventoryValuation,
+    inventoryReservations,
     priceHistory,
     legal,
     footer,
@@ -215,7 +225,12 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     read('/admin/audit?limit=50', { data: [] }, errors, 'audit'),
     read('/admin/notifications?limit=50', { data: [] }, errors, 'notifications'),
     read('/admin/shipping/capabilities', {}, errors, 'shippingCapabilities'),
+    read('/admin/inventory/overview', { data: [], summary: {} }, errors, 'inventoryOverview'),
+    read('/admin/inventory/warehouses', { data: [] }, errors, 'inventoryWarehouses'),
     read('/admin/inventory/history', { data: [] }, errors, 'inventoryHistory'),
+    read('/admin/inventory/alerts', { data: [] }, errors, 'inventoryAlerts'),
+    read('/admin/inventory/valuation', { data: [] }, errors, 'inventoryValuation'),
+    read('/admin/inventory/reservations', { data: [] }, errors, 'inventoryReservations'),
     read('/admin/prices/history', { data: [] }, errors, 'priceHistory'),
     read('/admin/content/legal', { data: [] }, errors, 'legal'),
     read('/admin/content/footer', {}, errors, 'footer'),
@@ -233,7 +248,12 @@ export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSna
     audit,
     notifications,
     shippingCapabilities,
+    inventoryOverview,
+    inventoryWarehouses,
     inventoryHistory,
+    inventoryAlerts,
+    inventoryValuation,
+    inventoryReservations,
     priceHistory,
     legal,
     footer,

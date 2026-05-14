@@ -159,9 +159,15 @@ export class ReserveStockUseCase {
           variantId: line.variantId,
           warehouseId: line.warehouseId,
           quantity: line.quantity,
+          quantityDelta: 0,
+          quantityBefore: inventoryEntity.onHandQty,
+          quantityAfter: updatedItem.onHandQty,
           referenceType: input.referenceType,
           referenceId: input.referenceId,
+          reasonCode: input.reason ?? 'RESERVATION_CREATED',
+          reasonText: input.reason ?? null,
           reason: input.reason ?? null,
+          source: input.actor ? 'admin' : 'system',
           createdByUserId: input.actor?.sub ?? null,
         });
 
@@ -182,17 +188,15 @@ export class ReserveStockUseCase {
       ? await executor(input.tx)
       : await this.prisma.$transaction(async (tx) => executor(tx));
 
-    if (input.actor) {
-      await this.auditRepository.write({
-        actorUserId: input.actor.sub,
-        action: 'inventory.reserved',
-        entityType: 'inventory_reservation',
-        entityId: input.referenceId,
-        afterData: result,
-        ipAddress: input.ipAddress,
-        userAgent: input.userAgent,
-      });
-    }
+    await this.auditRepository.write({
+      actorUserId: input.actor?.sub,
+      action: 'inventory.reserved',
+      entityType: 'inventory_reservation',
+      entityId: input.referenceId,
+      afterData: result,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+    });
 
     return result;
   }

@@ -6,6 +6,12 @@ export interface InventoryItemState {
   warehouseId: string;
   onHandQty: number;
   reservedQty: number;
+  committedQty?: number;
+  minStock?: number | null;
+  maxStock?: number | null;
+  reorderPoint?: number | null;
+  reorderQty?: number | null;
+  costPrice?: unknown;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,8 +43,12 @@ export class InventoryItemEntity {
     return this.state.reservedQty;
   }
 
+  get committedQty(): number {
+    return this.state.committedQty ?? 0;
+  }
+
   get availableQty(): number {
-    return this.state.onHandQty - this.state.reservedQty;
+    return this.state.onHandQty - this.state.reservedQty - this.committedQty;
   }
 
   ensureCanReserve(quantity: number): void {
@@ -76,9 +86,9 @@ export class InventoryItemEntity {
       throw new ConflictException('On-hand stock cannot become negative');
     }
 
-    if (this.reservedQty > nextOnHand) {
+    if (this.reservedQty + this.committedQty > nextOnHand) {
       throw new ConflictException(
-        'Reserved stock cannot exceed on-hand stock after adjustment',
+        'Reserved or committed stock cannot exceed on-hand stock after adjustment',
       );
     }
   }
@@ -90,7 +100,13 @@ export class InventoryItemEntity {
       warehouseId: this.warehouseId,
       onHandQty: this.onHandQty,
       reservedQty: this.reservedQty,
+      committedQty: this.committedQty,
       availableQty: this.availableQty,
+      minStock: this.state.minStock ?? null,
+      maxStock: this.state.maxStock ?? null,
+      reorderPoint: this.state.reorderPoint ?? null,
+      reorderQty: this.state.reorderQty ?? null,
+      costPrice: this.state.costPrice ?? null,
     };
   }
 

@@ -46,6 +46,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
         warehouseId: true,
         onHandQty: true,
         reservedQty: true,
+        committedQty: true,
         createdAt: true,
       },
     });
@@ -56,7 +57,8 @@ export class PrismaInventoryRepository implements InventoryRepository {
         warehouseId: item.warehouseId,
         onHandQty: item.onHandQty,
         reservedQty: item.reservedQty,
-        availableQty: item.onHandQty - item.reservedQty,
+        committedQty: item.committedQty,
+        availableQty: item.onHandQty - item.reservedQty - item.committedQty,
         createdAt: item.createdAt,
       }))
       .filter((item) => item.availableQty > 0)
@@ -90,7 +92,8 @@ export class PrismaInventoryRepository implements InventoryRepository {
 
     for (const target of uniqueTargets) {
       const queryResult = (await tx.$queryRaw(Prisma.sql`
-        SELECT id, variant_id, warehouse_id, on_hand_qty, reserved_qty, created_at, updated_at
+        SELECT id, variant_id, warehouse_id, on_hand_qty, reserved_qty, committed_qty,
+               min_stock, max_stock, reorder_point, reorder_qty, cost_price, created_at, updated_at
         FROM inventory_items
         WHERE variant_id = ${target.variantId}::uuid
           AND warehouse_id = ${target.warehouseId}::uuid
@@ -101,6 +104,12 @@ export class PrismaInventoryRepository implements InventoryRepository {
         warehouse_id: string;
         on_hand_qty: number;
         reserved_qty: number;
+        committed_qty: number;
+        min_stock: number | null;
+        max_stock: number | null;
+        reorder_point: number | null;
+        reorder_qty: number | null;
+        cost_price: unknown;
         created_at: Date;
         updated_at: Date;
       }>;
@@ -113,6 +122,12 @@ export class PrismaInventoryRepository implements InventoryRepository {
           warehouseId: lockedRow.warehouse_id,
           onHandQty: Number(lockedRow.on_hand_qty),
           reservedQty: Number(lockedRow.reserved_qty),
+          committedQty: Number(lockedRow.committed_qty),
+          minStock: lockedRow.min_stock,
+          maxStock: lockedRow.max_stock,
+          reorderPoint: lockedRow.reorder_point,
+          reorderQty: lockedRow.reorder_qty,
+          costPrice: lockedRow.cost_price,
           createdAt: lockedRow.created_at,
           updatedAt: lockedRow.updated_at,
         });
@@ -126,10 +141,16 @@ export class PrismaInventoryRepository implements InventoryRepository {
     tx: PrismaTransactionClient,
     variantId: string,
     warehouseId: string,
-    data: {
-      onHandQty?: number;
-      reservedQty?: number;
-    },
+      data: {
+        onHandQty?: number;
+        reservedQty?: number;
+        committedQty?: number;
+        minStock?: number | null;
+        maxStock?: number | null;
+        reorderPoint?: number | null;
+        reorderQty?: number | null;
+        costPrice?: unknown;
+      },
   ) {
     const updated = await tx.inventoryItem.update({
       where: {
@@ -141,6 +162,12 @@ export class PrismaInventoryRepository implements InventoryRepository {
       data: {
         onHandQty: data.onHandQty,
         reservedQty: data.reservedQty,
+        committedQty: data.committedQty,
+        minStock: data.minStock,
+        maxStock: data.maxStock,
+        reorderPoint: data.reorderPoint,
+        reorderQty: data.reorderQty,
+        costPrice: data.costPrice as never,
       },
     });
 
@@ -150,6 +177,12 @@ export class PrismaInventoryRepository implements InventoryRepository {
       warehouseId: updated.warehouseId,
       onHandQty: updated.onHandQty,
       reservedQty: updated.reservedQty,
+      committedQty: updated.committedQty,
+      minStock: updated.minStock,
+      maxStock: updated.maxStock,
+      reorderPoint: updated.reorderPoint,
+      reorderQty: updated.reorderQty,
+      costPrice: updated.costPrice,
       createdAt: updated.createdAt,
       updatedAt: updated.updatedAt,
     };
@@ -163,6 +196,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
         warehouseId: data.warehouseId,
         onHandQty: data.onHandQty,
         reservedQty: data.reservedQty,
+        committedQty: data.committedQty ?? 0,
       },
     });
 
@@ -172,6 +206,12 @@ export class PrismaInventoryRepository implements InventoryRepository {
       warehouseId: created.warehouseId,
       onHandQty: created.onHandQty,
       reservedQty: created.reservedQty,
+      committedQty: created.committedQty,
+      minStock: created.minStock,
+      maxStock: created.maxStock,
+      reorderPoint: created.reorderPoint,
+      reorderQty: created.reorderQty,
+      costPrice: created.costPrice,
       createdAt: created.createdAt,
       updatedAt: created.updatedAt,
     };

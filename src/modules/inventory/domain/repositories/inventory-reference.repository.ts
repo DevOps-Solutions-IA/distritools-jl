@@ -1,5 +1,6 @@
 export interface InventoryVariantReference {
   id: string;
+  productId: string | null;
   sku: string;
   name: string;
   isActive: boolean;
@@ -7,6 +8,7 @@ export interface InventoryVariantReference {
 
 export interface InventoryWarehouseReference {
   id: string;
+  code?: string;
   name: string;
   isActive: boolean;
 }

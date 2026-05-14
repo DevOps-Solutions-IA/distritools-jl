@@ -129,9 +129,16 @@ export class CommitStockUseCase {
           variantId: line.variantId,
           warehouseId: line.warehouseId,
           quantity: line.quantity,
+          quantityDelta: -line.quantity,
+          quantityBefore: inventoryEntity.onHandQty,
+          quantityAfter: updatedItem.onHandQty,
           referenceType: input.referenceType,
           referenceId: input.referenceId,
+          orderId: input.referenceType === 'order' ? input.referenceId : null,
+          reasonCode: input.reason ?? 'STOCK_COMMITTED',
+          reasonText: input.reason ?? null,
           reason: input.reason ?? null,
+          source: input.actor ? 'admin' : 'system',
           createdByUserId: input.actor?.sub ?? null,
         });
 
@@ -152,17 +159,15 @@ export class CommitStockUseCase {
       ? await executor(input.tx)
       : await this.prisma.$transaction(async (tx) => executor(tx));
 
-    if (input.actor) {
-      await this.auditRepository.write({
-        actorUserId: input.actor.sub,
-        action: 'inventory.committed',
-        entityType: 'inventory_commit',
-        entityId: input.referenceId,
-        afterData: result,
-        ipAddress: input.ipAddress,
-        userAgent: input.userAgent,
-      });
-    }
+    await this.auditRepository.write({
+      actorUserId: input.actor?.sub,
+      action: 'inventory.committed',
+      entityType: 'inventory_commit',
+      entityId: input.referenceId,
+      afterData: result,
+      ipAddress: input.ipAddress,
+      userAgent: input.userAgent,
+    });
 
     return result;
   }

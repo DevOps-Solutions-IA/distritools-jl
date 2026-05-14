@@ -13,6 +13,7 @@ export interface InventoryAllocationCandidate {
   warehouseId: string;
   onHandQty: number;
   reservedQty: number;
+  committedQty?: number;
   availableQty: number;
   createdAt: Date;
 }
@@ -22,6 +23,7 @@ export interface InventoryAdjustmentRecord {
   warehouseId: string;
   onHandQty: number;
   reservedQty: number;
+  committedQty?: number;
 }
 
 export interface InventoryRepository {
@@ -43,6 +45,12 @@ export interface InventoryRepository {
     data: {
       onHandQty?: number;
       reservedQty?: number;
+      committedQty?: number;
+      minStock?: number | null;
+      maxStock?: number | null;
+      reorderPoint?: number | null;
+      reorderQty?: number | null;
+      costPrice?: unknown;
     },
   ): Promise<InventoryItemState>;
   create(

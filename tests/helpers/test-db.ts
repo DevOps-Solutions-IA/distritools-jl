@@ -54,6 +54,16 @@ export const permissionCatalog = [
   ['inventory.release', 'inventory'],
   ['inventory.commit', 'inventory'],
   ['inventory.adjust', 'inventory'],
+  ['inventory.return', 'inventory'],
+  ['inventory.count.read', 'inventory'],
+  ['inventory.count.write', 'inventory'],
+  ['inventory.count.close', 'inventory'],
+  ['inventory.import', 'inventory'],
+  ['inventory.export', 'inventory'],
+  ['inventory.cost.read', 'inventory'],
+  ['inventory.cost.write', 'inventory'],
+  ['inventory.alerts.read', 'inventory'],
+  ['inventory.settings.write', 'inventory'],
   ['orders.read', 'orders'],
   ['orders.write', 'orders'],
   ['orders.cancel', 'orders'],
@@ -216,8 +226,11 @@ export async function seedBaseData() {
   await prisma.warehouse.create({
     data: {
       id: warehouseId,
+      code: 'MAIN',
       name: 'Main Warehouse',
       location: 'Cali',
+      isDefault: true,
+      priority: 1,
       isActive: true,
     },
   });

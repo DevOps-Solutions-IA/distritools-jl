@@ -13,6 +13,7 @@ export class PrismaInventoryReferenceRepository
       where: { id },
       select: {
         id: true,
+        productId: true,
         sku: true,
         name: true,
         isActive: true,
@@ -25,6 +26,7 @@ export class PrismaInventoryReferenceRepository
       where: { id },
       select: {
         id: true,
+        code: true,
         name: true,
         isActive: true,
       },
