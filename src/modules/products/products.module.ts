@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { ProductsController } from 'src/modules/products/infrastructure/http/controllers/products.controller';
+import { CatalogController } from 'src/modules/products/infrastructure/http/controllers/catalog.controller';
+import { ArchiveProductUseCase } from 'src/modules/products/application/use-cases/archive-product.use-case';
 import { CreateProductUseCase } from 'src/modules/products/application/use-cases/create-product.use-case';
+import { EvaluateProductSellabilityUseCase } from 'src/modules/products/application/use-cases/evaluate-product-sellability.use-case';
+import { GetCatalogOperationsUseCase } from 'src/modules/products/application/use-cases/get-catalog-operations.use-case';
 import { UpdateProductUseCase } from 'src/modules/products/application/use-cases/update-product.use-case';
 import { SetProductStatusUseCase } from 'src/modules/products/application/use-cases/set-product-status.use-case';
 import { GetProductUseCase } from 'src/modules/products/application/use-cases/get-product.use-case';
@@ -14,10 +18,13 @@ import { PrismaProductRepository } from 'src/modules/products/infrastructure/rep
 
 @Module({
   imports: [AuthModule],
-  controllers: [ProductsController],
+  controllers: [ProductsController, CatalogController],
   providers: [
     ProductPolicyService,
+    ArchiveProductUseCase,
     CreateProductUseCase,
+    EvaluateProductSellabilityUseCase,
+    GetCatalogOperationsUseCase,
     UpdateProductUseCase,
     SetProductStatusUseCase,
     GetProductUseCase,
@@ -28,6 +35,6 @@ import { PrismaProductRepository } from 'src/modules/products/infrastructure/rep
       useExisting: PrismaProductRepository,
     },
   ],
-  exports: [PRODUCT_REPOSITORY, GetProductUseCase, ListProductsUseCase],
+  exports: [PRODUCT_REPOSITORY, GetProductUseCase, ListProductsUseCase, EvaluateProductSellabilityUseCase],
 })
 export class ProductsModule {}

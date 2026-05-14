@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { OrderVariantReference } from 'src/modules/orders/domain/repositories/order-variant.repository';
 import { OrderEntity } from 'src/modules/orders/domain/entities/order.entity';
+import { evaluateCheckoutVariantSellability } from 'src/modules/products/domain/services/catalog-sellability.service';
 
 @Injectable()
 export class OrderPolicyService {
@@ -24,7 +25,8 @@ export class OrderPolicyService {
   }
 
   ensureVariantSellable(variant: OrderVariantReference): void {
-    if (!variant.isActive) {
+    const blockers = evaluateCheckoutVariantSellability(variant);
+    if (blockers.length) {
       throw new BadRequestException(
         'Uno de los productos del carrito no está disponible para compra en este momento.',
       );
@@ -43,7 +45,8 @@ export class OrderPolicyService {
   }
 
   ensureGuestVariantActive(variant: OrderVariantReference): void {
-    if (!variant.isActive) {
+    const blockers = evaluateCheckoutVariantSellability(variant);
+    if (blockers.length) {
       throw new UnprocessableEntityException(
         'Uno de los productos del carrito no está disponible para compra en este momento.',
       );

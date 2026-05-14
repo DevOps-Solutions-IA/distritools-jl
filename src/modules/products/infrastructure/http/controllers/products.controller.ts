@@ -16,7 +16,9 @@ import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorat
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { ArchiveProductUseCase } from 'src/modules/products/application/use-cases/archive-product.use-case';
 import { CreateProductUseCase } from 'src/modules/products/application/use-cases/create-product.use-case';
+import { EvaluateProductSellabilityUseCase } from 'src/modules/products/application/use-cases/evaluate-product-sellability.use-case';
 import { GetProductUseCase } from 'src/modules/products/application/use-cases/get-product.use-case';
 import { ListProductsUseCase } from 'src/modules/products/application/use-cases/list-products.use-case';
 import { SetProductStatusUseCase } from 'src/modules/products/application/use-cases/set-product-status.use-case';
@@ -38,6 +40,10 @@ export class ProductsController {
     private readonly getProductUseCase: GetProductUseCase,
     @Inject(ListProductsUseCase)
     private readonly listProductsUseCase: ListProductsUseCase,
+    @Inject(EvaluateProductSellabilityUseCase)
+    private readonly evaluateProductSellabilityUseCase: EvaluateProductSellabilityUseCase,
+    @Inject(ArchiveProductUseCase)
+    private readonly archiveProductUseCase: ArchiveProductUseCase,
   ) {}
 
   @Public()
@@ -74,7 +80,7 @@ export class ProductsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('products.manage')
+  @Permissions('products.write')
   @Post('admin/products')
   create(
     @Body() body: CreateProductRequestDto,
@@ -97,7 +103,7 @@ export class ProductsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('products.manage')
+  @Permissions('products.write')
   @Patch('admin/products/:id')
   update(
     @Param('id') productId: string,
@@ -122,7 +128,7 @@ export class ProductsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('products.manage')
+  @Permissions('products.publish')
   @Patch('admin/products/:id/activate')
   activate(
     @Param('id') productId: string,
@@ -140,7 +146,7 @@ export class ProductsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('products.manage')
+  @Permissions('products.write')
   @Patch('admin/products/:id/deactivate')
   deactivate(
     @Param('id') productId: string,
@@ -152,6 +158,43 @@ export class ProductsController {
       actor,
       productId,
       isActive: false,
+      ipAddress,
+      userAgent,
+    });
+  }
+
+  @ApiBearerAuth()
+  @Permissions('products.archive')
+  @Post('admin/products/:id/archive')
+  archive(
+    @Param('id') productId: string,
+    @Body('reason') reason: string | undefined,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.archiveProductUseCase.execute({
+      actor,
+      productId,
+      reason,
+      ipAddress,
+      userAgent,
+    });
+  }
+
+  @ApiBearerAuth()
+  @Permissions('products.read')
+  @Post('admin/products/:id/validate-sellability')
+  validateSellability(
+    @Param('id') productId: string,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.evaluateProductSellabilityUseCase.execute({
+      actor,
+      productId,
+      audit: true,
       ipAddress,
       userAgent,
     });

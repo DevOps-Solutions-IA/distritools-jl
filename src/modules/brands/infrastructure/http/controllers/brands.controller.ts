@@ -65,7 +65,7 @@ export class BrandsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('brands.manage')
+  @Permissions('brands.write')
   @Post('admin/brands')
   create(
     @Body() body: CreateBrandRequestDto,
@@ -82,7 +82,7 @@ export class BrandsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('brands.manage')
+  @Permissions('brands.write')
   @Patch('admin/brands/:id')
   update(
     @Param('id') brandId: string,
@@ -101,7 +101,7 @@ export class BrandsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('brands.manage')
+  @Permissions('brands.write')
   @Patch('admin/brands/:id/activate')
   activate(
     @Param('id') brandId: string,
@@ -119,7 +119,7 @@ export class BrandsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('brands.manage')
+  @Permissions('brands.write')
   @Patch('admin/brands/:id/deactivate')
   deactivate(
     @Param('id') brandId: string,

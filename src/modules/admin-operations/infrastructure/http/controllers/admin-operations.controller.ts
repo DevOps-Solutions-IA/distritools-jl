@@ -2098,11 +2098,14 @@ export class AdminOperationsController {
   @Permissions('prices.history.read')
   @Get('prices/history')
   async getPriceHistory(@Query('variantId') variantId?: string) {
-    const auditLogs = await this.auditRepository.list({
-      entityType: 'variant',
-      action: 'variant.updated',
-      entityId: variantId,
-      limit: 100,
+    const auditLogs = await this.prisma.auditLog.findMany({
+      where: {
+        entityType: 'variant',
+        ...(variantId ? { entityId: variantId } : {}),
+        action: { in: ['variant.price_updated', 'variant.updated'] },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
 
     return {
@@ -2125,22 +2128,49 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    if (!body.variantId || body.price === undefined) {
+    return this.persistPriceUpdate(body.variantId, body.price, body.reason, actor, ipAddress, userAgent);
+  }
+
+  @Permissions('prices.write')
+  @Patch('prices/:variantId')
+  async patchPrice(
+    @Param('variantId') variantId: string,
+    @Body() body: Omit<PriceUpdateBody, 'variantId'>,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.persistPriceUpdate(variantId, body.price, body.reason, actor, ipAddress, userAgent);
+  }
+
+  private async persistPriceUpdate(
+    variantId: string | undefined,
+    price: string | number | undefined,
+    reason: string | undefined,
+    actor: CurrentUser,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    if (!variantId || price === undefined) {
       throw new BadRequestException('Variante y precio son obligatorios.');
     }
 
-    const parsed = Number(body.price);
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      throw new BadRequestException('El precio no puede ser negativo.');
+    const parsed = Number(price);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      throw new BadRequestException('El precio debe ser mayor a cero.');
     }
 
-    const current = await this.prisma.variant.findUnique({ where: { id: body.variantId } });
+    if (!reason?.trim()) {
+      throw new BadRequestException('El motivo del cambio de precio es obligatorio.');
+    }
+
+    const current = await this.prisma.variant.findUnique({ where: { id: variantId } });
     if (!current) {
       throw new NotFoundException('Variante no encontrada.');
     }
 
     const updated = await this.prisma.variant.update({
-      where: { id: body.variantId },
+      where: { id: variantId },
       data: { price: parsed },
     });
 
@@ -2148,9 +2178,9 @@ export class AdminOperationsController {
       actor,
       'variant.price_updated',
       'variant',
-      body.variantId,
+      variantId,
       { price: current.price.toFixed(2) },
-      { price: updated.price.toFixed(2), reason: body.reason ?? null },
+      { price: updated.price.toFixed(2), reason: reason.trim() },
       ipAddress,
       userAgent,
     );

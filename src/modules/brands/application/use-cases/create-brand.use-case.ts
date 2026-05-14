@@ -43,7 +43,7 @@ export class CreateBrandUseCase {
   ) {}
 
   async execute(input: CreateBrandInput) {
-    assertHasPermissions(input.actor.permissions, ['brands.manage']);
+    assertHasPermissions(input.actor.permissions, ['brands.write']);
 
     const name = this.brandPolicyService.normalizeName(input.name);
     const slug = this.brandPolicyService.normalizeSlug(input.slug);

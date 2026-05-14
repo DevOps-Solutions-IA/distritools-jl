@@ -48,7 +48,7 @@ export class CreateProductUseCase {
   ) {}
 
   async execute(input: CreateProductInput) {
-    assertHasPermissions(input.actor.permissions, ['products.manage']);
+    assertHasPermissions(input.actor.permissions, ['products.write']);
 
     const slug = this.productPolicyService.normalizeSlug(input.slug);
     this.productPolicyService.ensureSlugAvailable(

@@ -66,7 +66,7 @@ export class CategoriesController {
   }
 
   @ApiBearerAuth()
-  @Permissions('categories.manage')
+  @Permissions('categories.write')
   @Post('admin/categories')
   create(
     @Body() body: CreateCategoryRequestDto,
@@ -83,7 +83,7 @@ export class CategoriesController {
   }
 
   @ApiBearerAuth()
-  @Permissions('categories.manage')
+  @Permissions('categories.write')
   @Patch('admin/categories/:id')
   update(
     @Param('id') categoryId: string,
@@ -102,7 +102,7 @@ export class CategoriesController {
   }
 
   @ApiBearerAuth()
-  @Permissions('categories.manage')
+  @Permissions('categories.write')
   @Patch('admin/categories/:id/tree')
   updateTree(
     @Param('id') categoryId: string,

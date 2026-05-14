@@ -142,6 +142,83 @@ export interface AdminOperationalSnapshot {
   errors: Record<string, string>;
 }
 
+export interface CatalogSellability {
+  sellable: boolean;
+  status: string;
+  blockers: string[];
+  warnings: string[];
+  requiredActions: string[];
+}
+
+export interface AdminCatalogProductRow {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  status: string;
+  isActive: boolean;
+  brand: { id: string; name: string; slug: string; isActive?: boolean } | null;
+  category: { id: string; name: string; slug: string; isActive?: boolean; parentId?: string | null } | null;
+  variantsCount: number;
+  activeVariantsCount: number;
+  primarySku: string | null;
+  priceFrom: number | null;
+  availableStock: number;
+  hasApprovedImage: boolean;
+  hasDimensions: boolean;
+  sellability: CatalogSellability;
+  updatedAt: string;
+}
+
+export interface AdminCatalogTaxonomyRow {
+  id: string;
+  parentId?: string | null;
+  parent?: { id: string; name: string; slug: string } | null;
+  name: string;
+  slug: string;
+  description: string | null;
+  status: string;
+  productCount: number;
+  sellableProductCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminCatalogPriceRow {
+  id: string;
+  productId: string;
+  product: string;
+  sku: string;
+  variant: string;
+  status: string;
+  currentPrice: string;
+  currency: string;
+  availableStock: number;
+  missingCost: boolean;
+  updatedAt: string;
+}
+
+export interface AdminCatalogData {
+  generatedAt: string;
+  range: string;
+  metrics: Record<string, number>;
+  readiness: {
+    products: string;
+    brands: string;
+    categories: string;
+    inventory: string;
+    prices: string;
+    status: string;
+    blockers: Array<Record<string, unknown>>;
+    warnings: Array<Record<string, unknown>>;
+  };
+  products: AdminCatalogProductRow[];
+  brands: AdminCatalogTaxonomyRow[];
+  categories: AdminCatalogTaxonomyRow[];
+  prices: AdminCatalogPriceRow[];
+  priceHistory: Array<Record<string, unknown>>;
+}
+
 async function getAdminAccessToken() {
   try {
     const cookieStore = await cookies();
@@ -760,4 +837,34 @@ export async function getAdminReportsData(range: string = '30d'): Promise<AdminR
     return { ...emptyReports(range), errors };
   }
   return { ...data, errors };
+}
+
+export async function getAdminCatalogOperationsData(range: string = '30d'): Promise<AdminCatalogData> {
+  const errors: Record<string, string> = {};
+  const fallback: AdminCatalogData = {
+    generatedAt: new Date().toISOString(),
+    range,
+    metrics: {},
+    readiness: {
+      products: 'NO_GO',
+      brands: 'NO_GO',
+      categories: 'NO_GO',
+      inventory: 'NO_GO',
+      prices: 'NO_GO',
+      status: 'NO_GO',
+      blockers: [],
+      warnings: [],
+    },
+    products: [],
+    brands: [],
+    categories: [],
+    prices: [],
+    priceHistory: [],
+  };
+  return read(
+    `/admin/catalog/overview?range=${encodeURIComponent(range)}`,
+    fallback,
+    errors,
+    'catalog',
+  );
 }

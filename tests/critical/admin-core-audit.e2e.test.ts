@@ -146,7 +146,7 @@ describe('Enterprise admin core audit guards', () => {
   });
 
   it('requires authentication for core admin APIs and blocks limited users server-side', async () => {
-    const { app, http, viewerToken } = await boot();
+    const { app, http, seeded, adminToken, viewerToken } = await boot();
 
     const unauthenticatedOrders = await http.get('/api/v1/admin/orders');
     assert.equal(unauthenticatedOrders.status, 401);
@@ -156,6 +156,9 @@ describe('Enterprise admin core audit guards', () => {
 
     const unauthenticatedReports = await http.get('/api/v1/admin/reports/summary');
     assert.equal(unauthenticatedReports.status, 401);
+
+    const unauthenticatedCatalog = await http.get('/api/v1/admin/catalog/metrics');
+    assert.equal(unauthenticatedCatalog.status, 401);
 
     const viewerDashboard = await http
       .get('/api/v1/admin/dashboard')
@@ -172,6 +175,23 @@ describe('Enterprise admin core audit guards', () => {
       .set('Authorization', `Bearer ${viewerToken}`)
       .send({ type: 'orders', range: '30d' });
     assert.equal(viewerExport.status, 403);
+
+    const viewerCatalog = await http
+      .get('/api/v1/admin/catalog/metrics')
+      .set('Authorization', `Bearer ${viewerToken}`);
+    assert.equal(viewerCatalog.status, 403);
+
+    const viewerProductMutation = await http
+      .patch(`/api/v1/admin/products/${seeded.inventory.productId}`)
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({ name: 'No autorizado' });
+    assert.equal(viewerProductMutation.status, 403);
+
+    const viewerPriceMutation = await http
+      .patch(`/api/v1/admin/prices/${seeded.inventory.variantId}`)
+      .set('Authorization', `Bearer ${viewerToken}`)
+      .send({ price: '199900', reason: 'No autorizado' });
+    assert.equal(viewerPriceMutation.status, 403);
 
     const inventoryAdjust = await http
       .patch('/api/v1/admin/inventory/adjust')
@@ -225,6 +245,33 @@ describe('Enterprise admin core audit guards', () => {
       .set('Authorization', `Bearer ${viewerToken}`)
       .send({ general: { storeName: 'No autorizado' } });
     assert.equal(settingsMutation.status, 403);
+
+    const catalogOverview = await http
+      .get('/api/v1/admin/catalog/overview')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(catalogOverview.status, 200);
+    assert.equal(typeof catalogOverview.body.metrics.totalProducts, 'number');
+    assert.equal(Array.isArray(catalogOverview.body.readiness.blockers), true);
+
+    const sellability = await http
+      .post(`/api/v1/admin/products/${seeded.inventory.productId}/validate-sellability`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(sellability.status, 201);
+    assert.equal(typeof sellability.body.sellable, 'boolean');
+
+    const pricePatch = await http
+      .patch(`/api/v1/admin/prices/${seeded.inventory.variantId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ price: '249900', reason: 'Auditoría catálogo' });
+    assert.equal(pricePatch.status, 200);
+    assert.equal(pricePatch.body.price, '249900.00');
+
+    const archived = await http
+      .post(`/api/v1/admin/products/${seeded.inventory.secondProductId}/archive`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ reason: 'Auditoría de archivo sin borrado físico' });
+    assert.equal(archived.status, 201);
+    assert.equal(archived.body.isActive, false);
 
     await app.close();
   });

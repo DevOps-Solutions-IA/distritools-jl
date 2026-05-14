@@ -27,6 +27,7 @@ export interface UpdateProductInput {
   slug?: string;
   description?: string | null;
   metadata?: Prisma.InputJsonValue | null;
+  isActive?: boolean;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -47,7 +48,7 @@ export class UpdateProductUseCase {
   ) {}
 
   async execute(input: UpdateProductInput) {
-    assertHasPermissions(input.actor.permissions, ['products.manage']);
+    assertHasPermissions(input.actor.permissions, ['products.write']);
 
     const current = this.productPolicyService.ensureExists(
       await this.productRepository.findById(input.productId),
@@ -126,6 +127,10 @@ export class UpdateProductUseCase {
         input.metadata !== undefined
           ? input.metadata
           : (current.metadata as Prisma.InputJsonValue | null),
+      isActive:
+        input.isActive !== undefined
+          ? input.isActive
+          : current.isActive,
     });
 
     await this.auditRepository.write({

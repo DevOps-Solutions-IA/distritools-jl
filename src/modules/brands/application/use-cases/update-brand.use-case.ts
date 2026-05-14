@@ -42,7 +42,7 @@ export class UpdateBrandUseCase {
   ) {}
 
   async execute(input: UpdateBrandInput) {
-    assertHasPermissions(input.actor.permissions, ['brands.manage']);
+    assertHasPermissions(input.actor.permissions, ['brands.write']);
 
     const current = this.brandPolicyService.ensureExists(
       await this.brandRepository.findById(input.brandId),

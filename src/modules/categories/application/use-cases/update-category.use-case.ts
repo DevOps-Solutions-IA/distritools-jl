@@ -42,7 +42,7 @@ export class UpdateCategoryUseCase {
   ) {}
 
   async execute(input: UpdateCategoryInput) {
-    assertHasPermissions(input.actor.permissions, ['categories.manage']);
+    assertHasPermissions(input.actor.permissions, ['categories.write']);
 
     const current = this.categoryPolicyService.ensureExists(
       await this.categoryRepository.findById(input.categoryId),

@@ -151,7 +151,8 @@ describe('Secure admin credential bootstrap', async () => {
 
       assert.ok(session.accessToken);
       assert.equal(session.user.permissions.includes('users.read'), true);
-      assert.equal(session.user.permissions.includes('products.manage'), true);
+      assert.equal(session.user.permissions.includes('products.write'), true);
+      assert.equal(session.user.permissions.includes('products.archive'), true);
     } finally {
       await testApp.app.close();
     }

@@ -43,7 +43,7 @@ export class CreateCategoryUseCase {
   ) {}
 
   async execute(input: CreateCategoryInput) {
-    assertHasPermissions(input.actor.permissions, ['categories.manage']);
+    assertHasPermissions(input.actor.permissions, ['categories.write']);
 
     const slug = this.categoryPolicyService.normalizeSlug(input.slug);
     this.categoryPolicyService.ensureSlugAvailable(

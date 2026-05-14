@@ -38,7 +38,7 @@ export class SetProductStatusUseCase {
   ) {}
 
   async execute(input: SetProductStatusInput) {
-    assertHasPermissions(input.actor.permissions, ['products.manage']);
+    assertHasPermissions(input.actor.permissions, [input.isActive ? 'products.publish' : 'products.write']);
 
     const current = this.productPolicyService.ensureExists(
       await this.productRepository.findById(input.productId),

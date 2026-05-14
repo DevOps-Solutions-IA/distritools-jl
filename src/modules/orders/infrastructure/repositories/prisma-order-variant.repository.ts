@@ -23,8 +23,12 @@ export class PrismaOrderVariantRepository implements OrderVariantRepository {
         isActive: true,
         product: {
           select: {
+            isActive: true,
+            metadata: true,
             brandId: true,
             categoryId: true,
+            brand: { select: { isActive: true } },
+            category: { select: { isActive: true } },
           },
         },
       },
@@ -32,14 +36,25 @@ export class PrismaOrderVariantRepository implements OrderVariantRepository {
 
     return variants.map((variant) => {
       const product = variant.product as
-        | { brandId: string | null; categoryId: string | null }
+        | {
+            isActive: boolean;
+            metadata: unknown | null;
+            brandId: string | null;
+            categoryId: string | null;
+            brand: { isActive: boolean } | null;
+            category: { isActive: boolean } | null;
+          }
         | null;
 
       return {
         id: variant.id,
         productId: variant.productId,
+        productIsActive: product?.isActive ?? null,
+        productMetadata: product?.metadata ?? null,
         brandId: product?.brandId ?? null,
+        brandIsActive: product?.brand?.isActive ?? null,
         categoryId: product?.categoryId ?? null,
+        categoryIsActive: product?.category?.isActive ?? null,
         sku: variant.sku,
         name: variant.name,
         price: variant.price.toFixed(2),

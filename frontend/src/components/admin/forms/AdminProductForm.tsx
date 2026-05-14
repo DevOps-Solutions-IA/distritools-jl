@@ -32,7 +32,7 @@ function slugify(value: string) {
 
 interface AdminProductFormProps {
   mode: 'create' | 'edit';
-  product?: CatalogProduct | null;
+  product?: (CatalogProduct & { isActive?: boolean }) | null;
   brands: BackendBrandRecord[];
   categories: BackendCategoryRecord[];
 }
@@ -44,7 +44,7 @@ export function AdminProductForm({ mode, product, brands, categories }: AdminPro
   const [brandId, setBrandId] = useState(product?.brand?.id ?? '');
   const [categoryId, setCategoryId] = useState(product?.category?.id ?? '');
   const [description, setDescription] = useState(product?.description ?? '');
-  const [isActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(product?.isActive ?? true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);

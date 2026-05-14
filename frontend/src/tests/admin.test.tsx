@@ -149,6 +149,122 @@ vi.mock('@/lib/admin/operations', async (importOriginal) => {
 });
 
 vi.mock('@/lib/admin/server-data', () => ({
+  getAdminCatalogOperationsData: vi.fn().mockResolvedValue({
+    generatedAt: '2026-05-14T12:00:00.000Z',
+    range: '30d',
+    metrics: {
+      totalProducts: 1,
+      activeProducts: 1,
+      inactiveProducts: 0,
+      archivedProducts: 0,
+      incompleteProducts: 0,
+      sellableProducts: 1,
+      notSellableProducts: 0,
+      totalVariants: 1,
+      variantsWithoutSku: 0,
+      variantsWithoutPrice: 0,
+      variantsWithoutDimensions: 0,
+      productsWithoutMainImage: 1,
+      productsWithoutCategory: 0,
+      productsWithoutBrand: 0,
+      outOfStockProducts: 0,
+      lowStockProducts: 0,
+      missingCostProducts: 1,
+      brandsCount: 1,
+      categoriesCount: 1,
+      priceChangesInPeriod: 1,
+    },
+    readiness: {
+      products: 'GO_WITH_RISKS',
+      brands: 'READY',
+      categories: 'READY',
+      inventory: 'READY',
+      prices: 'GO_WITH_RISKS',
+      status: 'GO_WITH_RISKS',
+      blockers: [],
+      warnings: [
+        {
+          module: 'products',
+          entity: 'Taladro percutor TOTAL',
+          warnings: ['MISSING_MAIN_IMAGE'],
+          href: '/admin/productos/33333333-3333-4333-8333-333333333333',
+        },
+      ],
+    },
+    products: [
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: 'Taladro percutor TOTAL',
+        slug: 'taladro-percutor-total',
+        description: 'Herramienta de perforación.',
+        status: 'active',
+        isActive: true,
+        brand: { id: '11111111-1111-4111-8111-111111111111', name: 'TOTAL', slug: 'total', isActive: true },
+        category: { id: '22222222-2222-4222-8222-222222222222', name: 'Perforación', slug: 'perforacion', isActive: true, parentId: null },
+        variantsCount: 1,
+        activeVariantsCount: 1,
+        primarySku: 'TOTAL-001',
+        priceFrom: 259900,
+        availableStock: 3,
+        hasApprovedImage: false,
+        hasDimensions: true,
+        sellability: {
+          sellable: true,
+          status: 'SELLABLE',
+          blockers: [],
+          warnings: ['MISSING_MAIN_IMAGE'],
+          requiredActions: ['Subir imagen principal aprobada.'],
+        },
+        updatedAt: '2026-05-14T12:00:00.000Z',
+      },
+    ],
+    brands: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: 'TOTAL',
+        slug: 'total',
+        description: null,
+        status: 'active',
+        productCount: 1,
+        sellableProductCount: 1,
+        createdAt: '2026-05-14T12:00:00.000Z',
+        updatedAt: '2026-05-14T12:00:00.000Z',
+      },
+    ],
+    categories: [
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        parentId: null,
+        parent: null,
+        name: 'Perforación',
+        slug: 'perforacion',
+        description: null,
+        status: 'active',
+        productCount: 1,
+        sellableProductCount: 1,
+        createdAt: '2026-05-14T12:00:00.000Z',
+        updatedAt: '2026-05-14T12:00:00.000Z',
+      },
+    ],
+    prices: [
+      {
+        id: '44444444-4444-4444-8444-444444444444',
+        productId: '33333333-3333-4333-8333-333333333333',
+        product: 'Taladro percutor TOTAL',
+        sku: 'TOTAL-001',
+        variant: 'Taladro percutor TOTAL',
+        status: 'READY',
+        currentPrice: '259900.00',
+        currency: 'COP',
+        availableStock: 3,
+        missingCost: true,
+        updatedAt: '2026-05-14T12:00:00.000Z',
+      },
+    ],
+    priceHistory: [
+      { id: '77777777-7777-4777-8777-777777777777', action: 'variant.price_updated', createdAt: '2026-05-14T12:00:00.000Z' },
+    ],
+  }),
   getAdminOperationalSnapshot: vi.fn().mockResolvedValue({
     orders: { data: [], meta: { page: 1, limit: 20, total: 0 } },
     quotes: {
@@ -427,9 +543,9 @@ describe('admin platform', () => {
   });
 
   it('productos admin muestra tabla real y acciones operativas', async () => {
-    render(await AdminProductsPage());
+    render(await AdminProductsPage({ searchParams: Promise.resolve({}) }));
 
-    expect(screen.getByText('Taladro percutor TOTAL')).toBeInTheDocument();
+    expect(screen.getAllByText('Taladro percutor TOTAL').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('$ 259.900')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /nuevo producto/i })).toHaveAttribute(
       'href',
