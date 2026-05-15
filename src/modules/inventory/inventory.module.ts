@@ -9,6 +9,8 @@ import { GetInventoryValuationUseCase } from 'src/modules/inventory/application/
 import { GetReservationsUseCase } from 'src/modules/inventory/application/use-cases/get-reservations.use-case';
 import { GetStockMovementsUseCase } from 'src/modules/inventory/application/use-cases/get-stock-movements.use-case';
 import { GetWarehousesUseCase } from 'src/modules/inventory/application/use-cases/get-warehouses.use-case';
+import { ProcessReturnUseCase } from 'src/modules/inventory/application/use-cases/process-return.use-case';
+import { UpdateInventorySettingsUseCase } from 'src/modules/inventory/application/use-cases/update-inventory-settings.use-case';
 import { ReleaseStockUseCase } from 'src/modules/inventory/application/use-cases/release-stock.use-case';
 import { ReserveStockUseCase } from 'src/modules/inventory/application/use-cases/reserve-stock.use-case';
 import {
@@ -38,6 +40,8 @@ import { StockMovementsModule } from 'src/modules/stock-movements/stock-movement
     GetInventoryAlertsUseCase,
     GetInventoryValuationUseCase,
     GetReservationsUseCase,
+    UpdateInventorySettingsUseCase,
+    ProcessReturnUseCase,
     InventoryPolicyService,
     PrismaInventoryRepository,
     PrismaInventoryReferenceRepository,

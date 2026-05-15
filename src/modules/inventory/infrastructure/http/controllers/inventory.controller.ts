@@ -37,6 +37,8 @@ import { GetInventoryValuationUseCase } from 'src/modules/inventory/application/
 import { GetReservationsUseCase } from 'src/modules/inventory/application/use-cases/get-reservations.use-case';
 import { GetStockMovementsUseCase } from 'src/modules/inventory/application/use-cases/get-stock-movements.use-case';
 import { GetWarehousesUseCase } from 'src/modules/inventory/application/use-cases/get-warehouses.use-case';
+import { ProcessReturnUseCase } from 'src/modules/inventory/application/use-cases/process-return.use-case';
+import { UpdateInventorySettingsUseCase } from 'src/modules/inventory/application/use-cases/update-inventory-settings.use-case';
 import { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { AdjustStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/adjust-stock.request.dto';
 import { CommitStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/commit-stock.request.dto';
@@ -70,6 +72,10 @@ export class InventoryController {
     private readonly getInventoryValuationUseCase: GetInventoryValuationUseCase,
     @Inject(GetReservationsUseCase)
     private readonly getReservationsUseCase: GetReservationsUseCase,
+    @Inject(UpdateInventorySettingsUseCase)
+    private readonly updateInventorySettingsUseCase: UpdateInventorySettingsUseCase,
+    @Inject(ProcessReturnUseCase)
+    private readonly processReturnUseCase: ProcessReturnUseCase,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(AUDIT_REPOSITORY)
@@ -207,35 +213,9 @@ export class InventoryController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const current = await this.prisma.inventoryItem.findUnique({
-      where: { variantId_warehouseId: { variantId, warehouseId } },
+    return this.updateInventorySettingsUseCase.execute({
+      variantId, warehouseId, body, actor, ipAddress, userAgent,
     });
-    if (!current) throw new NotFoundException('Inventario no encontrado.');
-
-    const data = {
-      minStock: this.optionalInteger(body.minStock, 'minStock'),
-      maxStock: this.optionalInteger(body.maxStock, 'maxStock'),
-      reorderPoint: this.optionalInteger(body.reorderPoint, 'reorderPoint'),
-      reorderQty: this.optionalInteger(body.reorderQty, 'reorderQty'),
-      costPrice: body.costPrice === undefined || body.costPrice === null || body.costPrice === ''
-        ? undefined
-        : this.nonNegativeNumber(body.costPrice, 'costPrice'),
-    };
-    const updated = await this.prisma.inventoryItem.update({
-      where: { variantId_warehouseId: { variantId, warehouseId } },
-      data,
-    });
-    await this.auditRepository.write({
-      actorUserId: actor.sub,
-      action: 'inventory.settings_updated',
-      entityType: 'inventory_item',
-      entityId: `${variantId}:${warehouseId}`,
-      beforeData: this.redactInventoryItem(current),
-      afterData: this.redactInventoryItem(updated),
-      ipAddress,
-      userAgent,
-    });
-    return this.redactInventoryItem(updated);
   }
 
   @Permissions('inventory.return')
@@ -246,87 +226,7 @@ export class InventoryController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const orderItemId = this.requiredString(body.orderItemId, 'orderItemId');
-    const warehouseId = this.requiredString(body.warehouseId, 'warehouseId');
-    const quantity = this.positiveInteger(body.quantity, 'quantity');
-    const condition = this.requiredString(body.condition, 'condition');
-    const reason = this.requiredString(body.reason, 'reason');
-    const comment = body.comment ? String(body.comment) : null;
-    if (!['sellable', 'damaged', 'warranty_review', 'discarded'].includes(condition)) {
-      throw new BadRequestException('Condición de devolución inválida.');
-    }
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      const orderItem = await tx.orderItem.findUnique({
-        where: { id: orderItemId },
-        include: { variant: true, order: true },
-      });
-      if (!orderItem) throw new NotFoundException('Item de pedido no encontrado.');
-
-      const alreadyReturned = await tx.inventoryReturnLine.aggregate({
-        where: { orderItemId },
-        _sum: { quantity: true },
-      });
-      if ((alreadyReturned._sum.quantity ?? 0) + quantity > orderItem.quantity) {
-        throw new ConflictException('No se puede devolver más cantidad que la vendida.');
-      }
-
-      const locked = await this.lockInventory(tx, orderItem.variantId, warehouseId);
-      const delta = condition === 'sellable' ? quantity : 0;
-      const updated = await tx.inventoryItem.update({
-        where: { variantId_warehouseId: { variantId: orderItem.variantId, warehouseId } },
-        data: { onHandQty: locked.onHandQty + delta },
-      });
-      const movement = await tx.stockMovement.create({
-        data: {
-          id: uuidv7(),
-          movementType: StockMovementType.return_received,
-          productId: orderItem.variant.productId,
-          variantId: orderItem.variantId,
-          sku: orderItem.variant.sku,
-          warehouseId,
-          quantity,
-          quantityDelta: delta,
-          quantityBefore: locked.onHandQty,
-          quantityAfter: updated.onHandQty,
-          referenceType: 'return',
-          referenceId: `${orderItem.orderId}:${orderItemId}:${condition}:${(alreadyReturned._sum.quantity ?? 0) + quantity}`,
-          orderId: orderItem.orderId,
-          reasonCode: condition,
-          reasonText: reason,
-          reason,
-          source: 'admin',
-          rawMetadata: { condition, comment },
-          createdByUserId: actor.sub,
-        },
-      });
-      const returnLine = await tx.inventoryReturnLine.create({
-        data: {
-          id: uuidv7(),
-          orderId: orderItem.orderId,
-          orderItemId,
-          variantId: orderItem.variantId,
-          warehouseId,
-          quantity,
-          condition,
-          reason,
-          comment,
-          stockMovementId: movement.id,
-          createdByUserId: actor.sub,
-        },
-      });
-      return { returnLine, movement, inventory: updated };
-    });
-    await this.auditRepository.write({
-      actorUserId: actor.sub,
-      action: 'inventory.return_received',
-      entityType: 'inventory_return_line',
-      entityId: result.returnLine.id,
-      afterData: result,
-      ipAddress,
-      userAgent,
-    });
-    return result;
+    return this.processReturnUseCase.execute({ body, actor, ipAddress, userAgent });
   }
 
   @Permissions('inventory.count.write')
@@ -722,40 +622,10 @@ export class InventoryController {
     return value.trim();
   }
 
-  private positiveInteger(value: unknown, field: string) {
-    const numeric = Number(value);
-    if (!Number.isInteger(numeric) || numeric <= 0) throw new BadRequestException(`${field} debe ser entero positivo.`);
-    return numeric;
-  }
-
   private nonNegativeInteger(value: unknown, field: string) {
     const numeric = Number(value);
     if (!Number.isInteger(numeric) || numeric < 0) throw new BadRequestException(`${field} debe ser entero no negativo.`);
     return numeric;
-  }
-
-  private optionalInteger(value: unknown, field: string) {
-    if (value === undefined) return undefined;
-    if (value === null || value === '') return null;
-    return this.nonNegativeInteger(value, field);
-  }
-
-  private nonNegativeNumber(value: unknown, field: string) {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric) || numeric < 0) throw new BadRequestException(`${field} debe ser número no negativo.`);
-    return numeric;
-  }
-
-  private redactInventoryItem(item: { variantId: string; warehouseId: string; onHandQty: number; reservedQty: number; committedQty?: number | null; minStock?: number | null; costPrice?: unknown }) {
-    return {
-      variantId: item.variantId,
-      warehouseId: item.warehouseId,
-      physicalStock: item.onHandQty,
-      reservedStock: item.reservedQty,
-      committedStock: item.committedQty ?? 0,
-      minStock: item.minStock ?? null,
-      costConfigured: item.costPrice !== null && item.costPrice !== undefined,
-    };
   }
 
   private csvCell(value: unknown) {
