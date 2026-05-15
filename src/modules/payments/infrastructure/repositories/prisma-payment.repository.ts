@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -84,7 +85,7 @@ export class PrismaPaymentRepository implements PaymentRepository {
       data: {
         status: data.status,
         transactionId: data.transactionId,
-        rawPayload: data.rawPayload as never,
+        rawPayload: data.rawPayload as unknown as Prisma.InputJsonValue,
         confirmedAt: data.confirmedAt,
         expiresAt: data.expiresAt,
       },

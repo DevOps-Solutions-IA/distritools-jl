@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -14,7 +15,7 @@ export class PrismaContentRepository implements ContentRepository {
     return this.prisma.contentBlock.create({
       data: {
         ...data,
-        body: data.body as never,
+        body: data.body as unknown as Prisma.InputJsonValue,
       },
     });
   }
@@ -26,7 +27,7 @@ export class PrismaContentRepository implements ContentRepository {
     };
 
     if (update.body !== undefined) {
-      updateData.body = update.body as never;
+      updateData.body = update.body as unknown as Prisma.InputJsonValue;
     }
 
     return this.prisma.contentBlock.update({

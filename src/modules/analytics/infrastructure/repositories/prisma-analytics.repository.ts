@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -145,7 +146,7 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
       await this.prisma.analyticsSnapshot.update({
         where: { id: existing.id },
         data: {
-          payload: payload as never,
+          payload: payload as unknown as Prisma.InputJsonValue,
           refreshedAt: new Date(),
         },
       });
@@ -158,7 +159,7 @@ export class PrismaAnalyticsRepository implements AnalyticsRepository {
         reportKey,
         windowFrom: windowFrom ?? null,
         windowTo: windowTo ?? null,
-        payload: payload as never,
+        payload: payload as unknown as Prisma.InputJsonValue,
         refreshedAt: new Date(),
       },
     });

@@ -167,7 +167,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
         maxStock: data.maxStock,
         reorderPoint: data.reorderPoint,
         reorderQty: data.reorderQty,
-        costPrice: data.costPrice as never,
+        costPrice: data.costPrice as never, // costPrice is typed as unknown in interface but Prisma expects Decimal; safe cast
       },
     });
 

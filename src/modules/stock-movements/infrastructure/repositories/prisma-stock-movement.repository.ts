@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -52,7 +53,7 @@ export class PrismaStockMovementRepository implements StockMovementRepository {
         reasonText: data.reasonText ?? data.reason ?? undefined,
         reason: data.reason,
         source: data.source ?? 'system',
-        rawMetadata: data.rawMetadata as never,
+        rawMetadata: data.rawMetadata as unknown as Prisma.InputJsonValue,
         createdByUserId: data.createdByUserId,
       },
     });

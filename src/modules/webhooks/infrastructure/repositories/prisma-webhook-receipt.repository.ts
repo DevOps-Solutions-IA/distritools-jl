@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -36,7 +37,7 @@ export class PrismaWebhookReceiptRepository implements WebhookReceiptRepository 
           gateway: data.gateway,
           externalEventId: data.externalEventId,
           signature: data.signature,
-          payload: data.payload as never,
+          payload: data.payload as unknown as Prisma.InputJsonValue,
         },
       ],
       skipDuplicates: true,

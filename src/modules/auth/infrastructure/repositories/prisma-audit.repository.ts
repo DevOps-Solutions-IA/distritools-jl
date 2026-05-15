@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { RequestContextService } from 'src/common/request/request-context.service';
@@ -89,8 +90,8 @@ export class PrismaAuditRepository implements AuditRepository {
         entityId: entry.entityId,
         requestId: entry.requestId ?? requestContext?.requestId,
         correlationId: entry.correlationId ?? requestContext?.correlationId,
-        beforeData: this.sanitizePayload(entry.beforeData) as never,
-        afterData: this.sanitizePayload(entry.afterData) as never,
+        beforeData: this.sanitizePayload(entry.beforeData) as unknown as Prisma.InputJsonValue,
+        afterData: this.sanitizePayload(entry.afterData) as unknown as Prisma.InputJsonValue,
         ipAddress: entry.ipAddress ?? requestContext?.ipAddress,
         userAgent: entry.userAgent ?? requestContext?.userAgent,
       },

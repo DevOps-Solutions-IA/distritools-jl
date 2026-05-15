@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { NotificationChannel, NotificationStatus } from '@prisma/client';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
@@ -47,7 +48,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
           subject: data.subject,
           content: data.content,
           provider: data.provider,
-          payload: data.payload as never,
+          payload: data.payload as unknown as Prisma.InputJsonValue,
         },
       ],
       skipDuplicates: true,

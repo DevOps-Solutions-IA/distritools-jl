@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -42,7 +43,7 @@ export class PrismaPromotionRepository implements PromotionRepository {
     const created = await this.prisma.promotion.create({
       data: {
         ...data,
-        targetIds: data.targetIds as never,
+        targetIds: data.targetIds as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -56,7 +57,7 @@ export class PrismaPromotionRepository implements PromotionRepository {
     };
 
     if (update.targetIds !== undefined) {
-      updateData.targetIds = update.targetIds as never;
+      updateData.targetIds = update.targetIds as unknown as Prisma.InputJsonValue;
     }
 
     const updated = await this.prisma.promotion.update({

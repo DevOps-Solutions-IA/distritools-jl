@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
@@ -54,7 +55,7 @@ export class PrismaOrderItemRepository implements OrderItemRepository {
       await tx.orderItem.create({
         data: {
           ...row,
-          appliedPromotionIds: row.appliedPromotionIds as never,
+          appliedPromotionIds: row.appliedPromotionIds as unknown as Prisma.InputJsonValue,
         },
       });
     }
