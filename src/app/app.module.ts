@@ -41,17 +41,17 @@ import { AdminOperationsModule } from 'src/modules/admin-operations/admin-operat
       {
         name: 'auth',
         ttl: 60000,
-        limit: 5,
+        limit: (process.env.APP_ENV === 'test' || process.env.NODE_ENV === 'test') ? 1000 : 5,
       },
       {
         name: 'checkout',
         ttl: 60000,
-        limit: 10,
+        limit: (process.env.APP_ENV === 'test' || process.env.NODE_ENV === 'test') ? 1000 : 10,
       },
       {
         name: 'default',
         ttl: 60000,
-        limit: 100,
+        limit: (process.env.APP_ENV === 'test' || process.env.NODE_ENV === 'test') ? 10000 : 100,
       },
     ]),
     RequestContextModule,

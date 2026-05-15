@@ -1,4 +1,4 @@
-import { after, before, beforeEach, describe, it } from 'node:test';
+import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
@@ -44,11 +44,29 @@ describe('Platform closure modules', async () => {
     const testApp = await createTestApp();
     app = testApp.app;
     http = testApp.http;
-  });
-
-  beforeEach(async () => {
     await resetDatabase();
     seeded = await seedBaseData();
+
+    // Ensure enough stock for all shared-state tests
+    await prisma.inventoryItem.update({
+      where: {
+        variantId_warehouseId: {
+          variantId: seeded.inventory.variantId,
+          warehouseId: seeded.inventory.warehouseId,
+        },
+      },
+      data: { onHandQty: 20, reservedQty: 0 },
+    });
+    await prisma.inventoryItem.update({
+      where: {
+        variantId_warehouseId: {
+          variantId: seeded.inventory.secondVariantId,
+          warehouseId: seeded.inventory.warehouseId,
+        },
+      },
+      data: { onHandQty: 20, reservedQty: 0 },
+    });
+
     const admin = await loginAsAdmin(
       http,
       seeded.users.adminEmail,

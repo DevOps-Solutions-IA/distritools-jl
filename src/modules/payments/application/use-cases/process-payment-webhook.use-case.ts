@@ -29,6 +29,7 @@ import {
   PaymentStatusValue,
 } from 'src/modules/payments/domain/entities/payment.entity';
 import { PaymentPolicyService } from 'src/modules/payments/domain/services/payment-policy.service';
+import { PaymentPayloadProtectionService } from 'src/modules/payments/domain/services/payment-payload-protection.service';
 import {
   WEBHOOK_PARSER_PORT,
   WebhookParserPort,
@@ -64,6 +65,8 @@ export class ProcessPaymentWebhookUseCase {
     private readonly commitStockUseCase: CommitStockUseCase,
     @Inject(ReleaseStockUseCase)
     private readonly releaseStockUseCase: ReleaseStockUseCase,
+    @Inject(PaymentPayloadProtectionService)
+    private readonly payloadProtection: PaymentPayloadProtectionService,
     @Inject(PaymentPolicyService)
     private readonly paymentPolicyService: PaymentPolicyService,
     @Inject(WEBHOOK_SIGNATURE_PORT)
@@ -91,36 +94,22 @@ export class ProcessPaymentWebhookUseCase {
 
     const parsed = this.webhookParserPort.parse(input.gateway, input.payload);
 
-    const existingReceipt =
-      await this.webhookReceiptRepository.findByGatewayAndEventId(
-        this.prisma,
-        input.gateway,
-        parsed.externalEventId,
-      );
-
-    if (existingReceipt?.processedAt) {
-      return { ok: true, idempotent: true };
-    }
-
-    const receiptRegistration =
-      existingReceipt
-        ? {
-            receipt: existingReceipt,
-            inserted: false,
-          }
-        : await this.webhookReceiptRepository.createIfAbsent(this.prisma, {
-            id: uuidv7(),
-            gateway: input.gateway,
-            externalEventId: parsed.externalEventId,
-            signature: input.signature ?? null,
-            payload: parsed.rawPayload,
-          });
-
-    if (!receiptRegistration.inserted) {
-      return { ok: true, idempotent: true };
-    }
+    const receiptId = uuidv7();
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const receiptRegistration =
+        await this.webhookReceiptRepository.createIfAbsent(tx, {
+          id: receiptId,
+          gateway: input.gateway,
+          externalEventId: parsed.externalEventId,
+          signature: input.signature ?? null,
+          payload: parsed.rawPayload,
+        });
+
+      if (!receiptRegistration.inserted) {
+        return { idempotent: true as const, payment: null, order: null };
+      }
+
       const paymentRecord = await this.paymentRepository.findByGatewayReference(
         input.gateway,
         parsed.gatewayReference,
@@ -175,7 +164,7 @@ export class ProcessPaymentWebhookUseCase {
         id: payment.id,
         status: updatedPaymentStatus,
         transactionId: parsed.transactionId ?? null,
-        rawPayload: parsed.rawPayload,
+        rawPayload: this.payloadProtection.protect(parsed.rawPayload),
         confirmedAt: parsed.status === 'approved' ? new Date() : null,
       });
       const updatedOrder = await this.orderRepository.updateStatus(
@@ -187,13 +176,13 @@ export class ProcessPaymentWebhookUseCase {
       await this.webhookReceiptRepository.markProcessed(tx, receiptRegistration.receipt.id);
 
       return {
-        idempotent: false,
+        idempotent: false as const,
         payment: updatedPayment,
         order: updatedOrder,
       };
     }, {
       maxWait: 15000,
-      timeout: 15000,
+      timeout: 30000,
     });
 
     if (result.idempotent) {

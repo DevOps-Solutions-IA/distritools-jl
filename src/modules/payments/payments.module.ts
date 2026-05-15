@@ -15,6 +15,7 @@ import {
   PAYMENT_REPOSITORY,
 } from 'src/modules/payments/domain/repositories/payment.repository';
 import { PaymentPolicyService } from 'src/modules/payments/domain/services/payment-policy.service';
+import { PaymentPayloadProtectionService } from 'src/modules/payments/domain/services/payment-payload-protection.service';
 import { PaymentsController } from 'src/modules/payments/infrastructure/http/controllers/payments.controller';
 import { MockPaymentGatewayAdapter } from 'src/modules/payments/infrastructure/gateways/mock-payment-gateway.adapter';
 import { NullPaymentAdapter } from 'src/modules/payments/infrastructure/gateways/null-payment.adapter';
@@ -30,6 +31,7 @@ import { WebhooksModule } from 'src/modules/webhooks/webhooks.module';
     CreatePaymentIntentUseCase,
     ProcessPaymentWebhookUseCase,
     GetPaymentStatusUseCase,
+    PaymentPayloadProtectionService,
     PaymentPolicyService,
     PrismaPaymentRepository,
     MockPaymentGatewayAdapter,
