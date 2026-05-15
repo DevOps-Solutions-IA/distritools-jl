@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { isProductionOrStaging } from 'src/common/security/env-check';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
@@ -39,11 +40,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : String(exception),
     );
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const safe = isProductionOrStaging();
 
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      error: isProduction ? 'Internal server error' : (exception as Error)?.message ?? 'Internal server error',
+      error: safe ? 'Internal server error' : (exception as Error)?.message ?? 'Internal server error',
       correlationId,
     });
   }

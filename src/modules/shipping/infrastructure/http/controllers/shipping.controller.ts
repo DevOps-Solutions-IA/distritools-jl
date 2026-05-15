@@ -13,6 +13,7 @@ import {
   Query,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Prisma, ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
@@ -154,6 +155,7 @@ export class ShippingController {
 
   @ApiBearerAuth()
   @Permissions('shipping.retry')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('admin/orders/:orderId/auto-shipping/retry')
   async retryAutoShipping(
     @Param('orderId') orderId: string,

@@ -5,14 +5,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from 'src/app/app.module';
 import { GlobalExceptionFilter } from 'src/common/filters/global-exception.filter';
 
+import { isProductionOrStaging } from 'src/common/security/env-check';
+
 export async function bootstrap(): Promise<void> {
   const corsOriginsEnv = process.env.CORS_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production';
 
   if (corsOriginsEnv.length === 0) {
-    if (isProduction) {
+    if (isProductionOrStaging()) {
       throw new Error(
-        'FATAL: CORS_ORIGINS is empty in production. Set CORS_ORIGINS to a comma-separated list of allowed origins.',
+        'FATAL: CORS_ORIGINS is empty in production/staging. Set CORS_ORIGINS to a comma-separated list of allowed origins.',
       );
     }
     corsOriginsEnv.push('http://localhost:3001');

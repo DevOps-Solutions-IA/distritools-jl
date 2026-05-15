@@ -1,3 +1,4 @@
+import { Throttle } from '@nestjs/throttler';
 import {
   Body,
   Controller,
@@ -143,6 +144,7 @@ export class AdminReportsController {
   }
 
   @Permissions('reports.export')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('export')
   @HttpCode(200)
   async export(

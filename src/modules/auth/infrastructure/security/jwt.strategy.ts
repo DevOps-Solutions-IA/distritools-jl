@@ -77,6 +77,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
+    if (session.expiresAt && new Date() > session.expiresAt) {
+      this.logger.warn(`JWT validation failed: session ${payload.sessionId} has expired`);
+      throw new UnauthorizedException();
+    }
+
     return {
       sub: user.id,
       email: user.email,

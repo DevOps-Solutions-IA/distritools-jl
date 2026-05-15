@@ -58,6 +58,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('refresh')
   refresh(@Body() body: RefreshTokenRequestDto) {
     return this.refreshTokenUseCase.execute(body.refreshToken);

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { isProductionOrStaging } from 'src/common/security/env-check';
 import { PermissionsGuard } from 'src/common/guards/permissions.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import {
@@ -33,10 +34,8 @@ import { TwoFactorEncryptionService } from 'src/common/security/two-factor-encry
     JwtModule.registerAsync({
       useFactory: () => {
         const secret = process.env.JWT_ACCESS_SECRET;
-        const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production';
-
         if (!secret || secret === 'change-me-access') {
-          if (isProduction) {
+          if (isProductionOrStaging()) {
             throw new Error(
               'FATAL: JWT_ACCESS_SECRET is missing or using placeholder value in production/staging. Set a strong secret.',
             );

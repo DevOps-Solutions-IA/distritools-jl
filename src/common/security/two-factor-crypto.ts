@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { isProductionOrStaging } from './env-check';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
@@ -7,10 +8,9 @@ const PREFIX = 'enc:';
 
 function getKey(): Buffer | null {
   const envKey = process.env.TWO_FACTOR_ENCRYPTION_KEY;
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production';
 
   if (!envKey || envKey.length < 32) {
-    if (isProduction) {
+    if (isProductionOrStaging()) {
       throw new Error(
         'FATAL: TWO_FACTOR_ENCRYPTION_KEY is missing or shorter than 32 characters in production/staging. ' +
         '2FA secrets cannot be stored securely without a strong encryption key.',
