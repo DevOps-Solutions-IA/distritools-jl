@@ -30,7 +30,13 @@ import { AdjustStockUseCase } from 'src/modules/inventory/application/use-cases/
 import { CommitStockUseCase } from 'src/modules/inventory/application/use-cases/commit-stock.use-case';
 import { ReleaseStockUseCase } from 'src/modules/inventory/application/use-cases/release-stock.use-case';
 import { ReserveStockUseCase } from 'src/modules/inventory/application/use-cases/reserve-stock.use-case';
+import { GetInventoryAlertsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-alerts.use-case';
 import { GetInventoryItemUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-item.use-case';
+import { GetInventoryOverviewUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-overview.use-case';
+import { GetInventoryValuationUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-valuation.use-case';
+import { GetReservationsUseCase } from 'src/modules/inventory/application/use-cases/get-reservations.use-case';
+import { GetStockMovementsUseCase } from 'src/modules/inventory/application/use-cases/get-stock-movements.use-case';
+import { GetWarehousesUseCase } from 'src/modules/inventory/application/use-cases/get-warehouses.use-case';
 import { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { AdjustStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/adjust-stock.request.dto';
 import { CommitStockRequestDto } from 'src/modules/inventory/infrastructure/http/dto/commit-stock.request.dto';
@@ -52,6 +58,18 @@ export class InventoryController {
     private readonly adjustStockUseCase: AdjustStockUseCase,
     @Inject(GetInventoryItemUseCase)
     private readonly getInventoryItemUseCase: GetInventoryItemUseCase,
+    @Inject(GetInventoryOverviewUseCase)
+    private readonly getInventoryOverviewUseCase: GetInventoryOverviewUseCase,
+    @Inject(GetWarehousesUseCase)
+    private readonly getWarehousesUseCase: GetWarehousesUseCase,
+    @Inject(GetStockMovementsUseCase)
+    private readonly getStockMovementsUseCase: GetStockMovementsUseCase,
+    @Inject(GetInventoryAlertsUseCase)
+    private readonly getInventoryAlertsUseCase: GetInventoryAlertsUseCase,
+    @Inject(GetInventoryValuationUseCase)
+    private readonly getInventoryValuationUseCase: GetInventoryValuationUseCase,
+    @Inject(GetReservationsUseCase)
+    private readonly getReservationsUseCase: GetReservationsUseCase,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(AUDIT_REPOSITORY)
@@ -61,54 +79,13 @@ export class InventoryController {
   @Permissions('inventory.read')
   @Get('overview')
   async overview(@Query('search') search?: string) {
-    const where = search?.trim()
-      ? {
-          OR: [
-            { variant: { sku: { contains: search.trim(), mode: 'insensitive' as const } } },
-            { variant: { name: { contains: search.trim(), mode: 'insensitive' as const } } },
-            { warehouse: { name: { contains: search.trim(), mode: 'insensitive' as const } } },
-          ],
-        }
-      : {};
-    const rows = await this.prisma.inventoryItem.findMany({
-      where,
-      include: {
-        variant: { include: { product: { include: { brand: true, category: true } } } },
-        warehouse: true,
-      },
-      orderBy: [{ updatedAt: 'desc' }],
-      take: 250,
-    });
-    const mapped = rows.map((row) => this.serializeInventoryRow(row));
-    return {
-      summary: this.inventorySummary(mapped),
-      data: mapped,
-    };
+    return this.getInventoryOverviewUseCase.execute({ search });
   }
 
   @Permissions('inventory.read')
   @Get('warehouses')
   async warehouses() {
-    const rows = await this.prisma.warehouse.findMany({
-      include: { _count: { select: { inventoryItems: true, stockMovements: true } } },
-      orderBy: [{ isDefault: 'desc' }, { priority: 'asc' }, { name: 'asc' }],
-    });
-    return {
-      data: rows.map((row) => ({
-        id: row.id,
-        code: row.code,
-        name: row.name,
-        location: row.location,
-        address: row.address,
-        isDefault: row.isDefault,
-        priority: row.priority,
-        isActive: row.isActive,
-        inventoryItems: row._count.inventoryItems,
-        stockMovements: row._count.stockMovements,
-        createdAt: row.createdAt,
-        updatedAt: row.updatedAt,
-      })),
-    };
+    return this.getWarehousesUseCase.execute();
   }
 
   @Permissions('inventory.read')
@@ -117,137 +94,33 @@ export class InventoryController {
     @Query('variantId') variantId?: string,
     @Query('sku') sku?: string,
     @Query('warehouseId') warehouseId?: string,
-    @Query('movementType') movementType?: StockMovementType,
+    @Query('movementType') movementType?: string,
     @Query('referenceType') referenceType?: string,
     @Query('referenceId') referenceId?: string,
   ) {
-    const rows = await this.prisma.stockMovement.findMany({
-      where: { variantId, sku, warehouseId, movementType, referenceType, referenceId },
-      include: {
-        variant: { include: { product: true } },
-        warehouse: true,
-        createdByUser: { select: { id: true, email: true, fullName: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 250,
+    return this.getStockMovementsUseCase.execute({
+      variantId, sku, warehouseId,
+      movementType: movementType as StockMovementType | undefined,
+      referenceType, referenceId,
     });
-    return {
-      data: rows.map((row) => ({
-        id: row.id,
-        type: row.movementType,
-        productId: row.productId,
-        product: row.variant.product?.name ?? null,
-        variantId: row.variantId,
-        sku: row.sku ?? row.variant.sku,
-        warehouseId: row.warehouseId,
-        warehouse: row.warehouse.name,
-        quantity: row.quantity,
-        quantityDelta: row.quantityDelta,
-        quantityBefore: row.quantityBefore,
-        quantityAfter: row.quantityAfter,
-        reasonCode: row.reasonCode,
-        reasonText: row.reasonText ?? row.reason,
-        referenceType: row.referenceType,
-        referenceId: row.referenceId,
-        orderId: row.orderId,
-        source: row.source,
-        actor: row.createdByUser
-          ? { id: row.createdByUser.id, email: row.createdByUser.email, fullName: row.createdByUser.fullName }
-          : null,
-        createdAt: row.createdAt,
-      })),
-    };
   }
 
   @Permissions('inventory.alerts.read')
   @Get('alerts')
   async alerts() {
-    const rows = await this.prisma.inventoryItem.findMany({
-      include: { variant: { include: { product: true } }, warehouse: true },
-      orderBy: { updatedAt: 'desc' },
-    });
-    return {
-      data: rows
-        .map((row) => {
-          const available = this.available(row);
-          if (available <= 0) {
-            return this.inventoryAlert(row, 'inventory.out_of_stock', 'Sin stock disponible', 'danger');
-          }
-          const threshold = row.reorderPoint ?? row.minStock;
-          if (threshold !== null && threshold !== undefined && available <= threshold) {
-            return this.inventoryAlert(row, 'inventory.low_stock', 'Stock bajo', 'warning');
-          }
-          if (row.reservedQty > Math.max(1, Math.floor(row.onHandQty * 0.7))) {
-            return this.inventoryAlert(row, 'inventory.high_reserved_stock', 'Reserva alta frente al físico', 'warning');
-          }
-          if (row.minStock === null && row.reorderPoint === null) {
-            return this.inventoryAlert(row, 'inventory.missing_minimum', 'Sin mínimo configurado', 'info');
-          }
-          return null;
-        })
-        .filter(Boolean),
-    };
+    return this.getInventoryAlertsUseCase.execute();
   }
 
   @Permissions('inventory.cost.read')
   @Get('valuation')
   async valuation() {
-    const rows = await this.prisma.inventoryItem.findMany({
-      include: { variant: { include: { product: { include: { category: true } } } }, warehouse: true },
-    });
-    let total = 0;
-    const byWarehouse = new Map<string, number>();
-    const byCategory = new Map<string, number>();
-    const items = rows.map((row) => {
-      const available = this.available(row);
-      const cost = row.costPrice ? Number(row.costPrice) : null;
-      const value = cost === null ? null : available * cost;
-      if (value !== null) {
-        total += value;
-        byWarehouse.set(row.warehouse.name, (byWarehouse.get(row.warehouse.name) ?? 0) + value);
-        byCategory.set(row.variant.product?.category?.name ?? 'Sin categoría', (byCategory.get(row.variant.product?.category?.name ?? 'Sin categoría') ?? 0) + value);
-      }
-      return {
-        variantId: row.variantId,
-        sku: row.variant.sku,
-        product: row.variant.product?.name ?? row.variant.name,
-        warehouse: row.warehouse.name,
-        availableStock: available,
-        costPrice: cost,
-        inventoryValue: value,
-        valuationStatus: cost === null ? 'missing_cost' : 'valued',
-      };
-    });
-    return {
-      totalValue: total,
-      byWarehouse: Object.fromEntries(byWarehouse),
-      byCategory: Object.fromEntries(byCategory),
-      missingCost: items.filter((item) => item.valuationStatus === 'missing_cost' && item.availableStock > 0).length,
-      data: items,
-    };
+    return this.getInventoryValuationUseCase.execute();
   }
 
   @Permissions('inventory.read')
   @Get('reservations')
   async reservations() {
-    const rows = await this.prisma.inventoryItem.findMany({
-      where: { OR: [{ reservedQty: { gt: 0 } }, { committedQty: { gt: 0 } }] },
-      include: { variant: { include: { product: true } }, warehouse: true },
-      orderBy: [{ reservedQty: 'desc' }, { committedQty: 'desc' }],
-    });
-    return {
-      data: rows.map((row) => ({
-        variantId: row.variantId,
-        sku: row.variant.sku,
-        product: row.variant.product?.name ?? row.variant.name,
-        warehouseId: row.warehouseId,
-        warehouse: row.warehouse.name,
-        physicalStock: row.onHandQty,
-        reservedStock: row.reservedQty,
-        committedStock: row.committedQty,
-        availableStock: this.available(row),
-      })),
-    };
+    return this.getReservationsUseCase.execute();
   }
 
   @Permissions('inventory.read')
@@ -779,84 +652,8 @@ export class InventoryController {
     return session;
   }
 
-  private serializeInventoryRow(row: {
-    id: string;
-    variantId: string;
-    warehouseId: string;
-    onHandQty: number;
-    reservedQty: number;
-    committedQty: number;
-    minStock: number | null;
-    maxStock: number | null;
-    reorderPoint: number | null;
-    reorderQty: number | null;
-    costPrice: unknown;
-    updatedAt: Date;
-    variant: { sku: string; name: string; price: unknown; product: { name: string; brand?: { name: string } | null; category?: { name: string } | null } | null };
-    warehouse: { code: string; name: string; isDefault: boolean; isActive: boolean };
-  }) {
-    const available = this.available(row);
-    const cost = row.costPrice ? Number(row.costPrice) : null;
-    return {
-      id: row.id,
-      product: row.variant.product?.name ?? row.variant.name,
-      brand: row.variant.product?.brand?.name ?? null,
-      category: row.variant.product?.category?.name ?? null,
-      variantId: row.variantId,
-      sku: row.variant.sku,
-      variant: row.variant.name,
-      warehouseId: row.warehouseId,
-      warehouseCode: row.warehouse.code,
-      warehouse: row.warehouse.name,
-      warehouseDefault: row.warehouse.isDefault,
-      physicalStock: row.onHandQty,
-      reservedStock: row.reservedQty,
-      committedStock: row.committedQty,
-      availableStock: available,
-      minStock: row.minStock,
-      maxStock: row.maxStock,
-      reorderPoint: row.reorderPoint,
-      reorderQty: row.reorderQty,
-      costPrice: cost,
-      inventoryValue: cost === null ? null : available * cost,
-      stockStatus: available <= 0 ? 'out_of_stock' : row.minStock !== null && available <= row.minStock ? 'low_stock' : 'healthy',
-      updatedAt: row.updatedAt,
-    };
-  }
-
-  private inventorySummary(rows: Array<{ physicalStock: number; reservedStock: number; committedStock: number; availableStock: number; inventoryValue: number | null; stockStatus: string; costPrice: number | null }>) {
-    return {
-      skuCount: rows.length,
-      physicalStock: rows.reduce((sum, row) => sum + row.physicalStock, 0),
-      reservedStock: rows.reduce((sum, row) => sum + row.reservedStock, 0),
-      committedStock: rows.reduce((sum, row) => sum + row.committedStock, 0),
-      availableStock: rows.reduce((sum, row) => sum + row.availableStock, 0),
-      lowStock: rows.filter((row) => row.stockStatus === 'low_stock').length,
-      outOfStock: rows.filter((row) => row.stockStatus === 'out_of_stock').length,
-      missingCost: rows.filter((row) => row.costPrice === null && row.availableStock > 0).length,
-      inventoryValue: rows.reduce((sum, row) => sum + (row.inventoryValue ?? 0), 0),
-    };
-  }
-
   private available(row: { onHandQty: number; reservedQty: number; committedQty?: number | null }) {
     return row.onHandQty - row.reservedQty - (row.committedQty ?? 0);
-  }
-
-  private inventoryAlert(row: { variantId: string; onHandQty: number; reservedQty: number; committedQty: number; variant: { sku: string; name: string; product?: { name: string } | null }; warehouse: { code: string; name: string } }, code: string, message: string, severity: string) {
-    return {
-      code,
-      severity,
-      message,
-      variantId: row.variantId,
-      sku: row.variant.sku,
-      product: row.variant.product?.name ?? row.variant.name,
-      warehouseCode: row.warehouse.code,
-      warehouse: row.warehouse.name,
-      physicalStock: row.onHandQty,
-      reservedStock: row.reservedQty,
-      committedStock: row.committedQty,
-      availableStock: this.available(row),
-    };
   }
 
   private async lockInventory(tx: PrismaTransactionClient, variantId: string, warehouseId: string, createIfMissing = false) {

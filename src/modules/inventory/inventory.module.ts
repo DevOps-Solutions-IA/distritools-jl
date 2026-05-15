@@ -2,7 +2,13 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { AdjustStockUseCase } from 'src/modules/inventory/application/use-cases/adjust-stock.use-case';
 import { CommitStockUseCase } from 'src/modules/inventory/application/use-cases/commit-stock.use-case';
+import { GetInventoryAlertsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-alerts.use-case';
 import { GetInventoryItemUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-item.use-case';
+import { GetInventoryOverviewUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-overview.use-case';
+import { GetInventoryValuationUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-valuation.use-case';
+import { GetReservationsUseCase } from 'src/modules/inventory/application/use-cases/get-reservations.use-case';
+import { GetStockMovementsUseCase } from 'src/modules/inventory/application/use-cases/get-stock-movements.use-case';
+import { GetWarehousesUseCase } from 'src/modules/inventory/application/use-cases/get-warehouses.use-case';
 import { ReleaseStockUseCase } from 'src/modules/inventory/application/use-cases/release-stock.use-case';
 import { ReserveStockUseCase } from 'src/modules/inventory/application/use-cases/reserve-stock.use-case';
 import {
@@ -26,6 +32,12 @@ import { StockMovementsModule } from 'src/modules/stock-movements/stock-movement
     CommitStockUseCase,
     AdjustStockUseCase,
     GetInventoryItemUseCase,
+    GetInventoryOverviewUseCase,
+    GetWarehousesUseCase,
+    GetStockMovementsUseCase,
+    GetInventoryAlertsUseCase,
+    GetInventoryValuationUseCase,
+    GetReservationsUseCase,
     InventoryPolicyService,
     PrismaInventoryRepository,
     PrismaInventoryReferenceRepository,
