@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { AdjustStockUseCase } from 'src/modules/inventory/application/use-cases/adjust-stock.use-case';
+import { ApplyInventoryImportUseCase } from 'src/modules/inventory/application/use-cases/apply-inventory-import.use-case';
+import { CloseInventoryCountSessionUseCase } from 'src/modules/inventory/application/use-cases/close-inventory-count-session.use-case';
 import { CommitStockUseCase } from 'src/modules/inventory/application/use-cases/commit-stock.use-case';
+import { CreateInventoryCountSessionUseCase } from 'src/modules/inventory/application/use-cases/create-inventory-count-session.use-case';
+import { DryRunInventoryImportUseCase } from 'src/modules/inventory/application/use-cases/dry-run-inventory-import.use-case';
+import { ExportInventoryUseCase } from 'src/modules/inventory/application/use-cases/export-inventory.use-case';
 import { GetInventoryAlertsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-alerts.use-case';
 import { GetInventoryItemUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-item.use-case';
 import { GetInventoryOverviewUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-overview.use-case';
@@ -10,9 +15,10 @@ import { GetReservationsUseCase } from 'src/modules/inventory/application/use-ca
 import { GetStockMovementsUseCase } from 'src/modules/inventory/application/use-cases/get-stock-movements.use-case';
 import { GetWarehousesUseCase } from 'src/modules/inventory/application/use-cases/get-warehouses.use-case';
 import { ProcessReturnUseCase } from 'src/modules/inventory/application/use-cases/process-return.use-case';
-import { UpdateInventorySettingsUseCase } from 'src/modules/inventory/application/use-cases/update-inventory-settings.use-case';
 import { ReleaseStockUseCase } from 'src/modules/inventory/application/use-cases/release-stock.use-case';
 import { ReserveStockUseCase } from 'src/modules/inventory/application/use-cases/reserve-stock.use-case';
+import { UpdateCountSessionLinesUseCase } from 'src/modules/inventory/application/use-cases/update-count-session-lines.use-case';
+import { UpdateInventorySettingsUseCase } from 'src/modules/inventory/application/use-cases/update-inventory-settings.use-case';
 import {
   INVENTORY_REFERENCE_REPOSITORY,
 } from 'src/modules/inventory/domain/repositories/inventory-reference.repository';
@@ -29,36 +35,19 @@ import { StockMovementsModule } from 'src/modules/stock-movements/stock-movement
   imports: [AuthModule, StockMovementsModule],
   controllers: [InventoryController],
   providers: [
-    ReserveStockUseCase,
-    ReleaseStockUseCase,
-    CommitStockUseCase,
-    AdjustStockUseCase,
-    GetInventoryItemUseCase,
-    GetInventoryOverviewUseCase,
-    GetWarehousesUseCase,
-    GetStockMovementsUseCase,
-    GetInventoryAlertsUseCase,
-    GetInventoryValuationUseCase,
-    GetReservationsUseCase,
-    UpdateInventorySettingsUseCase,
-    ProcessReturnUseCase,
-    InventoryPolicyService,
-    PrismaInventoryRepository,
-    PrismaInventoryReferenceRepository,
-    {
-      provide: INVENTORY_REPOSITORY,
-      useExisting: PrismaInventoryRepository,
-    },
-    {
-      provide: INVENTORY_REFERENCE_REPOSITORY,
-      useExisting: PrismaInventoryReferenceRepository,
-    },
+    ReserveStockUseCase, ReleaseStockUseCase, CommitStockUseCase, AdjustStockUseCase,
+    GetInventoryItemUseCase, GetInventoryOverviewUseCase, GetWarehousesUseCase,
+    GetStockMovementsUseCase, GetInventoryAlertsUseCase, GetInventoryValuationUseCase,
+    GetReservationsUseCase, UpdateInventorySettingsUseCase, ProcessReturnUseCase,
+    CreateInventoryCountSessionUseCase, UpdateCountSessionLinesUseCase,
+    CloseInventoryCountSessionUseCase, DryRunInventoryImportUseCase,
+    ApplyInventoryImportUseCase, ExportInventoryUseCase,
+    InventoryPolicyService, PrismaInventoryRepository, PrismaInventoryReferenceRepository,
+    { provide: INVENTORY_REPOSITORY, useExisting: PrismaInventoryRepository },
+    { provide: INVENTORY_REFERENCE_REPOSITORY, useExisting: PrismaInventoryReferenceRepository },
   ],
   exports: [
-    ReserveStockUseCase,
-    ReleaseStockUseCase,
-    CommitStockUseCase,
-    AdjustStockUseCase,
+    ReserveStockUseCase, ReleaseStockUseCase, CommitStockUseCase, AdjustStockUseCase,
     INVENTORY_REPOSITORY,
   ],
 })
