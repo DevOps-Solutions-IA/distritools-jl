@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { generateSecret } from 'otplib';
+import { encryptTwoFactorSecret } from '../src/common/security/two-factor-crypto';
 import {
   loadLocalEnvFile,
   normalizeEmail,
@@ -31,12 +32,13 @@ async function main(): Promise<void> {
     }
 
     const secret = process.env.ADMIN_RESET_TOTP_SECRET ?? generateSecret();
+    const encryptedSecret = encryptTwoFactorSecret(secret);
 
     await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
         data: {
-          twoFactorSecret: secret,
+          twoFactorSecret: encryptedSecret,
           isActive: true,
         },
       }),

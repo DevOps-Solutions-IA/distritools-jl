@@ -2,7 +2,6 @@ export interface AccessTokenClaims {
   sub: string;
   email: string;
   role: string;
-  permissions: string[];
   sessionId: string;
 }
 

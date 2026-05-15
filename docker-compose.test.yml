@@ -15,10 +15,11 @@ services:
 
   redis:
     image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redis}
     ports:
       - "56379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-redis}", "ping"]
       interval: 2s
       timeout: 2s
       retries: 20
@@ -34,7 +35,9 @@ services:
       APP_NAME: DistriTools JL Backend Test
       APP_BASE_URL: http://app-runner:3100
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/distritoolsjl_test?schema=public
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:redis@redis:6379
+      REDIS_PASSWORD: redis
+      CORS_ORIGINS: http://localhost:3001
       JWT_ACCESS_SECRET: test-access-secret
       JWT_REFRESH_SECRET: test-refresh-secret
       JWT_2FA_CHALLENGE_SECRET: test-2fa-challenge-secret
@@ -42,6 +45,7 @@ services:
       JWT_REFRESH_TTL: 7d
       JWT_2FA_CHALLENGE_TTL: 10m
       PAYMENT_GATEWAY_SECRET: test-payment-secret
+      TWO_FACTOR_ENCRYPTION_KEY: test-two-factor-encryption-32chr
     depends_on:
       postgres:
         condition: service_healthy

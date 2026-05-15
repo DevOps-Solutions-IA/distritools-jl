@@ -14,6 +14,11 @@ export class RequestContextMiddleware implements NestMiddleware {
     response.setHeader('x-request-id', requestId);
     response.setHeader('x-correlation-id', correlationId);
 
+    (request as Request & { context: Record<string, unknown> }).context = {
+      requestId,
+      correlationId,
+    };
+
     runWithRequestContext(
       {
         requestId,

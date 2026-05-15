@@ -212,49 +212,56 @@ export class ShippingController {
     });
 
     const status = toPrismaStatus(result.status);
-    const shipment = await this.prisma.shipment.upsert({
-      where: {
-        orderId_provider: {
-          orderId,
-          provider: result.provider,
-        },
-      },
-      create: {
-        id: uuidv7(),
-        orderId,
-        customerId: customer.id,
-        provider: result.provider,
-        status,
-        quotedAmount: result.quotedAmount ?? undefined,
-        trackingNumber: result.trackingNumber,
-        routeNumber: result.routeNumber,
-        labelUrl: result.labelUrl,
-        providerShipmentId: result.id,
-        providerReference: result.carrier ?? result.rawStatus,
-        estimatedDeliveryDate: result.estimatedDeliveryDate,
-        addressSnapshot: this.addressSnapshot(order),
-        packageSnapshot: (input.packages as unknown as Prisma.InputJsonValue),
-        rawProviderStatus: result.rawStatus,
-        lastSyncAt: new Date(),
-        createdById: safeActorId(actor),
-        updatedById: safeActorId(actor),
-      },
-      update: {
-        status,
-        quotedAmount: result.quotedAmount ?? undefined,
-        trackingNumber: result.trackingNumber,
-        routeNumber: result.routeNumber,
-        labelUrl: result.labelUrl,
-        providerShipmentId: result.id,
-        providerReference: result.carrier ?? result.rawStatus,
-        estimatedDeliveryDate: result.estimatedDeliveryDate,
-        packageSnapshot: (input.packages as unknown as Prisma.InputJsonValue),
-        rawProviderStatus: result.rawStatus,
-        lastSyncAt: new Date(),
-        updatedById: safeActorId(actor),
-      },
-      include: { order: true, customer: true, events: true },
+    const existingShipment = await this.prisma.shipment.findFirst({
+      where: { orderId, provider: result.provider },
     });
+
+    const createData = {
+      id: uuidv7(),
+      orderId,
+      customerId: customer.id,
+      provider: result.provider,
+      status,
+      quotedAmount: result.quotedAmount ?? undefined,
+      trackingNumber: result.trackingNumber,
+      routeNumber: result.routeNumber,
+      labelUrl: result.labelUrl,
+      providerShipmentId: result.id,
+      providerReference: result.carrier ?? result.rawStatus,
+      estimatedDeliveryDate: result.estimatedDeliveryDate,
+      addressSnapshot: this.addressSnapshot(order),
+      packageSnapshot: (input.packages as unknown as Prisma.InputJsonValue),
+      rawProviderStatus: result.rawStatus,
+      lastSyncAt: new Date(),
+      createdById: safeActorId(actor),
+      updatedById: safeActorId(actor),
+    };
+
+    const updateData = {
+      status,
+      quotedAmount: result.quotedAmount ?? undefined,
+      trackingNumber: result.trackingNumber,
+      routeNumber: result.routeNumber,
+      labelUrl: result.labelUrl,
+      providerShipmentId: result.id,
+      providerReference: result.carrier ?? result.rawStatus,
+      estimatedDeliveryDate: result.estimatedDeliveryDate,
+      packageSnapshot: (input.packages as unknown as Prisma.InputJsonValue),
+      rawProviderStatus: result.rawStatus,
+      lastSyncAt: new Date(),
+      updatedById: safeActorId(actor),
+    };
+
+    const shipment = existingShipment
+      ? await this.prisma.shipment.update({
+          where: { id: existingShipment.id },
+          data: updateData,
+          include: { order: true, customer: true, events: true },
+        })
+      : await this.prisma.shipment.create({
+          data: createData,
+          include: { order: true, customer: true, events: true },
+        });
 
     await this.createShipmentEvent(shipment.id, status, result.rawStatus, 'Guía creada o preparada desde provider logístico.');
     await this.audit(actor, 'shipping.shipment_created', 'shipment', shipment.id, null, {

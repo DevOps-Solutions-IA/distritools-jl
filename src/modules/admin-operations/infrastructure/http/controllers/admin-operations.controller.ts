@@ -1735,27 +1735,36 @@ export class AdminOperationsController {
       customer: this.maskEmail(order.customerEmail),
     }) as Prisma.InputJsonValue;
     const packageSnapshot = (body.packageSnapshot ?? Prisma.JsonNull) as Prisma.InputJsonValue | typeof Prisma.JsonNull;
-    const shipment = await this.prisma.shipment.upsert({
-      where: { orderId_provider: { orderId, provider } },
-      create: {
-        id: uuidv7(),
-        orderId,
-        customerId: customer.id,
-        provider,
-        status: provider === 'none' ? 'pending_provider' : 'pending_quote',
-        addressSnapshot,
-        packageSnapshot,
-        createdById: actor.sub,
-        updatedById: actor.sub,
-      },
-      update: {
-        status: provider === 'none' ? 'pending_provider' : 'pending_quote',
-        addressSnapshot,
-        packageSnapshot,
-        updatedById: actor.sub,
-      },
-      include: { customer: true, order: true, events: true },
+    const shipmentStatus = provider === 'none' ? 'pending_provider' as const : 'pending_quote' as const;
+    const existingShipment = await this.prisma.shipment.findFirst({
+      where: { orderId, provider },
     });
+
+    const shipment = existingShipment
+      ? await this.prisma.shipment.update({
+          where: { id: existingShipment.id },
+          data: {
+            status: shipmentStatus,
+            addressSnapshot,
+            packageSnapshot,
+            updatedById: actor.sub,
+          },
+          include: { customer: true, order: true, events: true },
+        })
+      : await this.prisma.shipment.create({
+          data: {
+            id: uuidv7(),
+            orderId,
+            customerId: customer.id,
+            provider,
+            status: shipmentStatus,
+            addressSnapshot,
+            packageSnapshot,
+            createdById: actor.sub,
+            updatedById: actor.sub,
+          },
+          include: { customer: true, order: true, events: true },
+        });
     await this.prisma.shipmentEvent.create({
       data: {
         id: uuidv7(),

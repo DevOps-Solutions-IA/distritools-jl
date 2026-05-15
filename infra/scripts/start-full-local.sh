@@ -126,12 +126,15 @@ setsid env \
   PORT=3000 \
   APP_BASE_URL=http://127.0.0.1:3000 \
   DATABASE_URL="$DATABASE_URL" \
-  REDIS_URL="$REDIS_URL" \
+  REDIS_URL="${REDIS_URL:-redis://:redis@127.0.0.1:56379}" \
+  REDIS_PASSWORD="${REDIS_PASSWORD:-redis}" \
   PAYMENT_GATEWAY_SECRET="${PAYMENT_GATEWAY_SECRET:-test-payment-secret}" \
   JWT_ACCESS_SECRET="${JWT_ACCESS_SECRET:-test-access-secret}" \
   JWT_REFRESH_SECRET="${JWT_REFRESH_SECRET:-test-refresh-secret}" \
   JWT_2FA_CHALLENGE_SECRET="${JWT_2FA_CHALLENGE_SECRET:-test-2fa-challenge-secret}" \
+  TWO_FACTOR_ENCRYPTION_KEY="${TWO_FACTOR_ENCRYPTION_KEY:-test-two-factor-encryption-32chr}" \
   APP_ENV="${APP_ENV:-local}" \
+  CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:3001}" \
   ADMIN_AUTH_DISABLED="${ADMIN_AUTH_DISABLED:-true}" \
   SHIPPING_PROVIDER="${SHIPPING_PROVIDER:-internal}" \
   NINETY_NINE_ENVIOS_API_BASE_URL="${NINETY_NINE_ENVIOS_API_BASE_URL:-https://integration.99envios.app}" \

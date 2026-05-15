@@ -37,12 +37,11 @@ export class LoginAdminUseCase {
   ) {}
 
   async execute(input: LoginAdminInput): Promise<LoginAdminResult> {
-    const record = await this.authUserRepository.findByEmail(
-      input.email.toLowerCase().trim(),
-    );
+    const normalizedEmail = input.email.toLowerCase().trim();
+    const record = await this.authUserRepository.findByEmail(normalizedEmail);
 
     if (!record) {
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await this.authPolicyService.dummyVerify();
       throw new UnauthorizedException('Invalid credentials');
     }
 

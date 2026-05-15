@@ -26,13 +26,32 @@ import { PrismaAuthUserRepository } from 'src/modules/auth/infrastructure/reposi
 import { JwtTokenService } from 'src/modules/auth/infrastructure/security/jwt-token.service';
 import { JwtStrategy } from 'src/modules/auth/infrastructure/security/jwt.strategy';
 import { TwoFactorService } from 'src/modules/auth/infrastructure/security/two-factor.service';
+import { TwoFactorEncryptionService } from 'src/common/security/two-factor-encryption.service';
 
 @Module({
   imports: [
-    JwtModule.register({}),
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = process.env.JWT_ACCESS_SECRET;
+        const isProduction = process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production';
+
+        if (!secret || secret === 'change-me-access') {
+          if (isProduction) {
+            throw new Error(
+              'FATAL: JWT_ACCESS_SECRET is missing or using placeholder value in production/staging. Set a strong secret.',
+            );
+          }
+          console.warn('WARNING: JWT_ACCESS_SECRET is not set or using placeholder. Using dev-only fallback.');
+          return { secret: 'dev-fallback-jwt-secret-do-not-use-in-production' };
+        }
+
+        return { secret };
+      },
+    }),
   ],
   controllers: [AuthController],
   providers: [
+    TwoFactorEncryptionService,
     AuthPolicyService,
     LoginAdminUseCase,
     VerifyTwoFactorUseCase,

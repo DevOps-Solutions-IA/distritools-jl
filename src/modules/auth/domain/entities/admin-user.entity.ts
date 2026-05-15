@@ -57,7 +57,6 @@ export class AdminUserEntity {
       sub: this.id,
       email: this.email,
       role: this.roleSlug,
-      permissions: this.permissions,
       sessionId,
     };
   }

@@ -1,4 +1,5 @@
 import { Global, Inject, Injectable, Module, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 export const REDIS = Symbol('REDIS');
@@ -7,8 +8,10 @@ export const REDIS = Symbol('REDIS');
 class RedisProvider implements OnModuleDestroy {
   private readonly client: Redis;
 
-  constructor() {
-    this.client = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379');
+  constructor(configService: ConfigService) {
+    const url = configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379';
+
+    this.client = new Redis(url);
   }
 
   getClient(): Redis {

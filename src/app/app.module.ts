@@ -1,5 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { RequestContextModule } from 'src/common/request/request-context.module';
 import { RequestContextMiddleware } from 'src/common/request/request-context.middleware';
 import { AuthModule } from 'src/modules/auth/auth.module';
@@ -35,6 +37,23 @@ import { AdminOperationsModule } from 'src/modules/admin-operations/admin-operat
       isGlobal: true,
       envFilePath: ['.env'],
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'auth',
+        ttl: 60000,
+        limit: 5,
+      },
+      {
+        name: 'checkout',
+        ttl: 60000,
+        limit: 10,
+      },
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 100,
+      },
+    ]),
     RequestContextModule,
     PrismaModule,
     RedisModule,
@@ -63,7 +82,13 @@ import { AdminOperationsModule } from 'src/modules/admin-operations/admin-operat
     VariantsModule,
     AdminOperationsModule,
   ],
-  providers: [RequestContextMiddleware],
+  providers: [
+    RequestContextMiddleware,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

@@ -7,6 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
@@ -35,12 +36,14 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @Post('login')
   login(@Body() body: LoginAdminRequestDto) {
     return this.loginAdminUseCase.execute(body);
   }
 
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60000 } })
   @Post('verify-2fa')
   verifyTwoFactor(
     @Body() body: VerifyTwoFactorRequestDto,

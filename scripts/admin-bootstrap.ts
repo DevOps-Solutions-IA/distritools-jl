@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { hash } from 'bcrypt';
 import { generateSecret } from 'otplib';
 import { v7 as uuidv7 } from 'uuid';
+import { encryptTwoFactorSecret } from '../src/common/security/two-factor-crypto';
 import {
   assertProductionBootstrapSafety,
   ensureSuperAdminRole,
@@ -67,6 +68,8 @@ async function main(): Promise<void> {
       : null;
     const userId = uuidv7();
 
+    const encryptedSecret = twoFactorSecret ? encryptTwoFactorSecret(twoFactorSecret) : null;
+
     await prisma.user.upsert({
       where: { email },
       update: {
@@ -74,7 +77,7 @@ async function main(): Promise<void> {
         passwordHash: await hash(password, 12),
         roleId,
         isActive: true,
-        twoFactorSecret,
+        twoFactorSecret: encryptedSecret,
       },
       create: {
         id: userId,
@@ -83,7 +86,7 @@ async function main(): Promise<void> {
         passwordHash: await hash(password, 12),
         roleId,
         isActive: true,
-        twoFactorSecret,
+        twoFactorSecret: encryptedSecret,
       },
     });
 

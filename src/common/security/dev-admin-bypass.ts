@@ -111,16 +111,34 @@ export const DEV_ADMIN_PERMISSIONS = [
   'footer.publish',
 ];
 
+let cachedDevUser: CurrentUser | null = null;
+
 export function isDevAdminAuthDisabled(): boolean {
-  return process.env.APP_ENV !== 'production' && process.env.ADMIN_AUTH_DISABLED === 'true';
+  if (process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production') {
+    return false;
+  }
+
+  const env = process.env.APP_ENV ?? '';
+
+  if (env !== 'local' && env !== 'test') {
+    return false;
+  }
+
+  return process.env.ADMIN_AUTH_DISABLED === 'true';
 }
 
 export function createDevAdminUser(): CurrentUser {
-  return {
-    sub: '00000000-0000-7000-8000-000000000099',
-    email: 'dev-admin-bypass@distritools.local',
-    role: 'dev-super-admin',
-    permissions: DEV_ADMIN_PERMISSIONS,
-    sessionId: 'dev-admin-bypass-session',
-  };
+  if (!cachedDevUser) {
+    const { v7: uuidv7 } = require('uuid');
+
+    cachedDevUser = {
+      sub: uuidv7(),
+      email: 'dev-admin-bypass@distritools.local',
+      role: 'dev-super-admin',
+      permissions: DEV_ADMIN_PERMISSIONS,
+      sessionId: uuidv7(),
+    };
+  }
+
+  return cachedDevUser;
 }

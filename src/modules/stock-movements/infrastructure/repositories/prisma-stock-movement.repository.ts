@@ -18,15 +18,13 @@ export class PrismaStockMovementRepository implements StockMovementRepository {
     tx: PrismaTransactionClient,
     where: FindStockMovementRecord,
   ) {
-    return tx.stockMovement.findUnique({
+    return tx.stockMovement.findFirst({
       where: {
-        movementType_variantId_warehouseId_referenceType_referenceId: {
-          movementType: where.movementType,
-          variantId: where.variantId,
-          warehouseId: where.warehouseId,
-          referenceType: where.referenceType,
-          referenceId: where.referenceId,
-        },
+        movementType: where.movementType,
+        variantId: where.variantId,
+        warehouseId: where.warehouseId,
+        referenceType: where.referenceType,
+        referenceId: where.referenceId,
       },
     });
   }

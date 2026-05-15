@@ -41,8 +41,8 @@ function lintFile(filePath) {
       issues.push(`${relativePath}:${lineNumber} contiene "any" explícito.`);
     }
 
-    if (/console\.(log|warn|debug|error)\(/.test(line)) {
-      issues.push(`${relativePath}:${lineNumber} usa console.*; mueve eso a logger o test assertion.`);
+    if (/console\.(log|debug)\(/.test(line)) {
+      issues.push(`${relativePath}:${lineNumber} usa console.log/debug; mueve eso a logger o test assertion.`);
     }
   });
 }

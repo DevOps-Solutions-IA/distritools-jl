@@ -386,34 +386,41 @@ export class AutoShippingService {
       },
     });
 
-    const shipment = await this.prisma.shipment.upsert({
-      where: { orderId_provider: { orderId, provider } },
-      create: {
-        id: uuidv7(),
-        orderId,
-        customerId: customer.id,
-        provider,
-        status,
-        quotedAmount: selected?.quotedAmount ?? undefined,
-        providerReference: selected?.carrier ?? null,
-        addressSnapshot: {
-          city: order.shippingCity,
-          address: '[redacted]',
-          daneCode: input.destinationDaneCode ?? autoConfig().defaultDaneCode ?? null,
-        },
-        packageSnapshot: snapshot as Prisma.InputJsonValue,
-        rawProviderStatus,
-        lastSyncAt: new Date(),
-      },
-      update: {
-        status,
-        quotedAmount: selected?.quotedAmount ?? undefined,
-        providerReference: selected?.carrier ?? undefined,
-        packageSnapshot: snapshot as Prisma.InputJsonValue,
-        rawProviderStatus,
-        lastSyncAt: new Date(),
-      },
+    const existingShipment = await this.prisma.shipment.findFirst({
+      where: { orderId, provider },
     });
+
+    const shipment = existingShipment
+      ? await this.prisma.shipment.update({
+          where: { id: existingShipment.id },
+          data: {
+            status,
+            quotedAmount: selected?.quotedAmount ?? undefined,
+            providerReference: selected?.carrier ?? undefined,
+            packageSnapshot: snapshot as Prisma.InputJsonValue,
+            rawProviderStatus,
+            lastSyncAt: new Date(),
+          },
+        })
+      : await this.prisma.shipment.create({
+          data: {
+            id: uuidv7(),
+            orderId,
+            customerId: customer.id,
+            provider,
+            status,
+            quotedAmount: selected?.quotedAmount ?? undefined,
+            providerReference: selected?.carrier ?? null,
+            addressSnapshot: {
+              city: order.shippingCity,
+              address: '[redacted]',
+              daneCode: input.destinationDaneCode ?? autoConfig().defaultDaneCode ?? null,
+            },
+            packageSnapshot: snapshot as Prisma.InputJsonValue,
+            rawProviderStatus,
+            lastSyncAt: new Date(),
+          },
+        });
 
     if (autoConfig().notifyAdmin && ['missing_dane', 'missing_shipping_dimensions', 'provider_not_ready'].includes(rawProviderStatus)) {
       await this.adminNotification(orderId, rawProviderStatus, `Auto-shipping requiere atención: ${rawProviderStatus}.`);

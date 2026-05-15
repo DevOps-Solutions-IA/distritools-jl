@@ -1,4 +1,5 @@
 import { Body, Controller, Headers, Inject, Ip, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CreateGuestCheckoutOrderUseCase } from 'src/modules/orders/application/use-cases/create-guest-checkout-order.use-case';
@@ -13,6 +14,7 @@ export class CheckoutController {
   ) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('checkout/guest-order')
   createGuestOrder(
     @Body() body: CreateGuestCheckoutOrderRequestDto,

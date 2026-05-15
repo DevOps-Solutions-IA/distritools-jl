@@ -19,7 +19,8 @@
     "admin:bootstrap": "NODE_PATH=. tsx scripts/admin-bootstrap.ts",
     "admin:reset-password": "NODE_PATH=. tsx scripts/admin-reset-password.ts",
     "admin:reset-2fa": "NODE_PATH=. tsx scripts/admin-reset-2fa.ts",
-    "test": "npm run build",
+    "test": "npm run test:critical",
+    "test:all": "npm run test:critical && npm run test:e2e:all",
     "test:critical": "for file in tests/critical/*.test.ts; do NODE_PATH=. tsx --test --test-concurrency=1 \"$file\" || exit 1; done",
     "test:critical:sequential": "NODE_PATH=. tsx --test --test-concurrency=1 tests/critical/auth-rbac.e2e.test.ts tests/critical/inventory-orders-payments.e2e.test.ts tests/critical/concurrency-stress.e2e.test.ts",
     "test:e2e:all": "for file in tests/critical/auth-rbac.e2e.test.ts tests/critical/admin-credentials.e2e.test.ts tests/critical/inventory-orders-payments.e2e.test.ts tests/critical/inventory-enterprise.e2e.test.ts tests/critical/admin-operations.e2e.test.ts tests/critical/admin-core-audit.e2e.test.ts tests/critical/concurrency-stress.e2e.test.ts tests/critical/platform-closure.e2e.test.ts tests/critical/catalog.e2e.test.ts tests/critical/checkout-providers.e2e.test.ts; do NODE_PATH=. tsx --test --test-concurrency=1 \"$file\" || exit 1; done"
@@ -37,6 +38,7 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.1.19",
     "@nestjs/swagger": "^11.4.1",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^6.19.0",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.76.1",

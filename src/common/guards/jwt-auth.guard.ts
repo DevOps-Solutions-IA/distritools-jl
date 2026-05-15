@@ -1,4 +1,4 @@
-import { ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import { ExecutionContext, Inject, Injectable, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from 'src/common/constants/auth.constants';
@@ -9,6 +9,8 @@ import {
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  private readonly logger = new Logger(JwtAuthGuard.name);
+
   constructor(@Inject(Reflector) private readonly reflector: Reflector) {
     super();
   }
@@ -24,8 +26,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     }
 
     if (isDevAdminAuthDisabled()) {
-      const request = context.switchToHttp().getRequest<{ user?: unknown }>();
+      const request = context.switchToHttp().getRequest<{ user?: unknown; ip?: string; path?: string }>();
       request.user = createDevAdminUser();
+      this.logger.warn(
+        `DEV AUTH BYPASS ACTIVE — request to ${request.path ?? 'unknown'} from ${request.ip ?? 'unknown'}`,
+      );
       return true;
     }
 
