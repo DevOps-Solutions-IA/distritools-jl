@@ -61,20 +61,20 @@ export function ProductImageFrame({
       <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),transparent_42%,rgba(245,183,0,0.06))]" />
       <div className="absolute inset-x-8 bottom-5 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
-      <div className="relative w-full h-full flex items-center justify-center">
-        {hasImage ? (
+      {hasImage ? (
+        <div className="relative z-10 w-full h-full">
           <ProductImageLightbox images={images} />
-        ) : (
-          <div
-            aria-label="Imagen de producto pendiente"
-            className="flex items-center justify-center"
-          >
-            <div className="grid h-14 w-14 place-items-center rounded-2xl border border-[rgba(245,183,0,0.28)] bg-[rgba(245,183,0,0.08)] shadow-[0_24px_80px_rgba(245,183,0,0.14)] md:h-20 md:w-20">
-              <span className="text-lg font-bold text-[var(--color-industrial-yellow)] md:text-2xl">?</span>
-            </div>
+        </div>
+      ) : (
+        <div
+          aria-label="Imagen de producto pendiente"
+          className="relative z-10 w-full h-full flex items-center justify-center"
+        >
+          <div className="grid h-14 w-14 place-items-center rounded-2xl border border-[rgba(245,183,0,0.28)] bg-[rgba(245,183,0,0.08)] shadow-[0_24px_80px_rgba(245,183,0,0.14)] md:h-20 md:w-20">
+            <span className="text-lg font-bold text-[var(--color-industrial-yellow)] md:text-2xl">?</span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {showBadge ? (
         <div className="absolute bottom-2 left-2.5 z-10 rounded-full bg-[rgba(0,0,0,0.6)] px-2 py-0.5 text-[9px] font-medium text-white/50">

@@ -65,7 +65,7 @@ export function ProductImageLightbox({ images }: ProductImageLightboxProps) {
           alt={current.alt}
           fill
           sizes="(max-width: 768px) 100vw, 45vw"
-          className="object-contain p-3 sm:p-4"
+          className="object-contain p-1 sm:p-2"
           priority
         />
       </button>
