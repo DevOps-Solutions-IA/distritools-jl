@@ -469,7 +469,7 @@ describe('catalog storefront', () => {
     expect(specs).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(specs);
     expect(specs).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('Taladro percutor')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Taladro percutor/i })).toBeInTheDocument();
   });
 
   it('Product detail page maneja error de carga', async () => {
