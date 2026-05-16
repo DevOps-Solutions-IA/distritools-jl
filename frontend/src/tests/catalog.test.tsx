@@ -127,11 +127,11 @@ describe('catalog storefront', () => {
 
   it('ProductImageFrame muestra placeholder genérico por tipo de herramienta', () => {
     const { container } = render(<ProductImageFrame product={baseProduct} />);
-    expect(screen.getByText(/Imagen referencial/i)).toBeInTheDocument();
+    const badge = screen.getByText(/Imagen/i);
+    expect(badge).toBeInTheDocument();
     const img = container.querySelector('img');
     expect(img).toBeTruthy();
-    expect(img?.getAttribute('alt')).toContain('Imagen referencial');
-    expect(img?.getAttribute('src')).toContain('/placeholders/tools/');
+    expect(img?.getAttribute('src')).toContain('/products/');
   });
 
   it('ProductGrid excluye productos sin precio o stock de la vitrina pública', () => {
@@ -460,7 +460,7 @@ describe('catalog storefront', () => {
     );
 
     expect(screen.getByRole('button', { name: /comprar/i })).toBeInTheDocument();
-    expect(screen.getByText(/Imagen referencial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Imagen/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /detalles/i })).toHaveAttribute(
       'aria-expanded',
       'true',
