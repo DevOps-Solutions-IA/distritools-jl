@@ -125,13 +125,13 @@ describe('catalog storefront', () => {
     expect(screen.queryByRole('link', { name: /^ver$/i })).not.toBeInTheDocument();
   });
 
-  it('ProductImageFrame placeholder mantiene imagen limpia sin textos internos', () => {
+  it('ProductImageFrame muestra placeholder genérico por tipo de herramienta', () => {
     const { container } = render(<ProductImageFrame product={baseProduct} />);
-    const frame = screen.getByLabelText(/imagen de producto pendiente/i);
-
-    expect(frame).toBeInTheDocument();
-    expect(frame).not.toHaveTextContent(/perforación|total|taladro/i);
-    expect(container.querySelector('svg')).toBeInTheDocument();
+    expect(screen.getByText(/Imagen referencial/i)).toBeInTheDocument();
+    const img = container.querySelector('img');
+    expect(img).toBeTruthy();
+    expect(img?.getAttribute('alt')).toContain('Imagen referencial');
+    expect(img?.getAttribute('src')).toContain('/placeholders/tools/');
   });
 
   it('ProductGrid excluye productos sin precio o stock de la vitrina pública', () => {
@@ -460,7 +460,7 @@ describe('catalog storefront', () => {
     );
 
     expect(screen.getByRole('button', { name: /comprar/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/imagen de producto pendiente/i)).not.toHaveTextContent(/total|perforación/i);
+    expect(screen.getByText(/Imagen referencial/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /detalles/i })).toHaveAttribute(
       'aria-expanded',
       'true',

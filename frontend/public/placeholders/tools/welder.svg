@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 320" fill="none">
+  <rect width="400" height="320" rx="16" fill="#0a0a0a" stroke="#1a1a1a" stroke-width="2"/>
+  <rect x="140" y="80" width="120" height="90" rx="8" stroke="#f5b700" stroke-width="3" fill="none"/>
+  <rect x="160" y="100" width="80" height="50" rx="4" stroke="#f5b700" stroke-width="1.5" fill="none" opacity="0.5"/>
+  <circle cx="200" cy="125" r="10" stroke="#f5b700" stroke-width="2" fill="none"/>
+  <line x1="180" y1="170" x2="180" y2="200" stroke="#f5b700" stroke-width="2"/>
+  <line x1="220" y1="170" x2="220" y2="200" stroke="#f5b700" stroke-width="2"/>
+  <line x1="160" y1="70" x2="240" y2="70" stroke="#f5b700" stroke-width="2"/>
+  <line x1="200" y1="55" x2="200" y2="80" stroke="#f5b700" stroke-width="2"/>
+  <text x="200" y="260" text-anchor="middle" fill="#555" font-size="11" font-family="sans-serif">Imagen referencial</text>
+  <text x="200" y="280" text-anchor="middle" fill="#333" font-size="10" font-family="sans-serif">Soldadora</text>
+</svg>
