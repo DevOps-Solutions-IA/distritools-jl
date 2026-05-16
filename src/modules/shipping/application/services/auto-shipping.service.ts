@@ -13,6 +13,7 @@ import {
   ShipmentQuote,
   ShipmentQuoteInput,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
+import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
 
 type AutoShippingMode = 'disabled' | 'quote_only' | 'quote_and_create_guide';
 
@@ -96,6 +97,8 @@ export class AutoShippingService {
     private readonly provider: ShippingProviderPort,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(AutoShippingEligibilityService)
+    private readonly eligibility: AutoShippingEligibilityService,
   ) {}
 
   async runAfterCheckout(input: AutoShippingInput) {
@@ -142,30 +145,31 @@ export class AutoShippingService {
       };
     }
 
-    if (!providerCapabilities.ready || !providerCapabilities.supportsQuote) {
-      await this.persistOperationalShipment(order.id, providerCapabilities.provider, 'pending_provider', 'provider_not_ready', {
-        providerCapabilities,
-        autoShippingStatus: 'provider_not_ready',
-      }, input);
-      return { status: 'provider_not_ready', guideNumber: null, carrier: null };
-    }
-
-    const daneCode = input.destinationDaneCode ?? cfg.defaultDaneCode;
-    if (cfg.requireDane && !isDane(daneCode)) {
-      await this.persistOperationalShipment(order.id, providerCapabilities.provider, 'pending_address', 'missing_dane', {
-        autoShippingStatus: 'missing_dane',
-        message: 'DANE destino requerido antes de cotizar o crear guía.',
-      }, input);
-      return { status: 'missing_dane', guideNumber: null, carrier: null };
-    }
-
     const shipmentPackage = this.buildPackage(order, cfg);
-    if (cfg.requireDimensions && !this.hasValidDimensions(shipmentPackage)) {
-      await this.persistOperationalShipment(order.id, providerCapabilities.provider, 'pending_address', 'missing_shipping_dimensions', {
-        autoShippingStatus: 'missing_shipping_dimensions',
-        message: 'Peso y dimensiones requeridos antes de cotizar o crear guía.',
+    const daneCode = input.destinationDaneCode ?? cfg.defaultDaneCode;
+
+    const hasDane = isDane(daneCode);
+    const eligibility = this.eligibility.evaluate({
+      hasDane: cfg.requireDane ? hasDane : true,
+      hasValidDimensions: cfg.requireDimensions ? this.hasValidDimensions(shipmentPackage) : true,
+      providerReady: providerCapabilities.ready,
+      providerSupportsQuote: providerCapabilities.supportsQuote,
+    });
+
+    if (!eligibility.canProceed) {
+      const status = eligibility.blockReason === 'missing_dane' || eligibility.blockReason === 'missing_shipping_dimensions'
+        ? 'pending_address' as const
+        : 'pending_provider' as const;
+
+      await this.persistOperationalShipment(order.id, providerCapabilities.provider, status, eligibility.blockReason!, {
+        autoShippingStatus: eligibility.blockReason,
+        message: eligibility.blockReason === 'missing_dane'
+          ? 'DANE destino requerido antes de cotizar o crear guía.'
+          : eligibility.blockReason === 'missing_shipping_dimensions'
+            ? 'Peso y dimensiones requeridos antes de cotizar o crear guía.'
+            : undefined,
       }, input);
-      return { status: 'missing_shipping_dimensions', guideNumber: null, carrier: null };
+      return { status: eligibility.blockReason!, guideNumber: null, carrier: null };
     }
 
     const quoteInput = this.buildQuoteInput(order, shipmentPackage, daneCode!, cfg, input);

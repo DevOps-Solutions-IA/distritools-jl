@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import {
   SHIPPING_PROVIDER_PORT,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
+import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
 import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
 import { ShippingProviderInputMapper } from 'src/modules/shipping/application/services/shipping-provider-input.mapper';
 import { CreateShipmentUseCase } from 'src/modules/shipping/application/use-cases/create-shipment.use-case';
@@ -18,6 +19,7 @@ import { ServientregaShippingAdapter } from 'src/modules/shipping/infrastructure
   controllers: [ShippingController],
   providers: [
     NullShippingAdapter,
+    AutoShippingEligibilityService,
     AutoShippingService,
     ShippingProviderInputMapper,
     CreateShipmentUseCase, GetShipmentDetailUseCase, GetShipmentTrackingUseCase,
