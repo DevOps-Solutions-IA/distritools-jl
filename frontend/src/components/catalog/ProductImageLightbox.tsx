@@ -101,9 +101,9 @@ export function ProductImageLightbox({ images }: ProductImageLightboxProps) {
             </button>
           )}
 
-          {/* Image */}
+          {/* Image wrapper — minimal shell, no visible card */}
           <div
-            className="relative flex items-center justify-center max-w-[92vw] max-h-[88vh]"
+            className="relative max-h-[90vh] max-w-[94vw] overflow-hidden rounded-[1.5rem] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <Image
@@ -111,10 +111,10 @@ export function ProductImageLightbox({ images }: ProductImageLightboxProps) {
               alt={current.alt}
               width={800}
               height={800}
-              className="object-contain max-w-[92vw] max-h-[88vh] rounded-xl"
+              className="object-contain max-h-[86vh] max-w-[94vw] w-auto h-auto"
             />
             {current.isPlaceholder ? (
-              <div className="absolute bottom-3 left-3 rounded-full bg-[rgba(0,0,0,0.6)] px-3 py-1 text-xs text-white/60">
+              <div className="absolute bottom-3 left-3 rounded-full bg-black/70 px-3 py-1 text-xs text-[var(--color-industrial-yellow)]">
                 Imagen referencial
               </div>
             ) : null}
