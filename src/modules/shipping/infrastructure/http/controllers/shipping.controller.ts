@@ -1,13 +1,11 @@
-import { BadRequestException, Body, Controller, Get, Headers, Inject, Ip, Param, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Inject, Ip, Param, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
-import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
-import { ShippingProviderInputMapper } from 'src/modules/shipping/application/services/shipping-provider-input.mapper';
 import { SHIPPING_PROVIDER_PORT, ShippingProviderPort } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { CreateShipmentUseCase } from 'src/modules/shipping/application/use-cases/create-shipment.use-case';
 import { GetShipmentDetailUseCase, GetShipmentLabelUseCase, GetShipmentTrackingUseCase } from 'src/modules/shipping/application/use-cases/shipment-read.use-case';
@@ -17,8 +15,6 @@ import { CancelShipmentUseCase, ProcessShippingWebhookUseCase, SyncShipmentUseCa
 export class ShippingController {
   constructor(
     @Inject(SHIPPING_PROVIDER_PORT) private readonly provider: ShippingProviderPort,
-    @Inject(PrismaService) private readonly prisma: PrismaService,
-    @Inject(ShippingProviderInputMapper) private readonly mapper: ShippingProviderInputMapper,
     @Inject(AutoShippingService) private readonly autoShippingService: AutoShippingService,
     @Inject(CreateShipmentUseCase) private readonly createShipment: CreateShipmentUseCase,
     @Inject(GetShipmentDetailUseCase) private readonly getShipmentDetail: GetShipmentDetailUseCase,
@@ -45,12 +41,7 @@ export class ShippingController {
   async retryAutoShipping(@Param('orderId') orderId: string) { return this.autoShippingService.runAfterCheckout({ orderId } as { orderId: string }); }
 
   @Permissions('shipping.quote') @Post('admin/shipping/quote')
-  async quoteShipment(@Body() body: Record<string, unknown>) {
-    const command = this.mapper.buildQuoteCommandFromOrder(body, (body.orderId as string) ?? '', {
-      shippingCity: '', shippingAddress: '', customerName: '', customerPhone: '', orderNumber: '',
-    });
-    return this.provider.quoteShipment(this.mapper.buildQuoteInput(command));
-  }
+  async quoteShipment(@Body() body: Record<string, unknown>) { return this.provider.quoteShipment(body as never); }
 
   @Permissions('shipping.create_guide') @Post('admin/orders/:orderId/shipment')
   async createOrderShipment(@Param('orderId') orderId: string, @Body() body: Record<string, unknown>, @CurrentUserDecorator() actor: CurrentUser, @Ip() ip: string, @Headers('user-agent') ua?: string) {
@@ -96,7 +87,11 @@ export class ShippingController {
   async getIssues(@Param('shipmentId') id: string) { return this.provider.getShipmentIssues(id); }
 
   @Permissions('shipping.read') @Get('admin/shipping/branch-issues')
-  async getBranchIssues() { return this.provider.getBranchIssues(process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE ?? ''); }
+  async getBranchIssues(@Query('branchCode') branchCode?: string) {
+    const code = branchCode ?? process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE;
+    if (!code) throw new BadRequestException('Requiere branchCode o NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE.');
+    return this.provider.getBranchIssues(code);
+  }
 
   @Permissions('shipping.issues.write') @Post('admin/shipping/branch-issues/:issueId')
   async updateBranchIssue(@Param('issueId') id: string, @Body() body: Record<string, unknown>) { return this.provider.updateBranchIssue(id, body as { guideNumber: string; issue: string; observations?: string }); }
@@ -108,7 +103,10 @@ export class ShippingController {
   async getReturns(@Param('shipmentId') id: string) { return this.provider.getReturns(id); }
 
   @Permissions('shipping.cod.read') @Get('admin/cod')
-  async getCOD() { return this.provider.getCashOnDeliveryStatus(''); }
+  async getCOD(@Query('shipmentId') shipmentId?: string) {
+    if (!shipmentId) return { data: [], operationalState: { status: 'pending_provider', message: 'Requiere shipmentId para consultar COD.' } };
+    return this.provider.getCashOnDeliveryStatus(shipmentId);
+  }
 
   @Permissions('shipping.wallet.read') @Get('admin/wallet')
   async getWallet() { return this.provider.getWalletBalance(); }
