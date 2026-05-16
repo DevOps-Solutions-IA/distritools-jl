@@ -4,6 +4,9 @@ import {
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
 import { ShippingProviderInputMapper } from 'src/modules/shipping/application/services/shipping-provider-input.mapper';
+import { CreateShipmentUseCase } from 'src/modules/shipping/application/use-cases/create-shipment.use-case';
+import { GetShipmentDetailUseCase, GetShipmentLabelUseCase, GetShipmentTrackingUseCase } from 'src/modules/shipping/application/use-cases/shipment-read.use-case';
+import { CancelShipmentUseCase, ProcessShippingWebhookUseCase, SyncShipmentUseCase } from 'src/modules/shipping/application/use-cases/shipment-write.use-case';
 import { ShippingController } from 'src/modules/shipping/infrastructure/http/controllers/shipping.controller';
 import { CoordinadoraShippingAdapter } from 'src/modules/shipping/infrastructure/providers/coordinadora-shipping.adapter';
 import { Mock99EnviosAdapter } from 'src/modules/shipping/infrastructure/providers/mock-99envios.adapter';
@@ -17,6 +20,9 @@ import { ServientregaShippingAdapter } from 'src/modules/shipping/infrastructure
     NullShippingAdapter,
     AutoShippingService,
     ShippingProviderInputMapper,
+    CreateShipmentUseCase, GetShipmentDetailUseCase, GetShipmentTrackingUseCase,
+    GetShipmentLabelUseCase, CancelShipmentUseCase, SyncShipmentUseCase,
+    ProcessShippingWebhookUseCase,
     Mock99EnviosAdapter,
     NinetyNineEnviosAdapter,
     CoordinadoraShippingAdapter,
