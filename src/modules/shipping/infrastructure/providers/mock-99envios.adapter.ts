@@ -63,7 +63,7 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
 
   async quoteShipment(input: ShipmentQuoteInput): Promise<ShipmentQuote> {
     assertMockAllowed();
-    const packageCount = Math.max(input.packages.length, 1);
+    const packageCount = Math.max(input.packages?.length ?? 0, 1);
     const carrierOptions = [
       { carrier: 'tcc', carrierLabel: 'tcc', success: true, message: 'cotizacion exitosa mock', quotedAmount: String(8900 + packageCount * 1200), cashOnDeliveryAmount: input.cashOnDelivery?.enabled ? '1000' : '0', internalCommission: '0', surcharge: '300', insuranceAmount: '0', estimatedDays: 2, estimatedDeliveryDate: null, serviceId: '1' },
       { carrier: 'coordinadora', carrierLabel: 'coordinadora', success: true, message: 'cotizacion exitosa mock', quotedAmount: String(9800 + packageCount * 1400), cashOnDeliveryAmount: input.cashOnDelivery?.enabled ? '1500' : '0', internalCommission: '0', surcharge: '300', insuranceAmount: '0', estimatedDays: 2, estimatedDeliveryDate: null, serviceId: '1' },
@@ -98,7 +98,8 @@ export class Mock99EnviosAdapter implements ShippingProviderPort {
 
   async createShipment(input: CreateShipmentInput): Promise<ShipmentResult> {
     assertMockAllowed();
-    const suffix = input.idempotencyKey.replace(/[^a-z0-9]/gi, '').slice(-8).toUpperCase();
+    const key = input.idempotencyKey ?? `auto-${Date.now()}`;
+    const suffix = key.replace(/[^a-z0-9]/gi, '').slice(-8).toUpperCase();
 
     return {
       id: `mock99-${suffix}`,
