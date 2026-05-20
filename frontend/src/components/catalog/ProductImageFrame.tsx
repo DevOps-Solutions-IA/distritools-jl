@@ -21,11 +21,11 @@ function getProductImages(product: CatalogProduct) {
   const imagePath = approvedImagePath ?? localImagePath;
 
   if (imagePath) {
-    const isPlaceholder = !approvedImagePath;
     return [{
       src: imagePath,
       alt: product.name,
-      isPlaceholder,
+      isPlaceholder: false,
+      badgeLabel: approvedImagePath ? null : 'Imagen de catálogo',
     }];
   }
 
@@ -35,6 +35,7 @@ function getProductImages(product: CatalogProduct) {
       src: placeholders[0].src,
       alt: placeholders[0].alt,
       isPlaceholder: true,
+      badgeLabel: 'Imagen referencial',
     }];
   }
 
@@ -47,7 +48,7 @@ export function ProductImageFrame({
 }: ProductImageFrameProps) {
   const images = getProductImages(product).slice(0, 4);
   const hasImage = images.length > 0;
-  const showBadge = images.length > 0 && images[0].isPlaceholder;
+  const imageBadgeLabel = images[0]?.badgeLabel ?? null;
 
   return (
     <div
@@ -76,9 +77,9 @@ export function ProductImageFrame({
         </div>
       )}
 
-      {showBadge ? (
+      {imageBadgeLabel ? (
         <div className="absolute bottom-2 left-2.5 z-10 rounded-full bg-[rgba(0,0,0,0.6)] px-2 py-0.5 text-[9px] font-medium text-white/50">
-          Imagen referencial
+          {imageBadgeLabel}
         </div>
       ) : null}
     </div>

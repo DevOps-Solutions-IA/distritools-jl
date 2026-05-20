@@ -149,16 +149,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               { label: data.name },
             ]}
           />
-          <div className="grid items-start gap-4 lg:grid-cols-[1fr_1.1fr] lg:gap-8">
-            <Card variant="elevated" className="overflow-hidden rounded-[1.35rem] lg:self-start lg:rounded-[2rem]">
+          <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-8">
+            <Card variant="elevated" className="min-w-0 overflow-hidden rounded-[1.35rem] lg:self-start lg:rounded-[2rem]">
               <CardBody className="p-3 sm:p-5">
                 <ProductImageFrame product={data} className="h-[260px] sm:h-[360px] lg:h-[430px] flex items-center justify-center" priority />
                 {miniSpecs.length > 0 ? (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-3">
                     {miniSpecs.map((spec) => (
-                      <div key={spec.label} className="rounded-2xl border border-[var(--color-border)] bg-white/[0.035] px-2 py-2 text-center sm:px-4 sm:py-3">
+                      <div key={spec.label} className="min-w-0 rounded-2xl border border-[var(--color-border)] bg-white/[0.035] px-2 py-2 text-center sm:px-4 sm:py-3">
                         <p className="text-[10px] font-semibold text-[var(--color-steel-gray)]">{spec.label}</p>
-                        <p className="text-[11px] font-semibold text-[var(--color-off-white)] sm:text-xs">{spec.value}</p>
+                        <p className="break-words text-[11px] font-semibold leading-tight text-[var(--color-off-white)] sm:text-xs">{spec.value}</p>
                       </div>
                     ))}
                   </div>
@@ -166,18 +166,18 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </CardBody>
             </Card>
 
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex flex-wrap gap-2">
-                {data.brand ? <Badge variant="neutral">{data.brand.name}</Badge> : null}
-                {data.category ? <Badge variant="info">{data.category.name}</Badge> : null}
-                <ProductCommerceBadge commerce={commerce} />
+            <div className="min-w-0 space-y-4 sm:space-y-6">
+              <div className="flex min-w-0 flex-wrap gap-2">
+                {data.brand ? <Badge variant="neutral" className="max-w-full break-words text-[10px] tracking-[0.08em] sm:text-xs sm:tracking-[0.12em]">{data.brand.name}</Badge> : null}
+                {data.category ? <Badge variant="info" className="max-w-full break-words text-[10px] tracking-[0.08em] sm:text-xs sm:tracking-[0.12em]">{data.category.name}</Badge> : null}
+                <ProductCommerceBadge commerce={commerce} className="max-w-full break-words text-[10px] tracking-[0.08em] sm:text-xs sm:tracking-[0.12em]" />
               </div>
 
               <div className="space-y-2 sm:space-y-4">
-                <h1 className="text-2xl font-semibold leading-tight text-[var(--color-off-white)] sm:text-4xl lg:text-5xl">
+                <h1 className="break-words text-2xl font-semibold leading-tight text-[var(--color-off-white)] sm:text-4xl lg:text-5xl">
                   {data.name}
                 </h1>
-                <p className="line-clamp-3 max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base sm:leading-7">
+                <p className="line-clamp-3 max-w-2xl break-words text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base sm:leading-7">
                   {data.description ?? 'Producto disponible para compra con asesoría comercial.'}
                 </p>
               </div>
@@ -189,7 +189,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-[var(--color-steel-gray)]">Presentación</p>
-                  <p className="text-base font-semibold text-[var(--color-off-white)] sm:text-xl">
+                  <p className="break-words text-base font-semibold text-[var(--color-off-white)] sm:text-xl">
                     {data.presentation ?? data.primarySku ?? 'Presentación pendiente'}
                   </p>
                 </div>

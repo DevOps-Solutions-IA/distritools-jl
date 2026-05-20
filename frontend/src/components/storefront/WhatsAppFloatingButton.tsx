@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { getStorefrontWhatsappUrl, storefrontContactConfig } from '@/config/storefront-contact';
 import { cn } from '@/lib/utils/cn';
 
-const reducedRoutes = ['/carrito', '/checkout', '/checkout/confirmacion'];
+const reducedRoutes = ['/carrito', '/checkout', '/checkout/confirmacion', '/productos'];
 
 function WhatsAppIcon() {
   return (
