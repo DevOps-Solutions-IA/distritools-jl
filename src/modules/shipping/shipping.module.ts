@@ -4,6 +4,7 @@ import {
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
 import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
+import { CarrierSelectionService } from 'src/modules/shipping/application/services/carrier-selection.service';
 import { ShippingProviderInputMapper } from 'src/modules/shipping/application/services/shipping-provider-input.mapper';
 import { CreateShipmentUseCase } from 'src/modules/shipping/application/use-cases/create-shipment.use-case';
 import { GetShipmentDetailUseCase, GetShipmentLabelUseCase, GetShipmentTrackingUseCase } from 'src/modules/shipping/application/use-cases/shipment-read.use-case';
@@ -20,6 +21,7 @@ import { ServientregaShippingAdapter } from 'src/modules/shipping/infrastructure
   providers: [
     NullShippingAdapter,
     AutoShippingEligibilityService,
+    CarrierSelectionService,
     AutoShippingService,
     ShippingProviderInputMapper,
     CreateShipmentUseCase, GetShipmentDetailUseCase, GetShipmentTrackingUseCase,

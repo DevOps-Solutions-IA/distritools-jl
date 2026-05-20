@@ -10,10 +10,10 @@ import {
   SHIPPING_PROVIDER_PORT,
   ShippingProviderPort,
   ShipmentPackage,
-  ShipmentQuote,
   ShipmentQuoteInput,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
+import { CarrierSelectionService, CarrierCandidate } from 'src/modules/shipping/application/services/carrier-selection.service';
 
 type AutoShippingMode = 'disabled' | 'quote_only' | 'quote_and_create_guide';
 
@@ -25,23 +25,6 @@ interface AutoShippingInput {
   ipAddress?: string;
   userAgent?: string;
 }
-
-interface CarrierCandidate {
-  carrier: string;
-  carrierLabel: string;
-  serviceId: string | null;
-  success: boolean;
-  message: string | null;
-  quotedAmount: string | null;
-  cashOnDeliveryAmount: string | null;
-  surcharge: string | null;
-  insuranceAmount: string | null;
-  estimatedDays: number | null;
-  estimatedDeliveryDate: Date | null;
-  totalComparable: number;
-}
-
-const CARRIER_PRIORITY = ['tcc', 'coordinadora', 'servientrega', 'envia', 'interrapidisimo'];
 
 function autoConfig() {
   return {
@@ -65,12 +48,6 @@ function autoConfig() {
 
 function isDane(value: string | null | undefined) {
   return typeof value === 'string' && /^[0-9]{8}$/.test(value);
-}
-
-function toNumber(value: string | null | undefined) {
-  if (value === null || value === undefined || value === '') return 0;
-  const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
 }
 
 function redactPayload(payload: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
@@ -99,6 +76,8 @@ export class AutoShippingService {
     private readonly domainEventPublisher: DomainEventPublisher,
     @Inject(AutoShippingEligibilityService)
     private readonly eligibility: AutoShippingEligibilityService,
+    @Inject(CarrierSelectionService)
+    private readonly carrierSelection: CarrierSelectionService,
   ) {}
 
   async runAfterCheckout(input: AutoShippingInput) {
@@ -174,8 +153,8 @@ export class AutoShippingService {
 
     const quoteInput = this.buildQuoteInput(order, shipmentPackage, daneCode!, cfg, input);
     const quote = await this.provider.quoteShipment(quoteInput);
-    const candidates = this.normalizeCandidates(quote);
-    const selected = this.selectCheapest(candidates);
+    const candidates = this.carrierSelection.normalizeCandidates(quote);
+    const selected = this.carrierSelection.selectCheapest(candidates);
 
     const quotedShipment = await this.persistOperationalShipment(order.id, quote.provider, 'quoted', 'quote_created', {
       autoShippingStatus: 'quoted',
@@ -317,47 +296,6 @@ export class AutoShippingService {
 
   private hasValidDimensions(pkg: ShipmentPackage) {
     return pkg.weightKg > 0 && pkg.lengthCm > 0 && pkg.widthCm > 0 && pkg.heightCm > 0;
-  }
-
-  private normalizeCandidates(quote: ShipmentQuote): CarrierCandidate[] {
-    const source = quote.carrierOptions?.length
-      ? quote.carrierOptions
-      : quote.carrier
-        ? [{
-            carrier: quote.carrier,
-            carrierLabel: quote.carrierLabel ?? quote.carrier,
-            success: quote.success !== false,
-            message: quote.message ?? null,
-            quotedAmount: quote.quotedAmount,
-            cashOnDeliveryAmount: quote.cashOnDeliveryAmount ?? null,
-            surcharge: quote.surcharge ?? null,
-            insuranceAmount: quote.insuranceAmount ?? null,
-            estimatedDays: quote.estimatedDays,
-            estimatedDeliveryDate: quote.estimatedDeliveryDate ?? null,
-            serviceId: quote.service,
-          }]
-        : [];
-
-    return source.map((candidate) => ({
-      ...candidate,
-      totalComparable:
-        toNumber(candidate.quotedAmount) +
-        toNumber(candidate.cashOnDeliveryAmount) +
-        toNumber(candidate.surcharge) +
-        toNumber(candidate.insuranceAmount),
-    }));
-  }
-
-  private selectCheapest(candidates: CarrierCandidate[]) {
-    return candidates
-      .filter((candidate) => candidate.success && candidate.quotedAmount !== null)
-      .sort((left, right) => {
-        if (left.totalComparable !== right.totalComparable) return left.totalComparable - right.totalComparable;
-        const leftDays = left.estimatedDays ?? Number.MAX_SAFE_INTEGER;
-        const rightDays = right.estimatedDays ?? Number.MAX_SAFE_INTEGER;
-        if (leftDays !== rightDays) return leftDays - rightDays;
-        return CARRIER_PRIORITY.indexOf(left.carrier) - CARRIER_PRIORITY.indexOf(right.carrier);
-      })[0] ?? null;
   }
 
   private async persistOperationalShipment(
