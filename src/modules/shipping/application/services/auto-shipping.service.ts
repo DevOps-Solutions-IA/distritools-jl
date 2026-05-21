@@ -1,16 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Prisma, ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
-import {
-  DOMAIN_EVENT_PUBLISHER,
-  DomainEventPublisher,
-} from 'src/common/events/domain-event.publisher';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   SHIPPING_PROVIDER_PORT,
   ShippingProviderPort,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
+import { AutoShippingInfraService, mergeJsonSnapshot, safeError as safeErrorMessage } from 'src/modules/shipping/application/services/auto-shipping-infra.service';
 import { AutoShippingProviderService } from 'src/modules/shipping/application/services/auto-shipping-provider.service';
 import { CarrierSelectionService, CarrierCandidate } from 'src/modules/shipping/application/services/carrier-selection.service';
 
@@ -49,19 +46,6 @@ function isDane(value: string | null | undefined) {
   return typeof value === 'string' && /^[0-9]{8}$/.test(value);
 }
 
-function redactPayload(payload: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
-  if (!payload || typeof payload !== 'object') return Prisma.JsonNull;
-  const output: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(payload as Record<string, unknown>)) {
-    if (/email|phone|address|document|token|secret|password/i.test(key)) {
-      output[key] = '[redacted]';
-    } else {
-      output[key] = value as Prisma.InputJsonValue;
-    }
-  }
-  return output as Prisma.InputJsonValue;
-}
-
 @Injectable()
 export class AutoShippingService {
   private readonly logger = new Logger(AutoShippingService.name);
@@ -71,14 +55,14 @@ export class AutoShippingService {
     private readonly prisma: PrismaService,
     @Inject(SHIPPING_PROVIDER_PORT)
     private readonly provider: ShippingProviderPort,
-    @Inject(DOMAIN_EVENT_PUBLISHER)
-    private readonly domainEventPublisher: DomainEventPublisher,
     @Inject(AutoShippingEligibilityService)
     private readonly eligibility: AutoShippingEligibilityService,
     @Inject(CarrierSelectionService)
     private readonly carrierSelection: CarrierSelectionService,
     @Inject(AutoShippingProviderService)
     private readonly shippingProvider: AutoShippingProviderService,
+    @Inject(AutoShippingInfraService)
+    private readonly infra: AutoShippingInfraService,
   ) {}
 
   async runAfterCheckout(input: AutoShippingInput) {
@@ -91,8 +75,8 @@ export class AutoShippingService {
       return await this.execute(input);
     } catch (error) {
       if (!cfg.failsafe) throw error;
-      this.logger.warn(`Auto-shipping failed safely for order ${input.orderId}: ${this.safeError(error)}`);
-      await this.markFailure(input.orderId, 'auto_shipping_failed', this.safeError(error), input);
+      this.logger.warn(`Auto-shipping failed safely for order ${input.orderId}: ${safeErrorMessage(error)}`);
+      await this.markFailure(input.orderId, 'auto_shipping_failed', safeErrorMessage(error), input);
       return { status: 'auto_shipping_failed', guideNumber: null, carrier: null };
     }
   }
@@ -165,18 +149,18 @@ export class AutoShippingService {
       candidates,
       selectedCarrier: selected,
     }, input, selected);
-    await this.shipmentEvent(quotedShipment.id, 'quoted', 'shipment.quote_created', 'Cotización automática creada después del checkout.', { candidates });
-    await this.audit('AUTO_SHIPPING_QUOTED', 'shipment', quotedShipment.id, null, { orderId: order.id, candidates }, input);
-    await this.publish('shipment.quote_created', order.id, { shipmentId: quotedShipment.id, orderNumber: order.orderNumber, candidates });
+    await this.infra.shipmentEvent(quotedShipment.id, 'quoted', 'shipment.quote_created', 'Cotización automática creada después del checkout.', { candidates });
+    await this.infra.audit('AUTO_SHIPPING_QUOTED', 'shipment', quotedShipment.id, null, { orderId: order.id, candidates }, input.ipAddress, input.userAgent);
+    await this.infra.publish('shipment.quote_created', order.id, { shipmentId: quotedShipment.id, orderNumber: order.orderNumber, candidates });
 
     if (!selected) {
       await this.failExistingShipment(quotedShipment.id, 'no_available_carrier', 'No hay transportadoras exitosas para crear guía.', input);
       return { status: 'no_available_carrier', guideNumber: null, carrier: null };
     }
 
-    await this.shipmentEvent(quotedShipment.id, 'quoted', 'shipment.carrier_selected', `Transportadora seleccionada por menor costo: ${selected.carrier}.`, { selected });
-    await this.audit('AUTO_SHIPPING_CARRIER_SELECTED', 'shipment', quotedShipment.id, null, { orderId: order.id, selected }, input);
-    await this.publish('shipment.carrier_selected', order.id, { shipmentId: quotedShipment.id, orderNumber: order.orderNumber, selectedCarrier: selected.carrier });
+    await this.infra.shipmentEvent(quotedShipment.id, 'quoted', 'shipment.carrier_selected', `Transportadora seleccionada por menor costo: ${selected.carrier}.`, { selected });
+    await this.infra.audit('AUTO_SHIPPING_CARRIER_SELECTED', 'shipment', quotedShipment.id, null, { orderId: order.id, selected }, input.ipAddress, input.userAgent);
+    await this.infra.publish('shipment.carrier_selected', order.id, { shipmentId: quotedShipment.id, orderNumber: order.orderNumber, selectedCarrier: selected.carrier });
 
     if (cfg.mode === 'quote_only') {
       return { status: 'quoted', guideNumber: null, carrier: selected.carrier };
@@ -212,7 +196,7 @@ export class AutoShippingService {
         estimatedDeliveryDate: shipmentResult.estimatedDeliveryDate,
         rawProviderStatus: shipmentResult.rawStatus ?? 'guide_created',
         lastSyncAt: new Date(),
-        packageSnapshot: this.mergeSnapshot(quotedShipment.packageSnapshot, {
+        packageSnapshot: mergeJsonSnapshot(quotedShipment.packageSnapshot, {
           autoShippingStatus: 'guide_created',
           selectedCarrier: selected,
           guide: {
@@ -228,17 +212,17 @@ export class AutoShippingService {
         }),
       },
     });
-    await this.shipmentEvent(updated.id, updated.status, 'shipment.guide_created', `Guía automática creada: ${shipmentResult.trackingNumber}.`, {
+    await this.infra.shipmentEvent(updated.id, updated.status, 'shipment.guide_created', `Guía automática creada: ${shipmentResult.trackingNumber}.`, {
       guideNumber: shipmentResult.trackingNumber,
       carrier: selected.carrier,
     });
-    await this.audit('AUTO_SHIPPING_GUIDE_CREATED', 'shipment', updated.id, null, {
+    await this.infra.audit('AUTO_SHIPPING_GUIDE_CREATED', 'shipment', updated.id, null, {
       orderId: order.id,
       carrier: selected.carrier,
       guideNumber: shipmentResult.trackingNumber ? '[present]' : null,
       provider: shipmentResult.provider,
-    }, input);
-    await this.publish('shipment.guide_created', order.id, {
+    }, input.ipAddress, input.userAgent);
+    await this.infra.publish('shipment.guide_created', order.id, {
       shipmentId: updated.id,
       orderNumber: order.orderNumber,
       guideNumber: shipmentResult.trackingNumber,
@@ -320,7 +304,7 @@ export class AutoShippingService {
         });
 
     if (autoConfig().notifyAdmin && ['missing_dane', 'missing_shipping_dimensions', 'provider_not_ready'].includes(rawProviderStatus)) {
-      await this.adminNotification(orderId, rawProviderStatus, `Auto-shipping requiere atención: ${rawProviderStatus}.`);
+      await this.infra.adminNotification(orderId, rawProviderStatus, `Auto-shipping requiere atención: ${rawProviderStatus}.`);
     }
 
     return shipment;
@@ -332,14 +316,14 @@ export class AutoShippingService {
       data: {
         status: 'delivery_failed',
         rawProviderStatus: reason,
-        packageSnapshot: this.mergeSnapshot(undefined, { autoShippingStatus: reason, error: description }),
+        packageSnapshot: mergeJsonSnapshot(undefined, { autoShippingStatus: reason, error: description }),
         lastSyncAt: new Date(),
       },
     });
-    await this.shipmentEvent(shipmentId, 'delivery_failed', `shipment.${reason}`, description, { reason });
-    await this.audit('AUTO_SHIPPING_FAILED', 'shipment', shipmentId, null, { reason, description }, input);
-    await this.adminNotification(updated.orderId, reason, description);
-    await this.publish('shipment.auto_shipping_failed', updated.orderId, { shipmentId, reason });
+    await this.infra.shipmentEvent(shipmentId, 'delivery_failed', `shipment.${reason}`, description, { reason });
+    await this.infra.audit('AUTO_SHIPPING_FAILED', 'shipment', shipmentId, null, { reason, description }, input.ipAddress, input.userAgent);
+    await this.infra.adminNotification(updated.orderId, reason, description);
+    await this.infra.publish('shipment.auto_shipping_failed', updated.orderId, { shipmentId, reason });
   }
 
   private async markFailure(orderId: string, reason: string, description: string, input: AutoShippingInput) {
@@ -348,75 +332,10 @@ export class AutoShippingService {
       autoShippingStatus: reason,
       error: description,
     }, input);
-    await this.shipmentEvent(shipment.id, 'delivery_failed', `shipment.${reason}`, description, { reason });
-    await this.audit('AUTO_SHIPPING_FAILED', 'shipment', shipment.id, null, { reason, description }, input);
-    await this.adminNotification(orderId, reason, description);
-    await this.publish('shipment.auto_shipping_failed', orderId, { shipmentId: shipment.id, reason });
+    await this.infra.shipmentEvent(shipment.id, 'delivery_failed', `shipment.${reason}`, description, { reason });
+    await this.infra.audit('AUTO_SHIPPING_FAILED', 'shipment', shipment.id, null, { reason, description }, input.ipAddress, input.userAgent);
+    await this.infra.adminNotification(orderId, reason, description);
+    await this.infra.publish('shipment.auto_shipping_failed', orderId, { shipmentId: shipment.id, reason });
   }
 
-  private mergeSnapshot(existing: Prisma.JsonValue | undefined, patch: Record<string, unknown>) {
-    const base = existing && typeof existing === 'object' && !Array.isArray(existing)
-      ? existing as Record<string, unknown>
-      : {};
-    return { ...base, ...patch } as Prisma.InputJsonValue;
-  }
-
-  private async shipmentEvent(shipmentId: string, status: PrismaShipmentStatus, providerStatus: string, description: string, rawPayload?: Record<string, unknown>) {
-    await this.prisma.shipmentEvent.create({
-      data: {
-        id: uuidv7(),
-        shipmentId,
-        status,
-        providerStatus,
-        description,
-        occurredAt: new Date(),
-        rawPayload: rawPayload ? redactPayload(rawPayload) : Prisma.JsonNull,
-      },
-    });
-  }
-
-  private async audit(action: string, entityType: string, entityId: string, beforeData: unknown, afterData: unknown, input: AutoShippingInput) {
-    await this.prisma.auditLog.create({
-      data: {
-        id: uuidv7(),
-        actorUserId: null,
-        action,
-        entityType,
-        entityId,
-        beforeData: redactPayload(beforeData),
-        afterData: redactPayload(afterData),
-        ipAddress: input.ipAddress,
-        userAgent: input.userAgent,
-      },
-    });
-  }
-
-  private async adminNotification(orderId: string, reason: string, message: string) {
-    await this.prisma.notificationEvent.create({
-      data: {
-        id: uuidv7(),
-        entityType: 'order',
-        entityId: orderId,
-        provider: 'internal',
-        channel: 'internal',
-        recipientMasked: 'ops@internal',
-        errorCode: reason,
-        errorMessage: message,
-      },
-    }).catch(() => undefined);
-  }
-
-  private async publish(eventName: string, orderId: string, payload: Record<string, unknown>) {
-    await this.domainEventPublisher.publish({
-      eventName,
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: { orderId, ...payload },
-    });
-  }
-
-  private safeError(error: unknown) {
-    if (error instanceof Error) return error.message.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/g, '[email]');
-    return 'Error logístico no identificado.';
-  }
 }

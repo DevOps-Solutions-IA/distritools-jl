@@ -3,6 +3,7 @@ import {
   SHIPPING_PROVIDER_PORT,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
+import { AutoShippingInfraService } from 'src/modules/shipping/application/services/auto-shipping-infra.service';
 import { AutoShippingProviderService } from 'src/modules/shipping/application/services/auto-shipping-provider.service';
 import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
 import { CarrierSelectionService } from 'src/modules/shipping/application/services/carrier-selection.service';
@@ -24,6 +25,7 @@ import { ServientregaShippingAdapter } from 'src/modules/shipping/infrastructure
     AutoShippingEligibilityService,
     CarrierSelectionService,
     AutoShippingProviderService,
+    AutoShippingInfraService,
     AutoShippingService,
     ShippingProviderInputMapper,
     CreateShipmentUseCase, GetShipmentDetailUseCase, GetShipmentTrackingUseCase,
