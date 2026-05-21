@@ -6,6 +6,8 @@ import {
   DomainEvent,
   DomainEventPublisher,
 } from 'src/common/events/domain-event.publisher';
+import { BullMqDomainEventPublisher } from 'src/infra/events/bullmq-domain-event.publisher';
+import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
 
 type DomainEventHandler<TPayload = Record<string, unknown>> = (
   event: DomainEvent<TPayload>,
@@ -68,11 +70,15 @@ export class InMemoryDomainEventPublisher
 @Module({
   providers: [
     InMemoryDomainEventPublisher,
+    BullMqDomainEventPublisher,
+    DomainEventsWorker,
     {
       provide: DOMAIN_EVENT_PUBLISHER,
       useExisting: InMemoryDomainEventPublisher,
     },
   ],
-  exports: [InMemoryDomainEventPublisher, DOMAIN_EVENT_PUBLISHER],
+  exports: [InMemoryDomainEventPublisher, BullMqDomainEventPublisher, DOMAIN_EVENT_PUBLISHER],
 })
 export class DomainEventsModule {}
+
+export { InMemoryDomainEventPublisher as DomainEventDispatcher };
