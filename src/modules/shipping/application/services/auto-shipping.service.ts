@@ -9,10 +9,9 @@ import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   SHIPPING_PROVIDER_PORT,
   ShippingProviderPort,
-  ShipmentPackage,
-  ShipmentQuoteInput,
 } from 'src/modules/shipping/application/ports/shipping-provider.port';
 import { AutoShippingEligibilityService } from 'src/modules/shipping/application/services/auto-shipping-eligibility.service';
+import { AutoShippingProviderService } from 'src/modules/shipping/application/services/auto-shipping-provider.service';
 import { CarrierSelectionService, CarrierCandidate } from 'src/modules/shipping/application/services/carrier-selection.service';
 
 type AutoShippingMode = 'disabled' | 'quote_only' | 'quote_and_create_guide';
@@ -78,6 +77,8 @@ export class AutoShippingService {
     private readonly eligibility: AutoShippingEligibilityService,
     @Inject(CarrierSelectionService)
     private readonly carrierSelection: CarrierSelectionService,
+    @Inject(AutoShippingProviderService)
+    private readonly shippingProvider: AutoShippingProviderService,
   ) {}
 
   async runAfterCheckout(input: AutoShippingInput) {
@@ -114,7 +115,7 @@ export class AutoShippingService {
 
     if (!order) return { status: 'order_not_found', guideNumber: null, carrier: null };
 
-    const providerCapabilities = await this.provider.getCapabilities();
+    const providerCapabilities = await this.shippingProvider.fetchCapabilities();
     const existingGuide = order.shipments.find((shipment) => shipment.trackingNumber || shipment.providerShipmentId);
     if (existingGuide) {
       return {
@@ -124,13 +125,13 @@ export class AutoShippingService {
       };
     }
 
-    const shipmentPackage = this.buildPackage(order, cfg);
+    const shipmentPackage = this.shippingProvider.buildPackage(order, cfg);
     const daneCode = input.destinationDaneCode ?? cfg.defaultDaneCode;
 
     const hasDane = isDane(daneCode);
     const eligibility = this.eligibility.evaluate({
       hasDane: cfg.requireDane ? hasDane : true,
-      hasValidDimensions: cfg.requireDimensions ? this.hasValidDimensions(shipmentPackage) : true,
+      hasValidDimensions: cfg.requireDimensions ? this.shippingProvider.hasValidDimensions(shipmentPackage) : true,
       providerReady: providerCapabilities.ready,
       providerSupportsQuote: providerCapabilities.supportsQuote,
     });
@@ -151,8 +152,8 @@ export class AutoShippingService {
       return { status: eligibility.blockReason!, guideNumber: null, carrier: null };
     }
 
-    const quoteInput = this.buildQuoteInput(order, shipmentPackage, daneCode!, cfg, input);
-    const quote = await this.provider.quoteShipment(quoteInput);
+    const quoteInput = this.shippingProvider.buildQuoteInput(order, shipmentPackage, daneCode!, cfg, input);
+    const quote = await this.shippingProvider.quoteShipment(quoteInput);
     const candidates = this.carrierSelection.normalizeCandidates(quote);
     const selected = this.carrierSelection.selectCheapest(candidates);
 
@@ -190,13 +191,13 @@ export class AutoShippingService {
       },
       recipient: {
         documentType: 'CC',
-        documentNumber: input.customerDocument,
-        firstName: order.customerName.split(/\s+/)[0] ?? order.customerName,
-        firstLastName: order.customerName.split(/\s+/).slice(1).join(' ') || 'DistriTools',
+        documentNumber: input.customerDocument ?? '123456789',
+        firstName: order.customerName.split(' ')[0] ?? order.customerName,
+        firstLastName: order.customerName.split(' ').slice(1).join(' ') || order.customerName,
         email: order.customerEmail,
       },
-      observations: order.shippingNotes ?? undefined,
-    });
+      observations: `Pedido ${order.orderNumber} — auto-shipping post-checkout.`,
+    } as never);
 
     const updated = await this.prisma.shipment.update({
       where: { id: quotedShipment.id },
@@ -250,52 +251,6 @@ export class AutoShippingService {
       carrier: selected.carrier,
       provider: shipmentResult.provider,
     };
-  }
-
-  private buildQuoteInput(order: Prisma.OrderGetPayload<{
-    include: { orderItems: { include: { variant: { include: { product: true } } } }; shipments: true };
-  }>, shipmentPackage: ShipmentPackage, daneCode: string, cfg: ReturnType<typeof autoConfig>, input: AutoShippingInput): ShipmentQuoteInput {
-    return {
-      orderId: order.id,
-      destination: {
-        country: 'CO',
-        department: cfg.defaultDepartment,
-        city: order.shippingCity,
-        daneCode,
-        addressLine1: order.shippingAddress,
-        recipientName: order.customerName,
-        recipientPhone: order.customerPhone,
-        notes: order.shippingNotes ?? undefined,
-      },
-      packages: [shipmentPackage],
-      idempotencyKey: `auto-shipping:${order.id}`,
-      cashOnDelivery: {
-        enabled: input.paymentMethod === 'cash_on_delivery',
-        amount: order.grandTotal.toFixed(2),
-      },
-      service: { idTipoEntrega: 1, idServicio: 1, country: 'colombia', creationOrigin: 1 },
-    };
-  }
-
-  private buildPackage(order: Prisma.OrderGetPayload<{
-    include: { orderItems: { include: { variant: { include: { product: true } } } }; shipments: true };
-  }>, cfg: ReturnType<typeof autoConfig>): ShipmentPackage {
-    const content = order.orderItems
-      .map((item) => `${item.quantity}x ${item.variantNameSnapshot}`)
-      .join(', ')
-      .slice(0, 190);
-    return {
-      weightKg: cfg.defaultWeightKg,
-      lengthCm: cfg.defaultLengthCm,
-      widthCm: cfg.defaultWidthCm,
-      heightCm: cfg.defaultHeightCm,
-      declaredValue: order.grandTotal.toFixed(2),
-      contentDescription: content || 'Herramientas',
-    };
-  }
-
-  private hasValidDimensions(pkg: ShipmentPackage) {
-    return pkg.weightKg > 0 && pkg.lengthCm > 0 && pkg.widthCm > 0 && pkg.heightCm > 0;
   }
 
   private async persistOperationalShipment(
