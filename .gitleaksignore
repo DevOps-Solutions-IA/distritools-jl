@@ -1,0 +1,5 @@
+# DistriTools JL — reviewed Gitleaks false positives
+#
+# Test-only TWO_FACTOR_ENCRYPTION_KEY fixture in docker-compose.test.yml.
+# Reviewed before initial GitHub publication.
+9a62adc1fd12d369988577b83c0b060f4b9d44f5:docker-compose.test.yml:generic-api-key:48
