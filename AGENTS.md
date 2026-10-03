@@ -6,6 +6,7 @@
 - Never treat old audits, prompts, screenshots, or duplicated specs as current state without revalidation.
 - Read docs/orchestration/STATE.json first. Then read only the execution file(s) relevant to the assigned run.
 - For Codex/subagent execution mechanics, read docs/orchestration/CODEX_EXECUTION_PROTOCOL.md.
+- `validated_product_sha` in STATE.json is the latest independently validated product/security merge. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.
 
 ## Roles
 - Orchestrator: owns sequencing, acceptance criteria, state transitions, validation, user-impact review, PR/merge decisions, and provider readiness.
@@ -23,7 +24,7 @@
 8. Present diff, evidence, remaining blockers, and rollback path.
 9. No commit/push unless the execution explicitly authorizes it.
 10. No merge to main without orchestrator approval.
-11. After merge, STATE.json must be synchronized to the exact canonical SHA before starting the next execution.
+11. After a validated product/security merge, record that merge SHA as `validated_product_sha` and update current/completed execution, counters, next_action and user impact. Read live HEAD/origin/main from Git rather than trying to store the self-referential STATE commit SHA.
 
 ## Hard prohibitions
 - No npm audit fix --force.
