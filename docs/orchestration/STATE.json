@@ -1,0 +1,56 @@
+{
+  "project": "DistriTools JL",
+  "repository": "DevOps-Solutions-IA/distritools-jl",
+  "canonical_branch": "main",
+  "canonical_sha": "d8c7cef1e730988f53312642ebaa36fee42d74c7",
+  "updated_at": "2026-10-03",
+  "phase": "internal-hardening",
+  "active_execution": "EX-01",
+  "completed_executions": ["EX-00"],
+  "baseline": {
+    "git_canonical": "PASS",
+    "gitleaks": "PASS",
+    "prisma_validate": "PASS",
+    "backend_typecheck": "PASS",
+    "backend_lint": "PASS",
+    "backend_build": "PASS",
+    "frontend_typecheck": "PASS",
+    "frontend_lint": "PASS",
+    "frontend_build": "PASS",
+    "frontend_tests": "52/52 PASS",
+    "backend_unit_tests": "26/26 PASS",
+    "critical_e2e": "83/83 PASS",
+    "architecture_check": "DEBT_DETECTED"
+  },
+  "security": {
+    "frontend_critical": 0,
+    "frontend_high": 15,
+    "frontend_moderate": 2,
+    "frontend_low": 3,
+    "backend_critical": 0,
+    "backend_high": 8,
+    "backend_moderate": 4,
+    "backend_low": 2
+  },
+  "provider_status": {
+    "payments_real": "BLOCKED_PROVIDER",
+    "email_real": "BLOCKED_PROVIDER",
+    "whatsapp_real": "BLOCKED_PROVIDER",
+    "ninety_nine_envios_real": "BLOCKED_PROVIDER",
+    "coordinadora_real": "BLOCKED_PROVIDER",
+    "servientrega_real": "BLOCKED_PROVIDER"
+  },
+  "known_p0": [
+    "BullMQ/event-bus wiring incomplete",
+    "Production providers must remain fail-closed",
+    "Frontend/backend HIGH dependency vulnerabilities remain",
+    "CI/branch protection not yet enforcing validation"
+  ],
+  "known_debt": [
+    "PrismaService used directly in application layer",
+    "Admin operations controller approximately 2915 lines",
+    "Several as never casts",
+    "Documentation duplication and stale status files"
+  ],
+  "next_action": "Execute EX-01 dependency high-risk remediation in safe batches; do not use forced audit fixes."
+}
