@@ -26,3 +26,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert merged PRs #1/#2 if regression is proven.
 - Evidence: 52/52 frontend, 26/26 backend unit, 83/83 critical E2E, Gitleaks clean.
 - Status: PASS
+
+### EX-01.1 — Frontend safe HIGH dependency remediation
+- Date: 2026-10-03
+- Surface: Frontend dependency/runtime/build chain
+- Change: Applied only non-forced compatible dependency updates in the lockfile.
+- Expected user impact: None intended; no UI, API, routing, checkout, or admin behavior was changed.
+- Negative-risk review: Framework-major migrations were excluded. Typecheck/lint/build and 52/52 frontend tests passed.
+- Compatibility: Next remains 15.5.27; Vitest remains 4.1.11; package.json API surface unchanged.
+- Rollback: Revert the EX-01.1 lockfile commit.
+- Evidence: npm audit 15 HIGH -> 8 HIGH, critical 0, low 0; Gitleaks clean.
+- Status: PASS

@@ -2,11 +2,13 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "canonical_sha": "d8c7cef1e730988f53312642ebaa36fee42d74c7",
+  "canonical_sha": "f3e27c9f2a1c55f656af2a02c37ed4e4cc162919",
   "updated_at": "2026-10-03",
   "phase": "internal-hardening",
   "active_execution": "EX-01",
-  "completed_executions": ["EX-00"],
+  "completed_executions": [
+    "EX-00"
+  ],
   "baseline": {
     "git_canonical": "PASS",
     "gitleaks": "PASS",
@@ -24,9 +26,9 @@
   },
   "security": {
     "frontend_critical": 0,
-    "frontend_high": 15,
-    "frontend_moderate": 2,
-    "frontend_low": 3,
+    "frontend_high": 8,
+    "frontend_moderate": 1,
+    "frontend_low": 0,
     "backend_critical": 0,
     "backend_high": 8,
     "backend_moderate": 4,
@@ -52,5 +54,5 @@
     "Several as never casts",
     "Documentation duplication and stale status files"
   ],
-  "next_action": "Execute EX-01 dependency high-risk remediation in safe batches; do not use forced audit fixes."
+  "next_action": "Complete EX-01.1 branch gate and merge; then run EX-01.2 Tailwind 4 migration and EX-01.3 Next 16 migration as separate major-upgrade sub-runs."
 }
