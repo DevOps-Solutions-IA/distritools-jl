@@ -101,7 +101,7 @@ export function MobileNavigationDrawer() {
 
       {open ? (
         <div
-          className="fixed inset-0 z-50 bg-black/72 backdrop-blur-sm xl:hidden"
+          className="fixed inset-0 z-50 bg-black/72 backdrop-blur-xs xl:hidden"
           onClick={() => setOpen(false)}
         >
           <div

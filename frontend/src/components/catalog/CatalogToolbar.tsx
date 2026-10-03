@@ -225,7 +225,7 @@ export function CatalogToolbar({
 
       {filtersOpen ? (
         <div
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs lg:hidden"
           onClick={() => setFiltersOpen(false)}
         >
           <div

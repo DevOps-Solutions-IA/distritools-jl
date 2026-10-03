@@ -68,7 +68,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
             <CategoryIcon />
           </div>
           <div className="min-w-0">
-            <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-[var(--color-off-white)] sm:text-lg">
+            <h3 className="line-clamp-2 text-sm font-semibold leading-tight text-[var(--color-off-white)] sm:text-lg sm:leading-7">
               <span className="sm:hidden">{compactName}</span>
               <span className="hidden sm:inline">{category.name}</span>
             </h3>

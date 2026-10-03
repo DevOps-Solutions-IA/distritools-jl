@@ -14,7 +14,7 @@ export function StorefrontHero({ featuredFamilies = [] }: StorefrontHeroProps) {
             Herramientas que construyen resultados
           </p>
           <div className="space-y-2">
-            <h1 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tight sm:text-5xl">
+            <h1 className="font-display text-[2rem] font-semibold leading-[1.02] tracking-tight sm:text-5xl sm:leading-none">
               Compra herramientas en segundos.
             </h1>
             <p className="max-w-xl text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base">

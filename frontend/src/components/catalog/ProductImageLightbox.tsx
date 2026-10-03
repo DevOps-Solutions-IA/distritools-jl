@@ -57,7 +57,7 @@ export function ProductImageLightbox({ images }: ProductImageLightboxProps) {
       <button
         type="button"
         onClick={() => onOpen(0)}
-        className="relative w-full h-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-industrial-yellow)]"
+        className="relative w-full h-full cursor-zoom-in focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-industrial-yellow)]"
         aria-label={`Ampliar imagen de ${current.alt}`}
       >
         <Image
@@ -73,7 +73,7 @@ export function ProductImageLightbox({ images }: ProductImageLightboxProps) {
       {/* Lightbox modal */}
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.92)] backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(0,0,0,0.92)] backdrop-blur-xs"
           onClick={onClose}
           role="dialog"
           aria-modal="true"
