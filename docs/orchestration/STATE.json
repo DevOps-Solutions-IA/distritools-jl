@@ -2,13 +2,14 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "canonical_sha": "63519ec98fe21edd72c599263dc8e1edf11b9718",
+  "canonical_sha": "004a5b1a9c014a4bb4b4766c28415de460a383d9",
   "updated_at": "2026-10-03",
   "phase": "internal-hardening",
-  "active_execution": "EX-01.2",
+  "active_execution": "EX-01.3",
   "completed_executions": [
     "EX-00",
-    "EX-01.1"
+    "EX-01.1",
+    "EX-01.2"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -27,7 +28,7 @@
   },
   "security": {
     "frontend_critical": 0,
-    "frontend_high": 8,
+    "frontend_high": 6,
     "frontend_moderate": 1,
     "frontend_low": 0,
     "backend_critical": 0,
@@ -37,19 +38,12 @@
   },
   "current_workstreams": [
     {
-      "execution": "EX-01.2",
-      "branch": "security/frontend-tailwind4-2026-10",
-      "base_sha": "63519ec98fe21edd72c599263dc8e1edf11b9718",
-      "status": "IMPLEMENTING",
-      "evidence": "Local dirty worktree detected; draft evidence reports Tailwind 4 migration, targeted/static/frontend/browser gates green, audit 8 HIGH -> 6 HIGH. Orchestrator validation/commit/PR pending.",
-      "user_impact": "STOREFRONT_CUSTOMER",
-      "hard_stop": "Do not overwrite unrelated dirty work; validate local diff and browser evidence before commit."
-    },
-    {
       "execution": "EX-01.3",
       "branch": "security/frontend-next16-2026-10",
       "status": "PLANNED",
-      "dependency": "EX-01.2 must close or be explicitly deferred first."
+      "objective": "Evaluate and, only if compatible, execute the Next 16 major migration needed to remove the embedded PostCSS advisory and reassess eslint-config-next/fast-glob advisory paths.",
+      "user_impact": "STOREFRONT_CUSTOMER / ADMIN_OPERATOR / AUTH_SECURITY",
+      "hard_stop": "Stop if App Router, middleware/proxy, auth, checkout, build/runtime contracts or browser behavior regress."
     }
   ],
   "provider_status": {
@@ -72,5 +66,12 @@
     "Several as never casts",
     "Documentation duplication and stale status files"
   ],
-  "next_action": "Independently validate EX-01.2 dirty Tailwind 4 branch (diff scope, audit, typecheck/lint/test/build, browser/user-impact evidence, gitleaks), then commit/PR only if green. After merge update canonical SHA and run EX-01.3 Next major path review."
+  "last_transition": {
+    "execution": "EX-01.2",
+    "status": "MERGED",
+    "pr": 6,
+    "merge_sha": "004a5b1a9c014a4bb4b4766c28415de460a383d9",
+    "result": "Tailwind 4 migration validated and merged; frontend HIGH 8 -> 6; user impact and rollback recorded."
+  },
+  "next_action": "Run EX-01.3 as a separate major-upgrade path review from canonical main. First baseline Next 15 remaining audit paths and Next 16 compatibility requirements; only implement if the migration can preserve auth/middleware, storefront/admin, checkout, tests/build and browser contracts."
 }
