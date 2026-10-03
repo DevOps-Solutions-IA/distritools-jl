@@ -130,7 +130,7 @@ export function ProductCard({ product }: ProductCardProps) {
               ) : null}
             </div>
             <Link href={`/productos/${product.slug}`}>
-              <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--color-off-white)] md:min-h-[2.75rem] md:text-base">
+              <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-[var(--color-off-white)] md:min-h-[2.75rem] md:text-base md:leading-6">
                 {product.name}
               </h3>
             </Link>
@@ -139,7 +139,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <div className="min-w-0 space-y-1">
               <PriceDisplay
                 priceLabel={product.primaryPriceLabel}
-                className="text-lg leading-none md:text-xl"
+                className="text-lg leading-none md:text-xl md:leading-7"
               />
               <p className="text-[11px] font-medium text-[var(--color-text-secondary)] md:hidden">
                 {product.availability.quantity

@@ -37,3 +37,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the EX-01.1 lockfile commit.
 - Evidence: npm audit 15 HIGH -> 8 HIGH, critical 0, low 0; Gitleaks clean.
 - Status: PASS
+
+### EX-01.2 — Tailwind 4 migration
+- Date: 2026-10-03
+- Surface: Storefront/admin presentation layer
+- Change: Migrated Tailwind 3 -> 4 with compatibility CSS/class adjustments intended to preserve current rendering.
+- Expected user impact: No intended functional or visual change; dependency security improves by removing the Tailwind/chokidar HIGH family.
+- Negative-risk review: 52/52 frontend tests, typecheck/lint/build PASS; executor Chromium checks at 390px/1440px report zero geometry differences on representative pages; orchestrator independently reran static/tests/build/audit/Gitleaks.
+- Compatibility: Browser floor becomes Safari 16.4+, Chrome 111+, Firefox 128+. Older browsers are NOT_TESTED.
+- Rollback: Revert EX-01.2 frontend migration files and run npm ci in frontend.
+- Evidence: docs/orchestration/runs/EX-01.2-frontend-tailwind4.md and local /tmp/ex012-* artifacts.
+- Status: PASS pending PR/merge.

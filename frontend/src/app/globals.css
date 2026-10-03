@@ -1,12 +1,66 @@
 @import '../styles/tokens.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss' source('../');
+@config '../../tailwind.config.ts';
+@custom-variant hover (&:hover);
+
+/* These existing tokens emitted no CSS in v3; keep their rendering unchanged. */
+@source not inline('sm:h-13 bg-black/72 bg-white/8 border-white/12 border-white/6 border-white/8 hover:bg-white/8 hover:border-white/16');
+
+/* Preserve the v3 status colors used by existing alerts and badges. */
+@theme {
+  --color-amber-50: #fffbeb;
+  --color-amber-100: #fef3c7;
+  --color-amber-300: #fcd34d;
+  --color-green-200: #bbf7d0;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-red-100: #fee2e2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-400: #f87171;
+  --color-red-500: #ef4444;
+}
+
+/* Keep v3 sibling spacing: v4's last-child selector changes inline form labels. */
+@utility space-y-* {
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--value(number) * 0.25rem * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--value(number) * 0.25rem * var(--tw-space-y-reverse));
+  }
+}
+
+/* Keep table separators on the following row, as in v3. */
+@utility divide-y {
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-divide-y-reverse: 0;
+    border-top-width: calc(1px * (1 - var(--tw-divide-y-reverse)));
+    border-bottom-width: calc(1px * var(--tw-divide-y-reverse));
+  }
+}
 
 @layer base {
   * {
     @apply border-[var(--color-border)];
+  }
+
+  /* Preserve the Tailwind 3 Preflight defaults used by existing controls. */
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: #e5e7eb;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+
+  button,
+  [role='button'] {
+    cursor: pointer;
   }
 
   html {
@@ -34,6 +88,21 @@
 }
 
 @layer utilities {
+  /* Undo v4's zero-specificity child rules without overriding child utilities. */
+  :where([class*='space-y-'] > :not(:last-child)) {
+    margin-block-start: 0;
+    margin-block-end: 0;
+  }
+
+  :where(.divide-y > :not(:last-child)) {
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+
+  .divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
+    border-color: rgb(255 255 255 / 0.1);
+  }
+
   .surface-panel {
     @apply rounded-lg border bg-[var(--color-surface)] shadow-soft;
   }
@@ -43,7 +112,7 @@
   }
 
   .focus-ring {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-industrial-yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)];
+    @apply focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-industrial-yellow)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)];
   }
 }
 

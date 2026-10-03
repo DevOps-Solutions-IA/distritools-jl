@@ -158,7 +158,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     {miniSpecs.map((spec) => (
                       <div key={spec.label} className="min-w-0 rounded-2xl border border-[var(--color-border)] bg-white/[0.035] px-2 py-2 text-center sm:px-4 sm:py-3">
                         <p className="text-[10px] font-semibold text-[var(--color-steel-gray)]">{spec.label}</p>
-                        <p className="break-words text-[11px] font-semibold leading-tight text-[var(--color-off-white)] sm:text-xs">{spec.value}</p>
+                        <p className="break-words text-[11px] font-semibold leading-tight text-[var(--color-off-white)] sm:text-xs sm:leading-4">{spec.value}</p>
                       </div>
                     ))}
                   </div>
@@ -174,7 +174,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               </div>
 
               <div className="space-y-2 sm:space-y-4">
-                <h1 className="break-words text-2xl font-semibold leading-tight text-[var(--color-off-white)] sm:text-4xl lg:text-5xl">
+                <h1 className="break-words text-2xl font-semibold leading-tight text-[var(--color-off-white)] sm:text-4xl sm:leading-10 lg:text-5xl lg:leading-none">
                   {data.name}
                 </h1>
                 <p className="line-clamp-3 max-w-2xl break-words text-sm leading-6 text-[var(--color-text-secondary)] sm:text-base sm:leading-7">
