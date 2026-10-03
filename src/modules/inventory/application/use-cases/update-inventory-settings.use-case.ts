@@ -80,6 +80,11 @@ function nonNegativeNumber(value: unknown, label: string): number | undefined {
 }
 
 function redactItem(item: { variantId: string; warehouseId: string; onHandQty: number; reservedQty: number; committedQty?: number | null; minStock?: number | null; costPrice?: unknown }) {
+  const costPrice =
+    item.costPrice === undefined || item.costPrice === null
+      ? null
+      : Number(item.costPrice);
+
   return {
     variantId: item.variantId,
     warehouseId: item.warehouseId,
@@ -87,6 +92,7 @@ function redactItem(item: { variantId: string; warehouseId: string; onHandQty: n
     reservedQty: item.reservedQty,
     committedQty: item.committedQty ?? 0,
     minStock: item.minStock ?? null,
-    costPrice: item.costPrice ?? null,
+    costPrice,
+    costConfigured: costPrice !== null,
   };
 }
