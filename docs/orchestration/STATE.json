@@ -2,12 +2,13 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "canonical_sha": "f3e27c9f2a1c55f656af2a02c37ed4e4cc162919",
+  "canonical_sha": "63519ec98fe21edd72c599263dc8e1edf11b9718",
   "updated_at": "2026-10-03",
   "phase": "internal-hardening",
-  "active_execution": "EX-01",
+  "active_execution": "EX-01.2",
   "completed_executions": [
-    "EX-00"
+    "EX-00",
+    "EX-01.1"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -34,6 +35,23 @@
     "backend_moderate": 4,
     "backend_low": 2
   },
+  "current_workstreams": [
+    {
+      "execution": "EX-01.2",
+      "branch": "security/frontend-tailwind4-2026-10",
+      "base_sha": "63519ec98fe21edd72c599263dc8e1edf11b9718",
+      "status": "IMPLEMENTING",
+      "evidence": "Local dirty worktree detected; draft evidence reports Tailwind 4 migration, targeted/static/frontend/browser gates green, audit 8 HIGH -> 6 HIGH. Orchestrator validation/commit/PR pending.",
+      "user_impact": "STOREFRONT_CUSTOMER",
+      "hard_stop": "Do not overwrite unrelated dirty work; validate local diff and browser evidence before commit."
+    },
+    {
+      "execution": "EX-01.3",
+      "branch": "security/frontend-next16-2026-10",
+      "status": "PLANNED",
+      "dependency": "EX-01.2 must close or be explicitly deferred first."
+    }
+  ],
   "provider_status": {
     "payments_real": "BLOCKED_PROVIDER",
     "email_real": "BLOCKED_PROVIDER",
@@ -54,5 +72,5 @@
     "Several as never casts",
     "Documentation duplication and stale status files"
   ],
-  "next_action": "Complete EX-01.1 branch gate and merge; then run EX-01.2 Tailwind 4 migration and EX-01.3 Next 16 migration as separate major-upgrade sub-runs."
+  "next_action": "Independently validate EX-01.2 dirty Tailwind 4 branch (diff scope, audit, typecheck/lint/test/build, browser/user-impact evidence, gitleaks), then commit/PR only if green. After merge update canonical SHA and run EX-01.3 Next major path review."
 }
