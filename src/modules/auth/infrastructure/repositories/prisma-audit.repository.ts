@@ -20,6 +20,18 @@ export class PrismaAuditRepository implements AuditRepository {
   ) {}
 
   private sanitizePayload(payload: unknown): unknown {
+    if (typeof payload === 'bigint') {
+      return payload.toString();
+    }
+
+    if (payload instanceof Date) {
+      return payload.toISOString();
+    }
+
+    if (payload instanceof Prisma.Decimal) {
+      return payload.toString();
+    }
+
     if (!payload || typeof payload !== 'object') {
       return payload;
     }
