@@ -58,10 +58,11 @@ Stop immediately and report without hiding the failure when any of these occurs:
 - No force-push unless orchestrator explicitly authorizes recovery.
 - PR body must include scope, before/after evidence, gates, user impact, rollback, and exact remaining blockers.
 - Merge only after orchestrator independent validation.
-- After merge: update STATE.json canonical_sha, completed/current execution, security/provider counters, next_action, and USER_IMPACT_LOG.md when applicable.
+- After a validated product/security merge: record that merge SHA as STATE.json `validated_product_sha`; update completed/current execution, security/provider counters, next_action and USER_IMPACT_LOG.md when applicable.
+- Never try to store “the exact current main SHA” as a self-equality invariant inside STATE.json. The state commit itself changes main. Instead, `validated_product_sha` must be an ancestor of current HEAD/origin/main and the live SHA is read from Git.
 
 ## Validation ownership
-The executor may report PASS, but the orchestrator independently verifies mergeability, branch/base relation, critical evidence, and canonical SHA. Production readiness requires the full VALIDATION_MATRIX.md, not executor confidence.
+The executor may report PASS, but the orchestrator independently verifies mergeability, branch/base relation, critical evidence, and validated-product ancestry. Production readiness requires the full VALIDATION_MATRIX.md, not executor confidence.
 
 ## User-impact contract
 Every execution classifies impact as:

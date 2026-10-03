@@ -2,7 +2,9 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "canonical_sha": "004a5b1a9c014a4bb4b4766c28415de460a383d9",
+  "validated_product_sha": "004a5b1a9c014a4bb4b4766c28415de460a383d9",
+  "state_base_sha": "14473ac08801cf03b25b4c8861e0a9ae58c8166d",
+  "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-03",
   "phase": "internal-hardening",
   "active_execution": "EX-01.3",
@@ -73,5 +75,5 @@
     "merge_sha": "004a5b1a9c014a4bb4b4766c28415de460a383d9",
     "result": "Tailwind 4 migration validated and merged; frontend HIGH 8 -> 6; user impact and rollback recorded."
   },
-  "next_action": "Run EX-01.3 as a separate major-upgrade path review from canonical main. First baseline Next 15 remaining audit paths and Next 16 compatibility requirements; only implement if the migration can preserve auth/middleware, storefront/admin, checkout, tests/build and browser contracts."
+  "next_action": "Run EX-01.3 as a separate major-upgrade path review from current origin/main. First baseline Next 15 remaining audit paths and Next 16 compatibility requirements; only implement if the migration can preserve auth/middleware, storefront/admin, checkout, tests/build and browser contracts."
 }
