@@ -10,13 +10,29 @@ function git(...args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
 }
 
+function gitOk(...args) {
+  try {
+    execFileSync('git', args, { cwd: root, stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const currentHead = git('rev-parse', 'HEAD');
+const originMain = git('rev-parse', 'origin/main');
+const validatedSha = state.validated_product_sha;
+
 const output = {
   project: state.project,
   canonical_branch: state.canonical_branch,
-  recorded_canonical_sha: state.canonical_sha,
+  validated_product_sha: validatedSha,
+  validated_sha_is_ancestor_of_head: gitOk('merge-base', '--is-ancestor', validatedSha, currentHead),
+  validated_sha_is_ancestor_of_origin_main: gitOk('merge-base', '--is-ancestor', validatedSha, originMain),
+  state_base_sha: state.state_base_sha,
   current_branch: git('branch', '--show-current'),
-  current_head: git('rev-parse', 'HEAD'),
-  origin_main: git('rev-parse', 'origin/main'),
+  current_head: currentHead,
+  origin_main: originMain,
   tree_clean: git('status', '--porcelain') === '',
   phase: state.phase,
   active_execution: state.active_execution,
