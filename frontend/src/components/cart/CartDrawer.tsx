@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
@@ -9,8 +9,12 @@ import { CartItemRow } from '@/components/cart/CartItemRow';
 import { useCart } from '@/features/cart/hooks';
 import { trackCommerceEvent } from '@/lib/observability/commerce-events';
 
+const subscribeToHydration = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
+
 export function CartDrawer() {
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useSyncExternalStore(subscribeToHydration, getClientSnapshot, getServerSnapshot);
   const {
     items,
     summary,
@@ -26,10 +30,6 @@ export function CartDrawer() {
       ? 'Subtotal parcial'
       : 'Subtotal'
     : 'Total por confirmar';
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!state.isDrawerOpen) {

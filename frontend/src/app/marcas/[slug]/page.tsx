@@ -50,21 +50,10 @@ export default async function BrandDetailPage({ params, searchParams }: BrandPag
   const status = getSingleValue(resolvedSearchParams.status);
   const sort = getSingleValue(resolvedSearchParams.sort);
 
-  try {
+  async function loadPageData() {
     const response = await getBrandDetailData(slug);
 
-    if (!response) {
-      return (
-        <StorefrontShell>
-          <EmptyState
-            title="Marca no encontrada"
-            description="Vuelve al directorio para explorar fabricantes disponibles."
-            actionLabel="Ver marcas"
-            actionHref="/marcas"
-          />
-        </StorefrontShell>
-      );
-    }
+    if (!response) return null;
 
     const { brand, products, relatedCategories } = response.data;
     const filteredProducts = filterCatalogProducts(products, {
@@ -78,52 +67,12 @@ export default async function BrandDetailPage({ params, searchParams }: BrandPag
       brand.description ??
       'Marca disponible para compra directa con productos publicados.';
 
-    return (
-      <StorefrontShell>
-        <section className="space-y-4 sm:space-y-6 lg:space-y-8">
-          <Breadcrumbs
-            className="hidden sm:block"
-            items={[
-              { label: 'Inicio', href: '/' },
-              { label: 'Marcas', href: '/marcas' },
-              { label: brand.name },
-            ]}
-          />
-          <CatalogHeader
-            eyebrow="Marca"
-            title={brand.name}
-            description={description}
-            stats={[
-              `${filteredProducts.length} productos`,
-              `${relatedCategories.length} categorías`,
-            ]}
-            primaryHref={`/productos?brand=${brand.slug}`}
-            primaryLabel="Ver productos"
-            secondaryHref="/buscar"
-            secondaryLabel="Consultar"
-          />
-          <CatalogToolbar
-            action={`/marcas/${brand.slug}`}
-            clearHref={`/marcas/${brand.slug}`}
-            brands={[]}
-            categories={relatedCategories}
-            products={products}
-            resultCount={filteredProducts.length}
-            query={query}
-            selectedCategorySlug={categorySlug}
-            selectedStatus={status}
-            selectedSort={sort}
-            hideBrandFilter
-            searchPlaceholder={`Buscar en ${brand.name}`}
-          />
-          <ProductGrid
-            products={filteredProducts}
-            emptyTitle={`No hay productos publicados para ${brand.name}.`}
-            emptyDescription="Ajusta los filtros o solicita asesoría para encontrar una alternativa."
-          />
-        </section>
-      </StorefrontShell>
-    );
+    return { brand, products, relatedCategories, filteredProducts, description };
+  }
+
+  let pageData: Awaited<ReturnType<typeof loadPageData>>;
+  try {
+    pageData = await loadPageData();
   } catch (error) {
     return (
       <StorefrontShell>
@@ -134,4 +83,67 @@ export default async function BrandDetailPage({ params, searchParams }: BrandPag
       </StorefrontShell>
     );
   }
+
+  if (!pageData) {
+    return (
+      <StorefrontShell>
+        <EmptyState
+          title="Marca no encontrada"
+          description="Vuelve al directorio para explorar fabricantes disponibles."
+          actionLabel="Ver marcas"
+          actionHref="/marcas"
+        />
+      </StorefrontShell>
+    );
+  }
+
+  const { brand, products, relatedCategories, filteredProducts, description } = pageData;
+
+  return (
+    <StorefrontShell>
+      <section className="space-y-4 sm:space-y-6 lg:space-y-8">
+        <Breadcrumbs
+          className="hidden sm:block"
+          items={[
+            { label: 'Inicio', href: '/' },
+            { label: 'Marcas', href: '/marcas' },
+            { label: brand.name },
+          ]}
+        />
+        <CatalogHeader
+          eyebrow="Marca"
+          title={brand.name}
+          description={description}
+          stats={[
+            `${filteredProducts.length} productos`,
+            `${relatedCategories.length} categorías`,
+          ]}
+          primaryHref={`/productos?brand=${brand.slug}`}
+          primaryLabel="Ver productos"
+          secondaryHref="/buscar"
+          secondaryLabel="Consultar"
+        />
+        <CatalogToolbar
+          action={`/marcas/${brand.slug}`}
+          clearHref={`/marcas/${brand.slug}`}
+          brands={[]}
+          categories={relatedCategories}
+          products={products}
+          resultCount={filteredProducts.length}
+          query={query}
+          selectedCategorySlug={categorySlug}
+          selectedStatus={status}
+          selectedSort={sort}
+          hideBrandFilter
+          searchPlaceholder={`Buscar en ${brand.name}`}
+        />
+        <ProductGrid
+          products={filteredProducts}
+          emptyTitle={`No hay productos publicados para ${brand.name}.`}
+          emptyDescription="Ajusta los filtros o solicita asesoría para encontrar una alternativa."
+        />
+      </section>
+    </StorefrontShell>
+  );
+
 }

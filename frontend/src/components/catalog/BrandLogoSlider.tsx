@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, useAnimationControls, useReducedMotion } from 'framer-motion';
 import { BrandLogo } from '@/components/catalog/BrandLogo';
 import type { CatalogBrand } from '@/features/catalog/types';
@@ -10,9 +10,20 @@ interface BrandLogoSliderProps {
   brands: CatalogBrand[];
 }
 
+const mobileQuery = '(max-width: 767px)';
+const getServerViewport = () => false;
+const getMobileViewport = () =>
+  typeof window.matchMedia === 'function' && window.matchMedia(mobileQuery).matches;
+function subscribeToViewport(onChange: () => void) {
+  if (typeof window.matchMedia !== 'function') return () => {};
+  const media = window.matchMedia(mobileQuery);
+  media.addEventListener('change', onChange);
+  return () => media.removeEventListener('change', onChange);
+}
+
 export function BrandLogoSlider({ brands }: BrandLogoSliderProps) {
   const [paused, setPaused] = useState(false);
-  const [mobileViewport, setMobileViewport] = useState(false);
+  const mobileViewport = useSyncExternalStore(subscribeToViewport, getMobileViewport, getServerViewport);
   const controls = useAnimationControls();
   const reduceMotion = useReducedMotion();
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -37,18 +48,6 @@ export function BrandLogoSlider({ brands }: BrandLogoSliderProps) {
     }, 1800);
   };
 
-  useEffect(() => {
-    if (typeof window.matchMedia !== 'function') {
-      setMobileViewport(false);
-      return;
-    }
-
-    const media = window.matchMedia('(max-width: 767px)');
-    const update = () => setMobileViewport(media.matches);
-    update();
-    media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
-  }, []);
 
   useEffect(() => {
     return () => {

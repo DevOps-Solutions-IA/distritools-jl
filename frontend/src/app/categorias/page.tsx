@@ -15,31 +15,15 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoriesPage() {
-  try {
+  async function loadPageData() {
     const categories = await listCategories();
 
-    return (
-      <StorefrontShell>
-        <section className="space-y-4 sm:space-y-8">
-          <CatalogHeader
-            eyebrow="Categorías"
-            title="Líneas para obra, taller e industria"
-            description="Navega por familias de producto y entra directo a referencias disponibles para compra."
-            stats={[]}
-          />
-          <div className="flex flex-wrap gap-2">
-            <StorefrontLinkButton href="/productos" storefrontVariant="primary">
-              Ver productos
-            </StorefrontLinkButton>
-          </div>
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
-          </div>
-        </section>
-      </StorefrontShell>
-    );
+    return { categories };
+  }
+
+  let pageData: Awaited<ReturnType<typeof loadPageData>>;
+  try {
+    pageData = await loadPageData();
   } catch (error) {
     return (
       <StorefrontShell>
@@ -50,4 +34,30 @@ export default async function CategoriesPage() {
       </StorefrontShell>
     );
   }
+
+  const { categories } = pageData;
+
+  return (
+    <StorefrontShell>
+      <section className="space-y-4 sm:space-y-8">
+        <CatalogHeader
+          eyebrow="Categorías"
+          title="Líneas para obra, taller e industria"
+          description="Navega por familias de producto y entra directo a referencias disponibles para compra."
+          stats={[]}
+        />
+        <div className="flex flex-wrap gap-2">
+          <StorefrontLinkButton href="/productos" storefrontVariant="primary">
+            Ver productos
+          </StorefrontLinkButton>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {categories.map((category) => (
+            <CategoryCard key={category.id} category={category} />
+          ))}
+        </div>
+      </section>
+    </StorefrontShell>
+  );
+
 }

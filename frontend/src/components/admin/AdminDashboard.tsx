@@ -342,7 +342,7 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
               </Link>
             ))}
             <Link
-              href={`/admin/dashboard?range=${activeRange}&refresh=${Date.now()}`}
+              href={`/admin/dashboard?range=${activeRange}&refresh=${new Date(dashboard.refreshedAt).getTime()}`}
               className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)]"
             >
               Refrescar

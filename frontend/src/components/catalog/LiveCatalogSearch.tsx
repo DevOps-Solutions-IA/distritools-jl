@@ -67,19 +67,11 @@ export function LiveCatalogSearch({
 }: LiveCatalogSearchProps) {
   const [query, setQuery] = useState(defaultValue);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const inputId = useId();
   const debouncedQuery = useDebouncedValue(query, 180);
   const canSearch = query.trim().length >= 2;
 
-  useEffect(() => {
-    if (!canSearch) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-  }, [canSearch, query]);
+  const loading = canSearch && query !== debouncedQuery;
 
   const results = useMemo(() => {
     return getLiveSearchResults({
@@ -89,10 +81,6 @@ export function LiveCatalogSearch({
       categories,
     });
   }, [brands, categories, debouncedQuery, products]);
-
-  useEffect(() => {
-    setLoading(false);
-  }, [debouncedQuery]);
 
   const totalResults =
     results.products.length + results.brands.length + results.categories.length;

@@ -1,19 +1,16 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { env } from '@/config/env';
+import { isDevAdminAuthDisabled } from '@/lib/admin/dev-auth-bypass';
 
 async function getAdminAccessToken() {
   const cookieStore = await cookies();
   return cookieStore.get('dt_admin_access')?.value ?? null;
 }
 
-function isAdminAuthDisabled() {
-  return process.env.APP_ENV !== 'production' && process.env.ADMIN_AUTH_DISABLED === 'true';
-}
-
 export async function GET(request: Request) {
   const token = await getAdminAccessToken();
-  if (!token && !isAdminAuthDisabled()) {
+  if (!token && !isDevAdminAuthDisabled()) {
     return NextResponse.json({ message: 'Sesión administrativa requerida.' }, { status: 401 });
   }
 

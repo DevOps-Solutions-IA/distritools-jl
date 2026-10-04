@@ -146,6 +146,11 @@ export function AdminShell({ children }: AdminShellProps) {
   const pathname = usePathname() ?? '/admin/dashboard';
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [previousPathname, setPreviousPathname] = React.useState(pathname);
+  if (previousPathname !== pathname) {
+    setPreviousPathname(pathname);
+    setMobileOpen(false);
+  }
   const [adminSearch, setAdminSearch] = React.useState('');
   const activeModule = adminModules.find((item) => moduleIsActive(pathname, item)) ?? adminModules[0];
 
@@ -163,10 +168,6 @@ export function AdminShell({ children }: AdminShellProps) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [mobileOpen]);
-
-  React.useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   function submitAdminSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -1,18 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isDevAdminAuthDisabled } from '@/lib/admin/dev-auth-bypass';
 
 const ADMIN_ACCESS_COOKIE = 'dt_admin_access';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (!pathname.startsWith('/admin')) {
     return NextResponse.next();
   }
 
-  if (
-    process.env.APP_ENV !== 'production' &&
-    process.env.ADMIN_AUTH_DISABLED === 'true'
-  ) {
+  if (isDevAdminAuthDisabled()) {
     return NextResponse.next();
   }
 
