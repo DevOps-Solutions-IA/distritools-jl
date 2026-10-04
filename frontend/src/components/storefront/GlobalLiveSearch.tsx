@@ -19,6 +19,8 @@ interface SearchGroups {
   categories: SearchResult[];
 }
 
+const EMPTY_SEARCH_GROUPS: SearchGroups = { products: [], brands: [], categories: [] };
+
 interface GlobalLiveSearchProps {
   action?: string;
   placeholder?: string;
@@ -52,6 +54,15 @@ export function GlobalLiveSearch({
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchGroups>({ products: [], brands: [], categories: [] });
   const debouncedQuery = useDebouncedValue(query, 180);
+  const isDebouncing = query.trim() !== debouncedQuery.trim();
+  const [previousDebouncedQuery, setPreviousDebouncedQuery] = useState(debouncedQuery);
+  if (previousDebouncedQuery !== debouncedQuery) {
+    setPreviousDebouncedQuery(debouncedQuery);
+    setLoading(debouncedQuery.trim().length >= 2);
+    if (debouncedQuery.trim().length < 2) {
+      setResults({ products: [], brands: [], categories: [] });
+    }
+  }
   const inputId = useId();
   const wrapperRef = useRef<HTMLFormElement>(null);
   const canSearch = query.trim().length >= 2;
@@ -68,14 +79,9 @@ export function GlobalLiveSearch({
   }, []);
 
   useEffect(() => {
-    if (debouncedQuery.trim().length < 2) {
-      setLoading(false);
-      setResults({ products: [], brands: [], categories: [] });
-      return;
-    }
+    if (debouncedQuery.trim().length < 2) return;
 
     const controller = new AbortController();
-    setLoading(true);
 
     fetch(`/api/storefront/live-search?q=${encodeURIComponent(debouncedQuery.trim())}`, {
       signal: controller.signal,
@@ -96,9 +102,12 @@ export function GlobalLiveSearch({
     return () => controller.abort();
   }, [debouncedQuery]);
 
+  const visibleResults = isDebouncing || loading
+    ? EMPTY_SEARCH_GROUPS
+    : results;
   const totalResults = useMemo(
-    () => results.products.length + results.brands.length + results.categories.length,
-    [results],
+    () => visibleResults.products.length + visibleResults.brands.length + visibleResults.categories.length,
+    [visibleResults],
   );
 
   return (
@@ -165,7 +174,7 @@ export function GlobalLiveSearch({
           className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(68vh,32rem)] overflow-y-auto rounded-[1.2rem] border border-[var(--color-border)] bg-[linear-gradient(180deg,#111_0%,#070707_100%)] p-3 shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
         >
           <div className="mb-3 flex items-center justify-between gap-3 text-xs text-[var(--color-text-secondary)]">
-            <span>{loading ? 'Buscando...' : `${totalResults} coincidencias`}</span>
+            <span>{isDebouncing || loading ? 'Buscando...' : `${totalResults} coincidencias`}</span>
             <Link
               href={`/buscar?q=${encodeURIComponent(query.trim())}`}
               onClick={() => {
@@ -178,12 +187,12 @@ export function GlobalLiveSearch({
             </Link>
           </div>
 
-          {results.products.length ? (
+          {visibleResults.products.length ? (
             <section className="space-y-2">
               <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-industrial-yellow)]">
                 Productos
               </h3>
-              {results.products.map((product) => (
+              {visibleResults.products.map((product) => (
                 <Link
                   key={product.id}
                   href={`/productos/${product.slug}`}
@@ -206,9 +215,9 @@ export function GlobalLiveSearch({
             </section>
           ) : null}
 
-          {results.brands.length || results.categories.length ? (
+          {visibleResults.brands.length || visibleResults.categories.length ? (
             <section className="mt-3 flex flex-wrap gap-2">
-              {results.brands.map((brand) => (
+              {visibleResults.brands.map((brand) => (
                 <Link
                   key={brand.id}
                   href={`/marcas/${brand.slug}`}
@@ -221,7 +230,7 @@ export function GlobalLiveSearch({
                   Marca: {brand.name}
                 </Link>
               ))}
-              {results.categories.map((category) => (
+              {visibleResults.categories.map((category) => (
                 <Link
                   key={category.id}
                   href={`/categorias/${category.slug}`}
@@ -237,7 +246,7 @@ export function GlobalLiveSearch({
             </section>
           ) : null}
 
-          {!totalResults && !loading ? (
+          {!totalResults && !isDebouncing && !loading ? (
             <p className="rounded-xl border border-dashed border-white/12 p-3 text-sm text-[var(--color-text-secondary)]">
               Sin resultados con precio y stock. Prueba con otra palabra.
             </p>

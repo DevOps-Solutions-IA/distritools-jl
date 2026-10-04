@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { env } from '@/config/env';
+import { isDevAdminAuthDisabled } from '@/lib/admin/dev-auth-bypass';
 
 interface AdminApiResult<T> {
   ok: boolean;
@@ -228,13 +229,9 @@ async function getAdminAccessToken() {
   }
 }
 
-function isAdminAuthDisabled() {
-  return process.env.APP_ENV !== 'production' && process.env.ADMIN_AUTH_DISABLED === 'true';
-}
-
 export async function adminFetch<T>(path: string): Promise<AdminApiResult<T>> {
   const token = await getAdminAccessToken();
-  const authDisabled = isAdminAuthDisabled();
+  const authDisabled = isDevAdminAuthDisabled();
   if (!token && !authDisabled) {
     return { ok: false, status: 401, data: null, error: 'Sesión administrativa requerida.' };
   }

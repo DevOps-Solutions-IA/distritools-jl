@@ -55,21 +55,10 @@ export default async function CategoryDetailPage({
   const status = getSingleValue(resolvedSearchParams.status);
   const sort = getSingleValue(resolvedSearchParams.sort);
 
-  try {
+  async function loadPageData() {
     const categoryData = await getCategoryListingData(slug);
 
-    if (!categoryData) {
-      return (
-        <StorefrontShell>
-          <EmptyState
-            title="Categoría no encontrada"
-            description="Explora las categorías activas para encontrar una alternativa."
-            actionLabel="Ver categorías"
-            actionHref="/categorias"
-          />
-        </StorefrontShell>
-      );
-    }
+    if (!categoryData) return null;
 
     const { data } = categoryData;
     const filteredProducts = filterCatalogProducts(data.products, {
@@ -79,50 +68,12 @@ export default async function CategoryDetailPage({
       sort,
     });
 
-    return (
-      <StorefrontShell>
-        <section className="space-y-4 sm:space-y-6 lg:space-y-8">
-          <Breadcrumbs
-            className="hidden sm:block"
-            items={[
-              { label: 'Inicio', href: '/' },
-              { label: 'Categorías', href: '/categorias' },
-              { label: data.category.name },
-            ]}
-          />
-          <CatalogHeader
-            eyebrow="Categoría"
-            title={data.category.name}
-            description={
-              data.category.description ??
-              'Compra referencias disponibles con precio y stock publicado.'
-            }
-            stats={[`${filteredProducts.length} productos`, `${data.brands.length} marcas`]}
-            primaryHref="/productos"
-            primaryLabel="Ver productos"
-          />
-          <CatalogToolbar
-            action={`/categorias/${data.category.slug}`}
-            clearHref={`/categorias/${data.category.slug}`}
-            brands={data.brands}
-            categories={[]}
-            products={data.products}
-            resultCount={filteredProducts.length}
-            query={query}
-            selectedBrandSlug={brandSlug}
-            selectedStatus={status}
-            selectedSort={sort}
-            hideCategoryFilter
-            searchPlaceholder={`Buscar en ${data.category.name}`}
-          />
-          <ProductGrid
-            products={filteredProducts}
-            emptyTitle="No hay productos en esta categoría"
-            emptyDescription="Ajusta los filtros o solicita asesoría para encontrar una alternativa."
-          />
-        </section>
-      </StorefrontShell>
-    );
+    return { data, filteredProducts };
+  }
+
+  let pageData: Awaited<ReturnType<typeof loadPageData>>;
+  try {
+    pageData = await loadPageData();
   } catch (error) {
     return (
       <StorefrontShell>
@@ -134,4 +85,65 @@ export default async function CategoryDetailPage({
       </StorefrontShell>
     );
   }
+
+  if (!pageData) {
+    return (
+      <StorefrontShell>
+        <EmptyState
+          title="Categoría no encontrada"
+          description="Explora las categorías activas para encontrar una alternativa."
+          actionLabel="Ver categorías"
+          actionHref="/categorias"
+        />
+      </StorefrontShell>
+    );
+  }
+
+  const { data, filteredProducts } = pageData;
+
+  return (
+    <StorefrontShell>
+      <section className="space-y-4 sm:space-y-6 lg:space-y-8">
+        <Breadcrumbs
+          className="hidden sm:block"
+          items={[
+            { label: 'Inicio', href: '/' },
+            { label: 'Categorías', href: '/categorias' },
+            { label: data.category.name },
+          ]}
+        />
+        <CatalogHeader
+          eyebrow="Categoría"
+          title={data.category.name}
+          description={
+            data.category.description ??
+            'Compra referencias disponibles con precio y stock publicado.'
+          }
+          stats={[`${filteredProducts.length} productos`, `${data.brands.length} marcas`]}
+          primaryHref="/productos"
+          primaryLabel="Ver productos"
+        />
+        <CatalogToolbar
+          action={`/categorias/${data.category.slug}`}
+          clearHref={`/categorias/${data.category.slug}`}
+          brands={data.brands}
+          categories={[]}
+          products={data.products}
+          resultCount={filteredProducts.length}
+          query={query}
+          selectedBrandSlug={brandSlug}
+          selectedStatus={status}
+          selectedSort={sort}
+          hideCategoryFilter
+          searchPlaceholder={`Buscar en ${data.category.name}`}
+        />
+        <ProductGrid
+          products={filteredProducts}
+          emptyTitle="No hay productos en esta categoría"
+          emptyDescription="Ajusta los filtros o solicita asesoría para encontrar una alternativa."
+        />
+      </section>
+    </StorefrontShell>
+  );
+
 }

@@ -30,7 +30,7 @@ export default async function ProductsPage({
 }: {
   searchParams?: Promise<Record<string, SearchParamsValue>>;
 }) {
-  try {
+  async function loadPageData() {
     const resolvedSearchParams = (await searchParams) ?? {};
     const brandSlug = getSingleValue(resolvedSearchParams.brand);
     const categorySlug = getSingleValue(resolvedSearchParams.category);
@@ -48,44 +48,12 @@ export default async function ProductsPage({
       sort,
     });
 
-    return (
-      <StorefrontShell>
-        <section className="space-y-4 sm:space-y-6 lg:space-y-7">
-          <Breadcrumbs className="hidden sm:block" items={[{ label: 'Inicio', href: '/' }, { label: 'Productos' }]} />
-          <CatalogHeader
-            eyebrow="Productos"
-            title="Productos industriales"
-            description="Herramientas y equipos en stock para comprar directo."
-            stats={[]}
-            primaryHref="/marcas"
-            primaryLabel="Ver marcas"
-            secondaryHref="/buscar"
-            secondaryLabel="Buscar"
-          />
-          <CatalogToolbar
-            action="/productos"
-            clearHref="/productos"
-            brands={data.brands}
-            categories={data.categories}
-            products={publicProducts}
-            resultCount={filteredProducts.length}
-            query={query}
-            selectedBrandSlug={data.appliedFilters.brandSlug}
-            selectedCategorySlug={data.appliedFilters.categorySlug}
-            selectedStatus={status}
-            selectedSort={data.appliedFilters.sort}
-          />
-          <ProductGrid products={filteredProducts} />
-          <div className="text-sm text-[var(--color-text-secondary)]">
-            ¿No encuentras una referencia?{' '}
-            <Link href="/buscar" className="font-semibold text-[var(--color-industrial-yellow)]">
-              Usa la búsqueda
-            </Link>{' '}
-            o solicita asesoría.
-          </div>
-        </section>
-      </StorefrontShell>
-    );
+    return { query, status, data, publicProducts, filteredProducts };
+  }
+
+  let pageData: Awaited<ReturnType<typeof loadPageData>>;
+  try {
+    pageData = await loadPageData();
   } catch (error) {
     return (
       <StorefrontShell>
@@ -97,4 +65,46 @@ export default async function ProductsPage({
       </StorefrontShell>
     );
   }
+
+  const { query, status, data, publicProducts, filteredProducts } = pageData;
+
+  return (
+    <StorefrontShell>
+      <section className="space-y-4 sm:space-y-6 lg:space-y-7">
+        <Breadcrumbs className="hidden sm:block" items={[{ label: 'Inicio', href: '/' }, { label: 'Productos' }]} />
+        <CatalogHeader
+          eyebrow="Productos"
+          title="Productos industriales"
+          description="Herramientas y equipos en stock para comprar directo."
+          stats={[]}
+          primaryHref="/marcas"
+          primaryLabel="Ver marcas"
+          secondaryHref="/buscar"
+          secondaryLabel="Buscar"
+        />
+        <CatalogToolbar
+          action="/productos"
+          clearHref="/productos"
+          brands={data.brands}
+          categories={data.categories}
+          products={publicProducts}
+          resultCount={filteredProducts.length}
+          query={query}
+          selectedBrandSlug={data.appliedFilters.brandSlug}
+          selectedCategorySlug={data.appliedFilters.categorySlug}
+          selectedStatus={status}
+          selectedSort={data.appliedFilters.sort}
+        />
+        <ProductGrid products={filteredProducts} />
+        <div className="text-sm text-[var(--color-text-secondary)]">
+          ¿No encuentras una referencia?{' '}
+          <Link href="/buscar" className="font-semibold text-[var(--color-industrial-yellow)]">
+            Usa la búsqueda
+          </Link>{' '}
+          o solicita asesoría.
+        </div>
+      </section>
+    </StorefrontShell>
+  );
+
 }

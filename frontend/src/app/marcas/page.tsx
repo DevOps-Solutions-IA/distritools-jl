@@ -14,24 +14,15 @@ export const metadata: Metadata = {
 };
 
 export default async function BrandsPage() {
-  try {
+  async function loadPageData() {
     const { data } = await getBrandDirectoryData();
 
-    return (
-      <StorefrontShell>
-        <section className="space-y-8">
-          <CatalogHeader
-            eyebrow="Marcas"
-            title="Compra por fabricante"
-            description="Encuentra líneas por marca y entra directo a productos disponibles con precio y stock."
-            stats={[`${data.brands.length} marcas`, 'Compra directa']}
-            primaryHref="/productos"
-            primaryLabel="Ver productos"
-          />
-          <BrandStrip brands={data.brands} />
-        </section>
-      </StorefrontShell>
-    );
+    return { data };
+  }
+
+  let pageData: Awaited<ReturnType<typeof loadPageData>>;
+  try {
+    pageData = await loadPageData();
   } catch (error) {
     return (
       <StorefrontShell>
@@ -42,4 +33,23 @@ export default async function BrandsPage() {
       </StorefrontShell>
     );
   }
+
+  const { data } = pageData;
+
+  return (
+    <StorefrontShell>
+      <section className="space-y-8">
+        <CatalogHeader
+          eyebrow="Marcas"
+          title="Compra por fabricante"
+          description="Encuentra líneas por marca y entra directo a productos disponibles con precio y stock."
+          stats={[`${data.brands.length} marcas`, 'Compra directa']}
+          primaryHref="/productos"
+          primaryLabel="Ver productos"
+        />
+        <BrandStrip brands={data.brands} />
+      </section>
+    </StorefrontShell>
+  );
+
 }

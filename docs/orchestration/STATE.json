@@ -30,9 +30,10 @@
   },
   "security": {
     "frontend_critical": 0,
-    "frontend_high": 6,
-    "frontend_moderate": 1,
+    "frontend_high": 5,
+    "frontend_moderate": 0,
     "frontend_low": 0,
+    "frontend_audit_fresh": "PASS: 2026-10-03 fresh npm audit; 5 HIGH dev-tooling only, runtime audit 0 vulnerabilities",
     "backend_critical": 0,
     "backend_high": 8,
     "backend_moderate": 4,
@@ -42,10 +43,29 @@
     {
       "execution": "EX-01.3",
       "branch": "security/frontend-next16-2026-10",
-      "status": "PLANNED",
-      "objective": "Evaluate and, only if compatible, execute the Next 16 major migration needed to remove the embedded PostCSS advisory and reassess eslint-config-next/fast-glob advisory paths.",
+      "base_sha": "938abd5853123039ed9c8138ffb270c4e653aa76",
+      "status": "READY_FOR_PR",
+      "gate_status": "PASS",
+      "objective": "Complete compatible Next 16 migration and reduce frontend HIGH findings without unsafe downgrade/force; preserve fail-closed admin auth and storefront behavior.",
       "user_impact": "STOREFRONT_CUSTOMER / ADMIN_OPERATOR / AUTH_SECURITY",
-      "hard_stop": "Stop if App Router, middleware/proxy, auth, checkout, build/runtime contracts or browser behavior regress."
+      "passed_gates": [
+        "origin/main freshly fetched and equals branch base 938abd5853123039ed9c8138ffb270c4e653aa76",
+        "frontend typecheck",
+        "frontend lint (0 errors, 13 warnings)",
+        "frontend tests (10 files, 61/61)",
+        "frontend production build (Next 16.3.8 Turbopack)",
+        "fresh npm audit: 0 critical / 5 high / 0 moderate / 0 low",
+        "fresh runtime npm audit --omit=dev: 0 vulnerabilities",
+        "git diff --check",
+        "gitleaks history/diff/frontend-src: 0 leaks"
+      ],
+      "blocked_gates": [],
+      "remaining_debt": [
+        "5 HIGH advisory nodes in eslint-config-next development-tooling chain; npm proposes unsafe downgrade and braces has no patched version in current advisory",
+        "13 non-blocking lint warnings",
+        "tailwind.config.ts MODULE_TYPELESS_PACKAGE_JSON build warning"
+      ],
+      "next_action": "Commit the validated EX-01.3 change set, push branch, open PR against main, validate PR mergeability/diff, then merge only after orchestrator audit."
     }
   ],
   "provider_status": {
@@ -75,5 +95,5 @@
     "merge_sha": "004a5b1a9c014a4bb4b4766c28415de460a383d9",
     "result": "Tailwind 4 migration validated and merged; frontend HIGH 8 -> 6; user impact and rollback recorded."
   },
-  "next_action": "Run EX-01.3 as a separate major-upgrade path review from current origin/main. First baseline Next 15 remaining audit paths and Next 16 compatibility requirements; only implement if the migration can preserve auth/middleware, storefront/admin, checkout, tests/build and browser contracts."
+  "next_action": "EX-01.3 is independently audited and READY_FOR_PR. Commit validated worktree, push security/frontend-next16-2026-10, open PR against main, validate PR, then merge if unchanged and mergeable."
 }
