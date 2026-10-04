@@ -58,4 +58,4 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Compatibility: Next 16.3.8 / React 19.2.5. Fresh full audit: 0 critical / 5 high / 0 moderate / 0 low. Fresh runtime audit with `--omit=dev`: 0 vulnerabilities. Five HIGH advisory nodes remain only in the eslint-config-next -> fast-glob -> micromatch -> braces development-tooling chain; no safe patched braces version is currently available through npm audit and the proposed downgrade is rejected.
 - Rollback: Revert the EX-01.3 merge; restore Next 15 dependency lock and middleware naming/config, then run `npm ci` and the frontend validation matrix.
 - Evidence: `docs/orchestration/runs/EX-01.3-frontend-next16.md`, `docs/orchestration/runs/EX-01.3-frontend-lint.md`, fresh `/tmp/ex013-fresh-audit.json` and `/tmp/ex013-fresh-runtime-audit.json`.
-- Status: PASS / READY_FOR_PR. Remote main was freshly fetched and matches base SHA `938abd5853123039ed9c8138ffb270c4e653aa76`. No merge performed yet.
+- Status: PASS / MERGED via PR #9. Merge SHA `4f78b82b7a5fb0ee714e0846590ed323414b8c1f`. No negative user-facing regression observed in the audited scope.
