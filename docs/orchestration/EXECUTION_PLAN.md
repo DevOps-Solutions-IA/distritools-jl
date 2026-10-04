@@ -11,6 +11,7 @@ Known exception: architecture check reports pre-existing debt.
 Goal: reduce frontend 15 HIGH and backend 8 HIGH without unsafe forced upgrades.
 Method: safe patch/minor/transitive batches first; isolate major migrations; no downgrade acceptance without evidence.
 Exit: critical stays 0; HIGH reduced materially; all baseline gates remain green; unresolved HIGH categorized with concrete owner/reason.
+Sub-runs: EX-01.1 frontend safe HIGH PASS; EX-01.2 Tailwind 4 PASS; EX-01.3 Next 16 PASS/MERGED; EX-01.4 backend HIGH remediation ACTIVE.
 
 ## EX-02 — CI, branch governance, and repeatable release gates
 Goal: enforce Prisma validate, lint, typecheck, builds, unit tests, critical tests, Gitleaks, no-mock production guard, artifacts, and branch protection.
