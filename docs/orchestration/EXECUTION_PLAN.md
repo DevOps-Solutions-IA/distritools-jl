@@ -7,13 +7,13 @@ Goal: establish GitHub source of truth, secret hygiene, isolated test infrastruc
 Evidence: GitHub canonical; Gitleaks clean; frontend 52/52; backend unit 26/26; critical E2E 83/83; builds/typechecks/lints PASS.
 Known exception: architecture check reports pre-existing debt.
 
-## EX-01 — Dependency security high-risk remediation — ACTIVE
+## EX-01 — Dependency security high-risk remediation — PASS
 Goal: reduce frontend 15 HIGH and backend 8 HIGH without unsafe forced upgrades.
 Method: safe patch/minor/transitive batches first; isolate major migrations; no downgrade acceptance without evidence.
 Exit: critical stays 0; HIGH reduced materially; all baseline gates remain green; unresolved HIGH categorized with concrete owner/reason.
-Sub-runs: EX-01.1 frontend safe HIGH PASS; EX-01.2 Tailwind 4 PASS; EX-01.3 Next 16 PASS/MERGED; EX-01.4 backend HIGH remediation ACTIVE.
+Sub-runs: EX-01.1 frontend safe HIGH PASS; EX-01.2 Tailwind 4 PASS; EX-01.3 Next 16 PASS/MERGED; EX-01.4 backend HIGH safe remediation PASS/MERGED. Residual Prisma HIGH and Swagger moderate are explicit release obligations, not hidden findings.
 
-## EX-02 — CI, branch governance, and repeatable release gates
+## EX-02 — CI, branch governance, and repeatable release gates — ACTIVE
 Goal: enforce Prisma validate, lint, typecheck, builds, unit tests, critical tests, Gitleaks, no-mock production guard, artifacts, and branch protection.
 Exit: PR cannot merge when required gates fail; rollback/evidence tied to SHA.
 
