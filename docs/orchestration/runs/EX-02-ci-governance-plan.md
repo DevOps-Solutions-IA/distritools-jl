@@ -34,7 +34,7 @@ Current documented baselines:
 The gate must make known residual advisory paths visible in artifacts/output while preventing count/severity regression. Do not use npm audit fix, force, blanket ignore, or suppression to pass CI.
 
 ## Isolated integration requirements
-- use .env.test and the existing test-only database/Redis definitions
+- use `.env.test` and CI-owned test-only database/Redis services; the environment guard must reject this repository's shared developer-service ports
 - never target production or developer databases
 - preserve the existing test isolation guard
 - no real payment/email/WhatsApp/shipping provider calls

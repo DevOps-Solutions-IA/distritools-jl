@@ -70,3 +70,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the EX-01.4 dependency manifest/lockfile change as one unit, reinstall the prior lockfile, then rerun Prisma validate, typecheck, lint, build, unit/security and critical integration gates. Normal queue rollout monitoring is sufficient; no special msgpackr codec migration step is required.
 - Evidence: `docs/orchestration/runs/EX-01.4-backend-high-final.md`; `/tmp/ex014-fresh-audit.json`; `/tmp/ex014-after-batch1.json`; `/tmp/ex014-after-batch2.json`; `/tmp/ex014-runtime-after-safe.json`.
 - Status: PASS / MERGED via PR #11. Merge SHA `85be915832f71727ad4459c68bc65d1805f591e2`. No user-facing behavior change observed in the audited scope.
+
+### EX-02 — CI and release governance
+- Date: 2026-10-05
+- Surface: Engineering governance / CI; critical shipping test fixture assertion only.
+- Change: Added seven repeatable CI checks, an isolated test-service target guard, production readiness policy tests, a dependency audit regression gate, and governance documentation. Added an assertion that the 99 Envíos critical test's authenticated actor is the seeded admin.
+- Expected user impact: NONE_EXPECTED. No application/runtime behavior, API contract, storefront UI, or provider integration changed.
+- Negative-risk review: PASS locally for Prisma validation, backend/frontend quality and tests, critical integration (14 files/83 tests in independent orchestrator rerun), audit regression fixtures, production unsafe-config fixtures, Gitleaks history, workflow lint, reviewer/challenger and diff checks. GitHub Actions and branch protection have not yet been exercised remotely.
+- Compatibility: No dependency or schema changes. CI services are ephemeral Postgres 16/Redis 7; test guard requires CI context and explicitly test-named loopback targets. No real provider credentials/calls.
+- Rollback: Revert the EX-02 workflow/scripts/docs/state/user-impact changes and the test fixture identity assertion as a single change set; no product data migration is involved.
+- Evidence: `docs/orchestration/runs/EX-02-ci-governance-final.md`; four fresh audit artifacts referenced there.
+- Status: PASS / READY_FOR_PR after independent orchestrator local audit; remote GitHub checks and main branch protection remain NOT_TESTED until PR publication.

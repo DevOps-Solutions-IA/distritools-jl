@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "source": "docs/orchestration/STATE.json after EX-01.4 merge 85be915832f71727ad4459c68bc65d1805f591e2",
+  "profiles": {
+    "backend-full": {
+      "critical": 0, "high": 4, "moderate": 2, "low": 1,
+      "findings": [
+        "@nestjs/swagger|node_modules/@nestjs/swagger|dep:js-yaml",
+        "@prisma/config|node_modules/@prisma/config|dep:deepmerge-ts,dep:effect",
+        "deepmerge-ts|node_modules/deepmerge-ts|advisory:https://github.com/advisories/GHSA-ggr8-5vv4-36mx",
+        "effect|node_modules/effect|advisory:https://github.com/advisories/GHSA-38f7-945m-qr2g",
+        "esbuild|node_modules/esbuild|advisory:https://github.com/advisories/GHSA-g7r4-m6w7-qqqr",
+        "js-yaml|node_modules/js-yaml|advisory:https://github.com/advisories/GHSA-r3ph-w7gj-g6xm",
+        "prisma|node_modules/prisma|dep:@prisma/config"
+      ]
+    },
+    "backend-runtime": {
+      "critical": 0, "high": 4, "moderate": 2, "low": 0,
+      "findings": [
+        "@nestjs/swagger|node_modules/@nestjs/swagger|dep:js-yaml",
+        "@prisma/config|node_modules/@prisma/config|dep:deepmerge-ts,dep:effect",
+        "deepmerge-ts|node_modules/deepmerge-ts|advisory:https://github.com/advisories/GHSA-ggr8-5vv4-36mx",
+        "effect|node_modules/effect|advisory:https://github.com/advisories/GHSA-38f7-945m-qr2g",
+        "js-yaml|node_modules/js-yaml|advisory:https://github.com/advisories/GHSA-r3ph-w7gj-g6xm",
+        "prisma|node_modules/prisma|dep:@prisma/config"
+      ]
+    },
+    "frontend-full": {
+      "critical": 0, "high": 5, "moderate": 0, "low": 0,
+      "findings": [
+        "@next/eslint-plugin-next|node_modules/@next/eslint-plugin-next|dep:fast-glob",
+        "braces|node_modules/braces|advisory:https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+        "eslint-config-next|node_modules/eslint-config-next|dep:@next/eslint-plugin-next",
+        "fast-glob|node_modules/fast-glob|dep:micromatch",
+        "micromatch|node_modules/micromatch|dep:braces"
+      ]
+    },
+    "frontend-runtime": { "critical": 0, "high": 0, "moderate": 0, "low": 0, "findings": [] }
+  }
+}

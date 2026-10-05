@@ -1,0 +1,256 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-quality:
+    name: backend-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate workflow schema
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+          "$(go env GOPATH)/bin/actionlint" .github/workflows/ci.yml
+      - name: Validate Prisma schema
+        run: npm run prisma:validate
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Build
+        run: npm run build
+
+  backend-unit-security:
+    name: backend-unit-security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Run backend unit and security tests
+        run: NODE_PATH=. node --import tsx --test --test-concurrency=1 tests/unit/*.unit.test.ts tests/unit/security/*.unit.test.ts
+
+  frontend-quality:
+    name: frontend-quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit and component tests
+        run: npm test
+      - name: Production build
+        env:
+          APP_ENV: production
+          ADMIN_AUTH_DISABLED: 'false'
+          NEXT_PUBLIC_API_BASE_URL: https://api.example.invalid
+          NEXT_PUBLIC_SITE_URL: https://store.example.invalid
+        run: npm run build
+
+  critical-integration:
+    name: critical-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: distritoolsjl_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d distritoolsjl_test"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 20
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      APP_ENV: test
+      ADMIN_AUTH_DISABLED: 'true'
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
+      REDIS_URL: redis://127.0.0.1:6379
+      REDIS_PASSWORD: ''
+      SHIPPING_PROVIDER: internal
+      AUTO_SHIPPING_MODE: disabled
+      PAYMENT_GATEWAY_SECRET: ci-only-payment-secret
+      JWT_ACCESS_SECRET: ci-only-access-secret
+      JWT_REFRESH_SECRET: ci-only-refresh-secret
+      JWT_2FA_CHALLENGE_SECRET: ci-only-2fa-challenge-secret
+      TWO_FACTOR_ENCRYPTION_KEY: ci-only-two-factor-encryption-key
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Create isolated test environment file
+        run: |
+          cat > .env.test <<'EOF'
+          NODE_ENV=test
+          APP_ENV=test
+          ADMIN_AUTH_DISABLED=true
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
+          REDIS_URL=redis://127.0.0.1:6379
+          REDIS_PASSWORD=
+          SHIPPING_PROVIDER=internal
+          AUTO_SHIPPING_MODE=disabled
+          PAYMENT_GATEWAY_SECRET=ci-only-payment-secret
+          JWT_ACCESS_SECRET=ci-only-access-secret
+          JWT_REFRESH_SECRET=ci-only-refresh-secret
+          JWT_2FA_CHALLENGE_SECRET=ci-only-2fa-challenge-secret
+          TWO_FACTOR_ENCRYPTION_KEY=ci-only-two-factor-encryption-key
+          EOF
+      - name: Test test-environment guard failure modes
+        run: node --test scripts/ci/tests/test-environment-guard.test.js
+      - name: Prove test-only service targets
+        run: node scripts/ci/assert-test-environment.js
+      - name: Generate Prisma client and migrate isolated database
+        run: |
+          npm run prisma:generate
+          npm run prisma:migrate:deploy
+      - name: Run critical integration suite
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          npm run test:critical 2>&1 | tee artifacts/critical-integration.log
+      - name: Upload critical test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: critical-integration-${{ github.run_id }}
+          path: artifacts/critical-integration.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Install pinned Gitleaks
+        run: |
+          go install github.com/gitleaks/gitleaks/v8@v8.28.0
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Scan history and checked-out source
+        run: |
+          gitleaks git --redact .
+          gitleaks dir --redact .
+
+  dependency-security:
+    name: dependency-security
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Install backend dependencies
+        run: npm ci
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Capture full and runtime audit reports
+        run: |
+          mkdir -p artifacts/security
+          set +e
+          npm audit --json > artifacts/security/backend-full.json
+          npm audit --omit=dev --json > artifacts/security/backend-runtime.json
+          (cd frontend && npm audit --json) > artifacts/security/frontend-full.json
+          (cd frontend && npm audit --omit=dev --json) > artifacts/security/frontend-runtime.json
+          set -e
+      - name: Enforce documented severity ceilings and print findings
+        run: |
+          node scripts/ci/dependency-security-gate.js \
+            --baseline scripts/ci/dependency-baseline.json \
+            --audit backend-full=artifacts/security/backend-full.json \
+            --audit backend-runtime=artifacts/security/backend-runtime.json \
+            --audit frontend-full=artifacts/security/frontend-full.json \
+            --audit frontend-runtime=artifacts/security/frontend-runtime.json
+          node --test scripts/ci/tests/dependency-security-gate.test.js
+      - name: Upload audit evidence, including known residual findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dependency-audits-${{ github.run_id }}
+          path: artifacts/security/*.json
+          if-no-files-found: error
+          retention-days: 30
+
+  production-readiness-guard:
+    name: production-readiness-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Verify fail-closed production policy and unsafe fixtures
+        run: node --test scripts/ci/tests/production-readiness-guard.test.js
