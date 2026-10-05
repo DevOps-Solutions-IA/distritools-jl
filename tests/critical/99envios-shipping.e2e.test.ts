@@ -34,6 +34,7 @@ describe('99 Envios API-ready shipping integration', async () => {
       seeded.users.twoFactorSecret,
     );
     adminToken = admin.accessToken;
+    assert.equal(admin.user.id, seeded.users.adminUserId, 'authenticated actor must match seeded admin');
 
     const order = await http.post('/api/v1/checkout/guest-order').send({
       customer: {
