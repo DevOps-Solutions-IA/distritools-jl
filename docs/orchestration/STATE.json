@@ -5,7 +5,7 @@
   "validated_product_sha": "4f78b82b7a5fb0ee714e0846590ed323414b8c1f",
   "state_base_sha": "4f78b82b7a5fb0ee714e0846590ed323414b8c1f",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
-  "updated_at": "2026-10-03",
+  "updated_at": "2026-10-05",
   "phase": "internal-hardening",
   "active_execution": "EX-01.4",
   "completed_executions": [
@@ -26,7 +26,7 @@
     "frontend_build": "PASS",
     "frontend_tests": "61/61 PASS",
     "backend_unit_tests": "26/26 PASS",
-    "critical_e2e": "83/83 PASS",
+    "critical_e2e": "PASS (14 critical files; EX-01.4 orchestrator rerun)",
     "architecture_check": "DEBT_DETECTED"
   },
   "security": {
@@ -36,34 +36,54 @@
     "frontend_low": 0,
     "frontend_audit_fresh": "PASS: 2026-10-03 fresh npm audit; 5 HIGH dev-tooling only, runtime audit 0 vulnerabilities",
     "backend_critical": 0,
-    "backend_high": 8,
-    "backend_moderate": 4,
-    "backend_low": 2
+    "backend_high": 4,
+    "backend_moderate": 2,
+    "backend_low": 1,
+    "backend_audit_fresh": "PASS: independently rerun by orchestrator on 2026-10-05; full audit 0 critical/4 high/2 moderate/1 low; runtime-only audit 0 critical/4 high/2 moderate/0 low"
   },
   "current_workstreams": [
     {
       "execution": "EX-01.4",
       "branch": "security/backend-high-safe-2026-10",
-      "status": "PLANNED",
+      "status": "READY_FOR_PR",
+      "gate_status": "PASS",
       "objective": "Refresh backend dependency audit and reduce HIGH findings using safe patch/minor/transitive fixes first; isolate any framework-major or Prisma-path remediation.",
-      "user_impact": "API_CONTRACT / AUTH_SECURITY / INTERNAL_OPERATIONS",
+      "user_impact": "NONE_EXPECTED",
       "hard_stop": "No npm audit fix --force; no Prisma downgrade; no broad Nest/Prisma major migration mixed into a safe-fix batch; stop on runtime/API/test regression or ambiguous advisory remediation.",
       "entry_gates": [
-        "fresh origin/main",
-        "clean branch from canonical main",
-        "fresh backend npm audit --json",
-        "backend typecheck/lint/unit baseline",
-        "Prisma validate",
-        "Gitleaks baseline"
+        "orchestrator verified canonical origin/main base and safe dependency batch",
+        "fresh backend npm audit artifacts before/after supplied by orchestrator",
+        "post-batch Prisma validate/typecheck/lint/build/unit-security tests",
+        "targeted Nest HTTP/Multer and BullMQ queue-worker tests",
+        "critical integration suite",
+        "Gitleaks history/diff/source and git diff --check"
       ],
       "exit_gates": [
-        "critical remains 0",
-        "backend HIGH reduced where safe",
-        "all backend static/unit gates PASS",
-        "critical integration suite remains green if dependency changes affect runtime",
-        "remaining HIGH findings categorized with exact dependency path and safe owner"
+        "critical remains 0 and HIGH reduced from 8 to 4",
+        "all assigned post-batch local gates PASS",
+        "runtime dependency smoke and critical integration suite PASS",
+        "remaining Prisma HIGH and Swagger moderate isolated with owner and next phase"
       ],
-      "next_action": "INICIA FASE EX-01.4"
+      "passed_gates": [
+        "fresh git fetch: HEAD == origin/main == GitHub main at 165907fc7db33e906ffc7703c6a842f8ad0ac510 before commit",
+        "dependency diff limited to package.json/package-lock.json plus EX-01.4 orchestration evidence",
+        "fresh full audit after batch: 0 critical / 4 high / 2 moderate / 1 low",
+        "fresh runtime-only audit after batch: 0 critical / 4 high / 2 moderate / 0 low",
+        "Prisma validate PASS",
+        "backend typecheck PASS",
+        "backend lint PASS",
+        "backend build PASS",
+        "backend unit/security tests 26/26 PASS",
+        "critical integration suite PASS across 14 files",
+        "targeted Express/Multer multipart + Supertest PASS",
+        "targeted BullMQ Queue/Worker Redis round-trip PASS",
+        "BullMQ 5.76.1 vs 5.81.5 Packr configuration identical; msgpackr 1.11.5/2.0.5 representative payload buffers byte-identical and mutually decodable",
+        "ioredis 5.11.1 pins cluster-key-slot exactly 1.1.1; lockfile downgrade from 1.1.2 is parent-driven",
+        "Gitleaks history/diff/source PASS",
+        "git diff --check PASS"
+      ],
+      "blocked_gates": [],
+      "next_action": "Orchestrator commit/push/open PR for EX-01.4, audit remote PR, and merge if unchanged and mergeable."
     }
   ],
   "provider_status": {
@@ -77,7 +97,7 @@
   "known_p0": [
     "BullMQ/event-bus wiring incomplete",
     "Production providers must remain fail-closed",
-    "Backend HIGH dependency vulnerabilities remain; frontend has 5 dev-tooling HIGH nodes with no safe patched braces path",
+    "EX-01.4 residual backend advisories: 4 HIGH nodes in Prisma config/deepmerge-ts/effect and 2 MODERATE nodes in Swagger/js-yaml; address only in separate approved compatibility work. Frontend has 5 dev-tooling HIGH nodes with no safe patched braces path",
     "CI/branch protection not yet enforcing validation"
   ],
   "known_debt": [
@@ -94,5 +114,5 @@
     "merge_sha": "4f78b82b7a5fb0ee714e0846590ed323414b8c1f",
     "result": "Next 16 migration validated and merged; frontend runtime audit 0 vulnerabilities; full audit 5 HIGH dev-tooling only; frontend tests 61/61; auth proxy/search regressions corrected."
   },
-  "next_action": "INICIA FASE EX-01.4 — backend dependency security. Executor should read AGENTS.md, STATE.json, EXECUTION_PLAN.md, CODEX_EXECUTION_PROTOCOL.md and docs/orchestration/runs/EX-01.4-backend-high-plan.md."
+  "next_action": "EX-01.4 independently audited and READY_FOR_PR. Orchestrator owns commit, push, PR audit and merge."
 }
