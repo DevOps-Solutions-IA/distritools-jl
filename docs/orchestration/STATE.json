@@ -47,7 +47,7 @@
     {
       "execution": "EX-02",
       "branch": "ci/enterprise-release-gates-2026-10",
-      "status": "REMOTE_BOOTSTRAP_REQUIRED",
+      "status": "REMOTE_VALIDATION_IN_PROGRESS",
       "objective": "Establish mandatory CI, security regression gates, isolated integration services, release evidence, and branch governance before deeper architecture/runtime work.",
       "user_impact": "NONE_EXPECTED / ENGINEERING_GOVERNANCE",
       "hard_stop": "No production secrets or production databases in CI; no real provider calls; no weakening tests to make CI pass; workflow permissions must be least-privilege.",
@@ -70,8 +70,8 @@
         "REQUIRED_AFTER_BOOTSTRAP: validation PR must show all seven checks green on exact head SHA",
         "REQUIRED_AFTER_BOOTSTRAP: main branch protection must require all seven checks and PR-based updates"
       ],
-      "next_action": "One-time bootstrap merge of the independently audited CI introduction PR; then create a validation PR, require all seven checks green, configure main protection, and only then close EX-02.",
-      "gate_status": "LOCAL_PASS_REMOTE_BOOTSTRAP_PENDING"
+      "next_action": "Validation PR #14 is open; require all seven CI checks green on the latest PR revision before branch protection and EX-02 closure.",
+      "gate_status": "LOCAL_PASS_REMOTE_PR_VALIDATION_PENDING"
     }
   ],
   "provider_status": {
@@ -102,7 +102,7 @@
     "merge_sha": "85be915832f71727ad4459c68bc65d1805f591e2",
     "result": "Safe backend dependency batch merged; backend HIGH reduced 8 -> 4, moderate 4 -> 2, low 2 -> 1; all local/critical gates passed; remaining Prisma/Swagger advisories isolated as explicit obligations."
   },
-  "next_action": "EX-02 local audit PASS. GitHub Actions is enabled but main has no registered workflows yet; perform one-time bootstrap merge, then remote validation PR and branch protection before closing EX-02.",
+  "next_action": "EX-02 validation PR #14 in progress. Do not close EX-02 until seven remote checks pass and main protection is verified.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
