@@ -47,7 +47,7 @@
     {
       "execution": "EX-02",
       "branch": "ci/enterprise-release-gates-2026-10",
-      "status": "READY_FOR_PR",
+      "status": "REMOTE_BOOTSTRAP_REQUIRED",
       "objective": "Establish mandatory CI, security regression gates, isolated integration services, release evidence, and branch governance before deeper architecture/runtime work.",
       "user_impact": "NONE_EXPECTED / ENGINEERING_GOVERNANCE",
       "hard_stop": "No production secrets or production databases in CI; no real provider calls; no weakening tests to make CI pass; workflow permissions must be least-privilege.",
@@ -66,11 +66,12 @@
         "PASS: orchestrator reran full critical suite: 14 files / 83 tests",
         "PASS: fresh backend/frontend full+runtime audits match documented dependency baseline and fingerprints",
         "PASS: Gitleaks diff and git diff --check",
-        "NOT_TESTED: seven GitHub Actions checks on exact PR head SHA",
-        "NOT_TESTED: main branch protection requiring those check names"
+        "BOOTSTRAP_PENDING: workflow is new and absent from default branch, so GitHub has no PR check runs for the introduction PR",
+        "REQUIRED_AFTER_BOOTSTRAP: validation PR must show all seven checks green on exact head SHA",
+        "REQUIRED_AFTER_BOOTSTRAP: main branch protection must require all seven checks and PR-based updates"
       ],
-      "next_action": "Orchestrator commit/push/open PR, verify all seven GitHub Actions jobs on exact head SHA, then merge and configure main branch protection.",
-      "gate_status": "PASS"
+      "next_action": "One-time bootstrap merge of the independently audited CI introduction PR; then create a validation PR, require all seven checks green, configure main protection, and only then close EX-02.",
+      "gate_status": "LOCAL_PASS_REMOTE_BOOTSTRAP_PENDING"
     }
   ],
   "provider_status": {
@@ -101,7 +102,7 @@
     "merge_sha": "85be915832f71727ad4459c68bc65d1805f591e2",
     "result": "Safe backend dependency batch merged; backend HIGH reduced 8 -> 4, moderate 4 -> 2, low 2 -> 1; all local/critical gates passed; remaining Prisma/Swagger advisories isolated as explicit obligations."
   },
-  "next_action": "EX-02 independently audited locally and READY_FOR_PR. Remote GitHub Actions and branch protection remain mandatory before closing EX-02.",
+  "next_action": "EX-02 local audit PASS. GitHub Actions is enabled but main has no registered workflows yet; perform one-time bootstrap merge, then remote validation PR and branch protection before closing EX-02.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",

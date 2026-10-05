@@ -77,3 +77,10 @@ The first broad critical run produced FK/UUID failures in the 99 Envíos test; t
 - Fresh dependency audits for backend/frontend full+runtime matched documented count ceilings and finding fingerprints.
 - git diff --check and Gitleaks diff PASS.
 - Local audit result: READY_FOR_PR. Remote GitHub checks and main branch protection remain required.
+
+## Remote bootstrap diagnostic
+- GitHub Actions repository setting: enabled; allowed_actions=all.
+- Default-branch workflow registry before EX-02 merge: 0 workflows.
+- Introduction PR head before bootstrap: 0 workflow runs and 0 check-runs.
+- Conclusion: the first workflow cannot satisfy its own pull_request remote gate before it exists on main.
+- Approved one-time sequence: bootstrap-merge the independently audited introduction PR; create a follow-up validation PR; require all seven checks green on its exact SHA; configure branch protection; close EX-02 only after those remote gates pass.

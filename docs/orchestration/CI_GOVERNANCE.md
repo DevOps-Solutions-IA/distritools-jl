@@ -41,3 +41,7 @@ Known findings remain visible: backend Prisma/deepmerge-ts/effect HIGH chain, Sw
 ## Operator workflow
 
 For each pull request, wait for all seven stable checks on the exact head SHA. Any changed audit identity requires review and an explicit baseline update; do not update the baseline merely to make a failing run green. The orchestrator independently reviews check results and configures branch protection after merge.
+
+## First-workflow bootstrap
+
+Because this repository had no workflow on the default branch before EX-02, GitHub cannot produce the new pull-request checks on the same PR that introduces the first workflow. Actions was verified enabled, while the repository workflow registry and the introduction-PR head both reported zero workflow runs/checks. The one-time bootstrap procedure is therefore: independently audit the workflow locally; merge only the CI introduction PR; immediately open a validation PR from the resulting main; require all seven checks green on that exact validation head SHA; then configure main branch protection to require those exact checks and PR-based updates. This exception applies only to the first workflow bootstrap and must not be reused once CI exists on main.
