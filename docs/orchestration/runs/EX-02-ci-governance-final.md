@@ -2,7 +2,7 @@
 
 ## Status
 
-**PASS / READY_FOR_PR**. This is a local executor handoff, not a GitHub Actions run, branch-protection verification, merge, or production-readiness declaration. No commit, push, PR, or merge was performed.
+**REMOTE_VALIDATION_IN_PROGRESS — NOT FINAL**. This handoff does not declare EX-02 complete. GitHub Actions checks and branch-protection verification remain required; no merge is authorized.
 
 ## Baseline
 
@@ -41,18 +41,18 @@ The EX-01.4 backend audit baseline is `0 critical / 4 high / 2 moderate / 1 low`
 | Frontend lint | PASS | `cd frontend && npm run lint`; 13 existing warnings, 0 errors |
 | Frontend tests | PASS | `cd frontend && npm test`, 61/61 across 10 files |
 | Frontend production build | PASS | `cd frontend && npm run build`; configured with reserved `.invalid` URLs |
-| Critical integration | PASS | Fresh complete rerun of `npm run test:critical` against disposable Postgres 16/Redis 7; 14 files / 83 tests. The earlier transient FK/UUID failure did not recur. |
+| Critical integration | PASS | `npm run test:critical` against disposable Postgres 16 / Redis 7, with no global `SHIPPING_PROVIDER`; 14 files / 83 tests. The provider-none assertion passes. |
 | Dependency regression | PASS | Gate passed all four supplied current full/runtime audit JSON files |
 | Test target guard | PASS | Guard requires CI context, test mode, test-named local PostgreSQL, rejects remote hosts/shared dev ports, and restricts default service ports to CI |
 | Production mock/readiness policy | PASS | Requires explicit production readiness/auth state, strong JWT/2FA values, documented logistics configuration, and known payment credentials when online payments are enabled; tests unsafe configs and local mocks |
 | Gitleaks history | PASS | `gitleaks git --redact .`, 77 commits scanned, no leaks |
-| Gitleaks working tree | PASS | Changed workflow, CI scripts, governance/final docs and critical test scanned directly; full local tree scan was interrupted because it traversed generated/dependency directories. CI scans a clean checkout in its own job. |
+| Gitleaks source | PASS | `gitleaks dir --redact .` in a clean versioned-source mirror containing the current changes; exact fixture fingerprint only, no leaks. Untracked local credentials/artifacts were not scanned or suppressed. |
 | Diff whitespace | PASS | `git diff --check` |
 | Independent reviewer | PASS | Read-only reviewer/challenger found no remaining blocking local-diff findings; GitHub checks and branch protection are outside local review |
-| GitHub Actions on PR SHA | NOT_TESTED | Requires orchestrator push/PR |
+| GitHub Actions on PR SHA | FAIL / REMEDIATION READY | Orchestrator reports 5/7 checks pass; `critical-integration` and `secret-scan` are the two remaining checks. This local correction is not yet pushed or remotely re-run. |
 | Main branch protection | NOT_TESTED | Orchestrator-owned after checks exist remotely |
 
-The first broad critical run produced FK/UUID failures in the 99 Envíos test; the failing response was downstream of a foreign-key rejection at shipment creation. The original cause was not conclusively identified. The focused case and three executor complete runs plus the orchestrator 14-file/83-test complete rerun passed, and the authenticated actor matched the seeded admin. The extra identity assertion was retained. This non-reproduced initial failure is recorded rather than presented as diagnosed; no product source was changed.
+The first critical-integration failure was diagnosed: `ADMIN_AUTH_DISABLED=true` enabled the dev-admin bypass, which replaced the authenticated actor with a non-persisted UUID and caused the shipment creator foreign-key rejection. Keeping `ADMIN_AUTH_DISABLED=false` is intentional and validates normal auth/RBAC. A later, separate remote failure expected `provider='none'` but received `internal` because the job environment and generated `.env.test` both forced `SHIPPING_PROVIDER=internal`. This correction removes those two provider defaults while retaining `AUTO_SHIPPING_MODE=disabled`, so individual tests alone choose an explicit provider. No assertions or product-source code are changed.
 
 ## Security and user impact
 
@@ -91,3 +91,14 @@ The first broad critical run produced FK/UUID failures in the 99 Envíos test; t
 - `critical-integration` root cause: CI set `APP_ENV=test` and `ADMIN_AUTH_DISABLED=true`, which activates the dev-admin bypass. `JwtAuthGuard` then replaces the authenticated request actor with an ephemeral bypass user whose UUID is not persisted in `users`; shipment creation correctly rejects that UUID via `shipments_created_by_id_fkey`.
 - Root cause reproduced locally A/B: bypass=true reproduced the FK/P2023 failure; bypass=false passed the 99 Envios shipping suite 4/4. CI now sets `ADMIN_AUTH_DISABLED=false`, so critical integration validates real authentication/RBAC rather than bypass behavior.
 - These corrections are workflow/test-environment fixes only; no product runtime code was changed.
+
+- PR validation run exposed one `secret-scan` false positive: `gitleaks git` passed, while `gitleaks dir` reported the already-reviewed test-only `TWO_FACTOR_ENCRYPTION_KEY` fixture in `docker-compose.test.yml`. The ignore file contains only its exact dir-scan fingerprint (`docker-compose.test.yml:generic-api-key:48`) alongside the existing commit-specific fingerprint; no path/rule-wide allowlist was added.
+- The critical suite's canonical count is 14 files / 83 tests. Do not mark EX-02 final until both remaining GitHub checks pass on the current PR revision and the orchestrator closes the remote gates.
+
+## EX-02 remote correction continuation — 2026-10-05
+- Current executor branch/HEAD: `ci/validate-release-gates-2026-10` / `5e36d88d57a96fa7b778c89187a4fa4d585b955a`; no commit, push, or merge performed.
+- The remote FK/UUID failure was not transient: `ADMIN_AUTH_DISABLED=true` enabled dev-admin bypass and supplied an actor UUID absent from persisted users. Keep `ADMIN_AUTH_DISABLED=false` in job env and generated `.env.test`.
+- The later critical-integration failure is distinct: workflow job env and generated `.env.test` globally set `SHIPPING_PROVIDER=internal`, changing the test that expects provider `none`. Both global defaults are removed; `AUTO_SHIPPING_MODE=disabled` remains. Tests requiring a provider configure it locally; the no-provider test receives no global provider override. Assertions and product code are unchanged.
+- Local rerun evidence: `actionlint` v1.7.7 PASS; CI helper tests 22/22 PASS; `npm run test:critical` PASS, 14 files / 83 tests, using isolated Postgres 16 / Redis 7; Gitleaks v8.28.0 history scan PASS (82 commits); Gitleaks source-dir scan PASS on versioned checkout mirror plus current edits; `git diff --check` PASS.
+- The first dir scan of the broad developer workspace encountered ignored local artifacts outside the PR source (including local credential files). They were not changed or allowlisted; the final source scan used only tracked checkout contents plus the three changed files, matching CI checkout scope.
+- Remote status remains 5/7 checks PASS until the orchestrator publishes this revision and observes `critical-integration` and `secret-scan` pass on the PR SHA. EX-02 remains open; no final status is declared here.

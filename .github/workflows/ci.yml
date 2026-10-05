@@ -125,7 +125,6 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
       REDIS_URL: redis://127.0.0.1:6379
       REDIS_PASSWORD: ''
-      SHIPPING_PROVIDER: internal
       AUTO_SHIPPING_MODE: disabled
       PAYMENT_GATEWAY_SECRET: ci-only-payment-secret
       JWT_ACCESS_SECRET: ci-only-access-secret
@@ -150,7 +149,6 @@ jobs:
           DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
           REDIS_URL=redis://127.0.0.1:6379
           REDIS_PASSWORD=
-          SHIPPING_PROVIDER=internal
           AUTO_SHIPPING_MODE=disabled
           PAYMENT_GATEWAY_SECRET=ci-only-payment-secret
           JWT_ACCESS_SECRET=ci-only-access-secret
