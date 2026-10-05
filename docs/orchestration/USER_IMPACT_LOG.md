@@ -59,3 +59,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the EX-01.3 merge; restore Next 15 dependency lock and middleware naming/config, then run `npm ci` and the frontend validation matrix.
 - Evidence: `docs/orchestration/runs/EX-01.3-frontend-next16.md`, `docs/orchestration/runs/EX-01.3-frontend-lint.md`, fresh `/tmp/ex013-fresh-audit.json` and `/tmp/ex013-fresh-runtime-audit.json`.
 - Status: PASS / MERGED via PR #9. Merge SHA `4f78b82b7a5fb0ee714e0846590ed323414b8c1f`. No negative user-facing regression observed in the audited scope.
+
+### EX-01.4 — Backend dependency security baseline
+- Date: 2026-10-05
+- Surface: Backend dependency/runtime compatibility and security posture.
+- Change: Applied the orchestrator-authorized compatible dependency batch: Nest platform-express 11.2.7/Multer 2.4.0, Swagger 11.4.7, BullMQ 5.81.5, Supertest 7.3.1, plus locked transitive updates for form-data, qs, and body-parser. No application source, schema, or migration changed.
+- Expected user impact: NONE_EXPECTED; no intended API or product behavior change. Multipart and queue/worker paths were exercised locally.
+- Negative-risk review: PASS. Fresh orchestrator audit shows 0 critical / 8 high / 4 moderate / 2 low before and 0 critical / 4 high / 2 moderate / 1 low after. Prisma/typecheck/lint/build, 26/26 unit/security tests, targeted Express/Multer+Supertest and BullMQ+Redis smoke tests, the full 14-file critical suite, Gitleaks and git diff check passed. Independent audit also proved BullMQ/msgpackr cross-version compatibility and confirmed cluster-key-slot 1.1.1 is parent-pinned by ioredis 5.11.1.
+- Compatibility: Application source remains unchanged; Nest remains major 11 and Prisma remains 6.19.0. Residual Prisma HIGH chain is not fixed by a safe in-range update; npm's Prisma 6.12.0 suggestion is a downgrade and is rejected. `@nestjs/swagger` 11.4.7 retains the js-yaml moderate; proposed Swagger 12.0.2 is a major migration and is isolated. The esbuild LOW via tsx remains out of scope.
+- Rollback: Revert the EX-01.4 dependency manifest/lockfile change as one unit, reinstall the prior lockfile, then rerun Prisma validate, typecheck, lint, build, unit/security and critical integration gates. Normal queue rollout monitoring is sufficient; no special msgpackr codec migration step is required.
+- Evidence: `docs/orchestration/runs/EX-01.4-backend-high-final.md`; `/tmp/ex014-fresh-audit.json`; `/tmp/ex014-after-batch1.json`; `/tmp/ex014-after-batch2.json`; `/tmp/ex014-runtime-after-safe.json`.
+- Status: PASS / READY_FOR_PR after independent orchestrator audit. Merge not yet performed.
