@@ -45,3 +45,7 @@ For each pull request, wait for all seven stable checks on the exact head SHA. A
 ## First-workflow bootstrap
 
 Because this repository had no workflow on the default branch before EX-02, GitHub cannot produce the new pull-request checks on the same PR that introduces the first workflow. Actions was verified enabled, while the repository workflow registry and the introduction-PR head both reported zero workflow runs/checks. The one-time bootstrap procedure is therefore: independently audit the workflow locally; merge only the CI introduction PR; immediately open a validation PR from the resulting main; require all seven checks green on that exact validation head SHA; then configure main branch protection to require those exact checks and PR-based updates. This exception applies only to the first workflow bootstrap and must not be reused once CI exists on main.
+
+## Critical authentication policy
+
+The `critical-integration` job must run with `ADMIN_AUTH_DISABLED=false`. Critical E2E tests exercise real admin login/RBAC and must not use the local/test admin bypass. Enabling the bypass in this job is a CI configuration defect because the bypass actor is intentionally ephemeral and is not a persisted `users` row.

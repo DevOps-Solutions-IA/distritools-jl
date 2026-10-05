@@ -84,3 +84,10 @@ The first broad critical run produced FK/UUID failures in the 99 Envíos test; t
 - Introduction PR head before bootstrap: 0 workflow runs and 0 check-runs.
 - Conclusion: the first workflow cannot satisfy its own pull_request remote gate before it exists on main.
 - Approved one-time sequence: bootstrap-merge the independently audited introduction PR; create a follow-up validation PR; require all seven checks green on its exact SHA; configure branch protection; close EX-02 only after those remote gates pass.
+
+## Bootstrap remote findings and corrections
+- Bootstrap push run `37333247826` registered all seven jobs. Five passed on the first remote attempt; `secret-scan` and `critical-integration` failed.
+- `secret-scan` root cause: Gitleaks v8.28.0 declares Go module path `github.com/zricethezav/gitleaks/v8`; the bootstrap workflow used the renamed GitHub organization path. Corrected the install path without changing the pinned version.
+- `critical-integration` root cause: CI set `APP_ENV=test` and `ADMIN_AUTH_DISABLED=true`, which activates the dev-admin bypass. `JwtAuthGuard` then replaces the authenticated request actor with an ephemeral bypass user whose UUID is not persisted in `users`; shipment creation correctly rejects that UUID via `shipments_created_by_id_fkey`.
+- Root cause reproduced locally A/B: bypass=true reproduced the FK/P2023 failure; bypass=false passed the 99 Envios shipping suite 4/4. CI now sets `ADMIN_AUTH_DISABLED=false`, so critical integration validates real authentication/RBAC rather than bypass behavior.
+- These corrections are workflow/test-environment fixes only; no product runtime code was changed.
