@@ -10,6 +10,8 @@ import { DomainEventName, VersionedDomainEvent, validateDomainEvent } from 'src/
 import { BullMqDomainEventPublisher } from 'src/infra/events/bullmq-domain-event.publisher';
 import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
 import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY } from 'src/common/events/domain-event-outbox.port';
+import { PrismaDomainEventOutboxRepository } from 'src/infra/events/prisma-domain-event-outbox.repository';
 
 type DomainEventHandler = (event: DomainEvent<Record<string, unknown>>) => Promise<void> | void;
 
@@ -71,6 +73,8 @@ export class InMemoryDomainEventPublisher
     BullMqDomainEventPublisher,
     DomainEventHandlerRegistry,
     DomainEventsWorker,
+    PrismaDomainEventOutboxRepository,
+    { provide: DOMAIN_EVENT_OUTBOX_REPOSITORY, useExisting: PrismaDomainEventOutboxRepository },
     {
       provide: DOMAIN_EVENT_PUBLISHER,
       useExisting: InMemoryDomainEventPublisher,
@@ -81,6 +85,7 @@ export class InMemoryDomainEventPublisher
     BullMqDomainEventPublisher,
     DomainEventHandlerRegistry,
     DOMAIN_EVENT_PUBLISHER,
+    DOMAIN_EVENT_OUTBOX_REPOSITORY,
   ],
 })
 export class DomainEventsModule {}

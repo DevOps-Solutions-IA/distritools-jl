@@ -125,3 +125,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert EX-04.1 source, tests and documentation together; no data/schema rollback is required.
 - Evidence: `docs/orchestration/runs/EX-04.1-event-contracts-final.md`.
 - Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; no commit, push, merge, or STATE transition performed.
+
+### EX-04.2 - Durable transactional outbox
+- Date: 2026-10-06
+- Surface: Order creation/cancellation and payment webhook intent capture; isolated event transport.
+- Change: Added mandatory held outbox capture inside existing transactions and reused persisted event IDs in post-commit legacy publication. Added bounded lease/claim relay with no normal runtime registration or activation. Worker/handlers, providers, API response shapes and business rules remain unchanged.
+- Expected user impact: Existing requests retain audit then awaited subscriber behavior. Outbox insert/validation failure now rolls back the scoped business transaction instead of allowing committed business state without durable intent. Schema must precede capture-code deployment. Event occurrence records transaction capture time.
+- Negative-risk review: PASS. Executor quality/security gates and independent source review passed. Fresh orchestrator runs proved 57/57 unit/security, 24/24 real outbox failure-injection cases, full critical 15 files / 107 tests, and dedicated migration forward/rollback/forward. Source/test snapshots were unchanged during execution. Executor sandbox failures are historical and resolved by this isolated verification.
+- Compatibility: Additive table only; no dependency, provider, frontend, event payload/version or stock/payment state-rule changes. Normal in-memory delivery retained; held rows are not delivered or automatically replayed. Existing versioned recipient fields require protected DB/backups; no payload endpoint/log added.
+- Rollback: Revert EX-04.2 application code as a unit while retaining the schema and all outbox records. Forward-fix/reconcile durable history; test-only DROP is forbidden in production or any backlog-bearing DB.
+- Evidence: `docs/orchestration/runs/EX-04.2-durable-outbox-final.md`; focused failure-injection suite and disposable migration test; exact logs referenced in the final record.
+- Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT. Orchestrator verified the implementation with disposable services and added explicit shared-port/CI guards to the new destructive tests. GitHub PR/CI/merge and the subsequent STATE transition remain governed separately; no production transport or provider activation.
