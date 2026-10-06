@@ -92,3 +92,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the EX-03.2 port, adapter, DI binding, use-case injection change and focused unit test; no data rollback is needed.
 - Evidence: `docs/orchestration/runs/EX-03.2-payment-webhook-final.md`.
 - Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; independent reviewer and orchestrator audit remain required.
+
+### EX-03.3 — Create order transaction boundary
+- Date: 2026-10-06
+- Surface: Order creation / checkout application-infrastructure boundary.
+- Change: Replaced direct Prisma transaction ownership in `CreateOrderUseCase` with an application-facing `CreateOrderUnitOfWork` backed by a Prisma adapter. Stock reservation, order creation and order-item creation remain atomic in the same transaction; audit and `order.created` publication remain post-commit.
+- Expected user impact: NONE_EXPECTED. No intended change to checkout/API responses, product/promotion/tax/total rules, order status, stock semantics, tracking, audit/event timing or provider behavior.
+- Negative-risk review: PASS. Focused adapter tests 2/2; backend unit/security 31/31; focused orders/checkout 12/12; concurrency/failure-injection 8/8; full critical 14 files/83 tests; Prisma/typecheck/lint/build, Gitleaks history/source and diff check passed. Independent reviewer/challenger PASS.
+- Compatibility: No schema, migration, API/DTO, transaction-option, dependency, provider or retry changes. Existing direct transaction boundary behavior is preserved.
+- Rollback: Revert the port, adapter, Nest binding, use-case injection substitution, focused test and EX-03.3 evidence entry as one set; no database rollback is needed.
+- Evidence: `docs/orchestration/runs/EX-03.3-create-order-final.md`.
+- Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; overall architecture checker remains DEBT_DETECTED for 115 unrelated findings.

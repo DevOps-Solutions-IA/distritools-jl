@@ -5,11 +5,14 @@ import {
   DOMAIN_EVENT_PUBLISHER,
   DomainEventPublisher,
 } from 'src/common/events/domain-event.publisher';
-import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
 } from 'src/modules/auth/domain/repositories/audit.repository';
+import {
+  CREATE_ORDER_UNIT_OF_WORK,
+  CreateOrderUnitOfWork,
+} from 'src/modules/orders/application/ports/create-order-unit-of-work.port';
 import { ReserveStockUseCase } from 'src/modules/inventory/application/use-cases/reserve-stock.use-case';
 import {
   ORDER_ITEM_REPOSITORY,
@@ -57,8 +60,8 @@ export interface CreateOrderInput {
 @Injectable()
 export class CreateOrderUseCase {
   constructor(
-    @Inject(PrismaService)
-    private readonly prisma: PrismaService,
+    @Inject(CREATE_ORDER_UNIT_OF_WORK)
+    private readonly createOrderUnitOfWork: CreateOrderUnitOfWork,
     @Inject(ORDER_VARIANT_REPOSITORY)
     private readonly orderVariantRepository: OrderVariantRepository,
     @Inject(ORDER_REPOSITORY)
@@ -154,7 +157,7 @@ export class CreateOrderUseCase {
     const discountTotal = new Decimal(promotionEvaluation.orderDiscountTotal);
     const grandTotal = subtotal.sub(discountTotal).add(taxTotal).add(shippingTotal);
 
-    const order = await this.prisma.$transaction(async (tx) => {
+    const order = await this.createOrderUnitOfWork.run(async (tx) => {
       await this.reserveStockUseCase.execute({
         referenceType: 'order',
         referenceId: orderId,
