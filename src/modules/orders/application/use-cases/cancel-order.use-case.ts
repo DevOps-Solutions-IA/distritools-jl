@@ -25,6 +25,7 @@ import {
 import { OrderEntity } from 'src/modules/orders/domain/entities/order.entity';
 import { OrderPolicyService } from 'src/modules/orders/domain/services/order-policy.service';
 import { OrderStatus } from '@prisma/client';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
 
 export interface CancelOrderInput {
   actor?: CurrentUser;
@@ -51,6 +52,8 @@ export class CancelOrderUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CancelOrderInput) {
@@ -65,7 +68,7 @@ export class CancelOrderUseCase {
 
     const orderItems = await this.orderItemRepository.findByOrderId(order.id);
 
-    const updatedOrder = await this.cancelOrderUnitOfWork.run(async (tx) => {
+    const { updatedOrder, event } = await this.cancelOrderUnitOfWork.run(async (tx) => {
       await this.releaseStockUseCase.execute({
         actor: input.actor,
         referenceType: 'order',
@@ -79,7 +82,13 @@ export class CancelOrderUseCase {
         tx,
       });
 
-      return this.orderRepository.updateStatus(tx, order.id, OrderStatus.cancelled);
+      const updatedOrder = await this.orderRepository.updateStatus(tx, order.id, OrderStatus.cancelled);
+      const event = await this.outbox.captureHeld(tx, {
+        eventName: 'order.cancelled', eventVersion: 'v1', occurredAt: new Date().toISOString(),
+        payload: { orderId: updatedOrder.id, orderNumber: updatedOrder.orderNumber, status: updatedOrder.status,
+          customerEmail: updatedOrder.customerEmail, customerPhone: updatedOrder.customerPhone },
+      });
+      return { updatedOrder, event };
     });
 
     await this.auditRepository.write({
@@ -93,18 +102,7 @@ export class CancelOrderUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'order.cancelled',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        orderId: updatedOrder.id,
-        orderNumber: updatedOrder.orderNumber,
-        status: updatedOrder.status,
-        customerEmail: updatedOrder.customerEmail,
-        customerPhone: updatedOrder.customerPhone,
-      },
-    });
+    await this.domainEventPublisher.publish(event);
 
     return OrderEntity.fromState(updatedOrder).toPublicResponse();
   }

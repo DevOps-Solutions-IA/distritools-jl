@@ -22,10 +22,10 @@ Goal: remove highest-risk direct Prisma coupling and unsafe casts incrementally,
 Exit: architecture findings reduced with no behavior regression; no big-bang rewrite.
 Sub-runs: EX-03.1 AdjustStockUseCase PASS/MERGED via PR #16; EX-03.2 ProcessPaymentWebhookUseCase PASS/MERGED via PR #18; EX-03.3 CreateOrderUseCase PASS/MERGED via PR #20; EX-03.4 CancelOrderUseCase PASS/MERGED via PR #22. Architecture findings reduced 124 -> 112 without behavior changes.
 
-## EX-04 — Event bus / BullMQ / idempotency / failure semantics — ACTIVE — ACTIVE
+## EX-04 — Event bus / BullMQ / idempotency / failure semantics — ACTIVE
 Goal: replace accidental in-memory-only production path, register handlers explicitly, define Redis failure behavior, dedupe/retry semantics, and decide transactional outbox strategy.
 Exit: domain events reach intended consumer once logically, retry safely, and fail closed where required.
-Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox ACTIVE/PLANNED.
+Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox local acceptance PASS; PR integration pending.
 
 ## EX-05 — Auth, RBAC, sessions, audit, secrets, readiness
 Goal: verify login/2FA/session rotation/revocation, permissions, audit redaction, throttling, CORS/trusted proxy, production auth guards, and secret handling.

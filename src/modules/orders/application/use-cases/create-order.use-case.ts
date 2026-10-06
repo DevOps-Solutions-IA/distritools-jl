@@ -33,6 +33,7 @@ import { OrderTrackingCodeService } from 'src/modules/orders/domain/services/ord
 import { OrderStatus } from '@prisma/client';
 import { OrderItemEntity } from 'src/modules/order-items/domain/entities/order-item.entity';
 import { EvaluatePromotionsUseCase } from 'src/modules/promotions/application/use-cases/evaluate-promotions.use-case';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
 
 export interface CreateOrderLineInput {
   variantId: string;
@@ -82,6 +83,8 @@ export class CreateOrderUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CreateOrderInput) {
@@ -192,9 +195,23 @@ export class CreateOrderUseCase {
         orderItemDrafts,
       );
 
+      const event = await this.outbox.captureHeld(tx, {
+        eventName: 'order.created', eventVersion: 'v1', occurredAt: new Date().toISOString(),
+        payload: {
+          orderId: createdOrder.id, orderNumber: createdOrder.orderNumber, trackingCode,
+          status: createdOrder.status,
+          totals: { subtotal: createdOrder.subtotal, discountTotal: createdOrder.discountTotal,
+            taxTotal: createdOrder.taxTotal, shippingTotal: createdOrder.shippingTotal, grandTotal: createdOrder.grandTotal },
+          customerEmail: createdOrder.customerEmail, customerPhone: createdOrder.customerPhone,
+          items: createdItems.map((item) => ({ sku: item.skuSnapshot, name: item.variantNameSnapshot,
+            quantity: item.quantity, unitPrice: item.unitPrice, lineTotal: item.lineGrandTotal })),
+        },
+      });
+
       return {
         order: createdOrder,
         items: createdItems,
+        event,
       };
     });
 
@@ -213,33 +230,7 @@ export class CreateOrderUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'order.created',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        orderId: order.order.id,
-        orderNumber: order.order.orderNumber,
-        trackingCode,
-        status: order.order.status,
-        totals: {
-          subtotal: order.order.subtotal,
-          discountTotal: order.order.discountTotal,
-          taxTotal: order.order.taxTotal,
-          shippingTotal: order.order.shippingTotal,
-          grandTotal: order.order.grandTotal,
-        },
-        customerEmail: order.order.customerEmail,
-        customerPhone: order.order.customerPhone,
-        items: order.items.map((item) => ({
-          sku: item.skuSnapshot,
-          name: item.variantNameSnapshot,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          lineTotal: item.lineGrandTotal,
-        })),
-      },
-    });
+    await this.domainEventPublisher.publish(order.event);
 
     return {
       order: orderEntity.toAdminResponse(

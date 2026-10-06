@@ -7,7 +7,7 @@
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-06",
   "phase": "internal-hardening",
-  "active_execution": "EX-04.1",
+  "active_execution": "EX-04.2",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -55,14 +55,15 @@
       "execution": "EX-04.2",
       "parent": "EX-04",
       "branch": "events/ex04-2-durable-outbox-2026-10",
-      "status": "PLANNED",
+      "status": "READY_FOR_PR",
       "objective": "Persist critical domain-event intent atomically with business state and relay it durably with stable event IDs, without switching production providers or weakening current request semantics.",
       "user_impact": "NONE_EXPECTED",
       "hard_stop": "No provider calls, no broad transport switch, no event contract rename, no checkout/payment behavior change, no exactly-once claims, no destructive migration.",
       "discovery": "docs/orchestration/runs/EX-04-eventbus-discovery.md",
       "prior": "EX-04.1 typed contracts/handler coverage PASS/MERGED via PR #24",
+      "relay_policy": "RESOLVED: mandatory atomic capture; legacy runtime preserved; persisted held records excluded from automatic relay; relay validated only in isolated tests; handlers/inbox/idempotency and historical cutover deferred to EX-04.3.",
       "runbook": "docs/orchestration/runs/EX-04.2-durable-outbox-plan.md",
-      "next_action": "INICIA FASE EX-04.2"
+      "next_action": "ORCHESTRATOR: PR, exact-head CI, remote diff audit and squash merge for EX-04.2."
     }
   ],
   "provider_status": {
@@ -95,7 +96,7 @@
     "workflow_run": 37435018001,
     "result": "Typed/versioned event contracts and explicit handler coverage merged after 7/7 CI. In-memory runtime binding remains active; outbox/transport/provider work remains deferred."
   },
-  "next_action": "INICIA FASE EX-04.2 — durable transactional outbox for critical domain events. Do not switch production transport/providers in this sub-run.",
+  "next_action": "ORCHESTRATOR: integrate EX-04.2 only after all seven CI checks pass on the exact PR head; retain production in-memory transport.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",

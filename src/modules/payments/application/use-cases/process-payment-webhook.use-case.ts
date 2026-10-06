@@ -46,6 +46,7 @@ import {
   WebhookReceiptRepository,
 } from 'src/modules/webhooks/domain/repositories/webhook-receipt.repository';
 import { OrderStatus } from '@prisma/client';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository, PersistedDomainEvent } from 'src/common/events/domain-event-outbox.port';
 
 export interface ProcessPaymentWebhookInput {
   gateway: string;
@@ -82,6 +83,8 @@ export class ProcessPaymentWebhookUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: ProcessPaymentWebhookInput) {
@@ -99,7 +102,7 @@ export class ProcessPaymentWebhookUseCase {
 
     const receiptId = uuidv7();
 
-    const result = await this.unitOfWork.run(async (tx) => {
+    const { events, ...result } = await this.unitOfWork.run(async (tx) => {
       const receiptRegistration =
         await this.webhookReceiptRepository.createIfAbsent(tx, {
           id: receiptId,
@@ -110,7 +113,7 @@ export class ProcessPaymentWebhookUseCase {
         });
 
       if (!receiptRegistration.inserted) {
-        return { idempotent: true as const, payment: null, order: null };
+        return { idempotent: true as const, payment: null, order: null, events: [] as PersistedDomainEvent[] };
       }
 
       const paymentRecord = await this.paymentRepository.findByGatewayReference(
@@ -176,12 +179,29 @@ export class ProcessPaymentWebhookUseCase {
         updatedOrderStatus,
       );
 
+      const events: PersistedDomainEvent[] = [await this.outbox.captureHeld(tx, {
+        eventName: updatedPayment.status === 'approved' ? 'payment.approved'
+          : updatedPayment.status === 'expired' ? 'payment.expired' : 'payment.rejected',
+        eventVersion: 'v1', occurredAt: new Date().toISOString(),
+        payload: { paymentId: updatedPayment.id, orderId: updatedOrder.id, orderNumber: updatedOrder.orderNumber,
+          status: updatedPayment.status, gatewayReference: updatedPayment.gatewayReference,
+          customerEmail: updatedOrder.customerEmail, customerPhone: updatedOrder.customerPhone },
+      })];
+      if (updatedPayment.status === 'approved') {
+        events.push(await this.outbox.captureHeld(tx, {
+          eventName: 'order.paid', eventVersion: 'v1', occurredAt: new Date().toISOString(),
+          payload: { orderId: updatedOrder.id, orderNumber: updatedOrder.orderNumber,
+            customerEmail: updatedOrder.customerEmail, customerPhone: updatedOrder.customerPhone },
+        }));
+      }
+
       await this.webhookReceiptRepository.markProcessed(tx, receiptRegistration.receipt.id);
 
       return {
         idempotent: false as const,
         payment: updatedPayment,
         order: updatedOrder,
+        events,
       };
     });
 
@@ -196,39 +216,7 @@ export class ProcessPaymentWebhookUseCase {
       afterData: result,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName:
-        result.payment!.status === 'approved'
-          ? 'payment.approved'
-          : result.payment!.status === 'expired'
-            ? 'payment.expired'
-            : 'payment.rejected',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        paymentId: result.payment!.id,
-        orderId: result.order!.id,
-        orderNumber: result.order!.orderNumber,
-        status: result.payment!.status,
-        gatewayReference: result.payment!.gatewayReference,
-        customerEmail: result.order!.customerEmail,
-        customerPhone: result.order!.customerPhone,
-      },
-    });
-
-    if (result.payment!.status === 'approved') {
-      await this.domainEventPublisher.publish({
-        eventName: 'order.paid',
-        eventVersion: 'v1',
-        occurredAt: new Date().toISOString(),
-        payload: {
-          orderId: result.order!.id,
-          orderNumber: result.order!.orderNumber,
-          customerEmail: result.order!.customerEmail,
-          customerPhone: result.order!.customerPhone,
-        },
-      });
-    }
+    for (const event of events) await this.domainEventPublisher.publish(event);
 
     return {
       ok: true,

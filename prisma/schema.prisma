@@ -7,6 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model DomainEventOutbox {
+  eventId       String    @id @map("event_id") @db.Uuid
+  eventName     String    @map("event_name")
+  eventVersion  String    @map("event_version")
+  payload       Json
+  occurredAt    DateTime  @map("occurred_at")
+  correlationId String?   @map("correlation_id")
+  eligibility   String    @default("held")
+  holdReason    String?   @default("legacy_delivery_requires_reconciliation") @map("hold_reason")
+  state         String    @default("pending")
+  claimToken    String?   @map("claim_token") @db.Uuid
+  leaseUntil    DateTime? @map("lease_until")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now()) @map("next_attempt_at")
+  enqueuedAt    DateTime? @map("enqueued_at")
+  lastErrorCode String?   @map("last_error_code")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([eligibility, state, nextAttemptAt, leaseUntil])
+  @@index([eligibility, createdAt])
+  @@map("domain_event_outbox")
+}
+
 model User {
   id                       String                  @id @db.Uuid
   fullName                 String                  @map("full_name")
