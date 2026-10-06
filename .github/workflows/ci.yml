@@ -121,11 +121,10 @@ jobs:
       CI: 'true'
       NODE_ENV: test
       APP_ENV: test
-      ADMIN_AUTH_DISABLED: 'true'
-      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
+      ADMIN_AUTH_DISABLED: 'false'
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public&connection_limit=20
       REDIS_URL: redis://127.0.0.1:6379
       REDIS_PASSWORD: ''
-      SHIPPING_PROVIDER: internal
       AUTO_SHIPPING_MODE: disabled
       PAYMENT_GATEWAY_SECRET: ci-only-payment-secret
       JWT_ACCESS_SECRET: ci-only-access-secret
@@ -146,11 +145,10 @@ jobs:
           cat > .env.test <<'EOF'
           NODE_ENV=test
           APP_ENV=test
-          ADMIN_AUTH_DISABLED=true
-          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public
+          ADMIN_AUTH_DISABLED=false
+          DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/distritoolsjl_test?schema=public&connection_limit=20
           REDIS_URL=redis://127.0.0.1:6379
           REDIS_PASSWORD=
-          SHIPPING_PROVIDER=internal
           AUTO_SHIPPING_MODE=disabled
           PAYMENT_GATEWAY_SECRET=ci-only-payment-secret
           JWT_ACCESS_SECRET=ci-only-access-secret
@@ -191,7 +189,7 @@ jobs:
           fetch-depth: 0
       - name: Install pinned Gitleaks
         run: |
-          go install github.com/gitleaks/gitleaks/v8@v8.28.0
+          go install github.com/zricethezav/gitleaks/v8@v8.28.0
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Scan history and checked-out source
         run: |
