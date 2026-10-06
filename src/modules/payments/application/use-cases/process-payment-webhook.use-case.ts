@@ -4,7 +4,6 @@ import {
   DOMAIN_EVENT_PUBLISHER,
   DomainEventPublisher,
 } from 'src/common/events/domain-event.publisher';
-import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -31,6 +30,10 @@ import {
 import { PaymentPolicyService } from 'src/modules/payments/domain/services/payment-policy.service';
 import { PaymentPayloadProtectionService } from 'src/modules/payments/domain/services/payment-payload-protection.service';
 import {
+  PAYMENT_WEBHOOK_UNIT_OF_WORK,
+  PaymentWebhookUnitOfWork,
+} from 'src/modules/payments/application/ports/payment-webhook-unit-of-work.port';
+import {
   WEBHOOK_PARSER_PORT,
   WebhookParserPort,
 } from 'src/modules/webhooks/application/ports/webhook-parser.port';
@@ -53,8 +56,8 @@ export interface ProcessPaymentWebhookInput {
 @Injectable()
 export class ProcessPaymentWebhookUseCase {
   constructor(
-    @Inject(PrismaService)
-    private readonly prisma: PrismaService,
+    @Inject(PAYMENT_WEBHOOK_UNIT_OF_WORK)
+    private readonly unitOfWork: PaymentWebhookUnitOfWork,
     @Inject(PAYMENT_REPOSITORY)
     private readonly paymentRepository: PaymentRepository,
     @Inject(ORDER_REPOSITORY)
@@ -96,7 +99,7 @@ export class ProcessPaymentWebhookUseCase {
 
     const receiptId = uuidv7();
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.unitOfWork.run(async (tx) => {
       const receiptRegistration =
         await this.webhookReceiptRepository.createIfAbsent(tx, {
           id: receiptId,
@@ -180,9 +183,6 @@ export class ProcessPaymentWebhookUseCase {
         payment: updatedPayment,
         order: updatedOrder,
       };
-    }, {
-      maxWait: 15000,
-      timeout: 30000,
     });
 
     if (result.idempotent) {

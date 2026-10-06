@@ -81,3 +81,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the EX-02 workflow/scripts/docs/state/user-impact changes and the test fixture identity assertion as a single change set; no product data migration is involved.
 - Evidence: `docs/orchestration/runs/EX-02-ci-governance-final.md`; four fresh audit artifacts referenced there.
 - Status: PASS / READY_FOR_PR after independent orchestrator local audit; remote GitHub checks and main branch protection remain NOT_TESTED until PR publication.
+
+### EX-03.2 — Payment webhook transaction boundary
+- Date: 2026-10-06
+- Surface: Payment webhook application/infrastructure boundary
+- Change: Replaced direct `PrismaService.$transaction` ownership in `ProcessPaymentWebhookUseCase` with a narrow application unit-of-work backed by a Prisma adapter. Transaction callback contents, options, payment/order/inventory semantics, API responses, signature checks, idempotency, audit and event timing are unchanged.
+- Expected user impact: NONE_EXPECTED.
+- Negative-risk review: Prisma validation, typecheck, lint, build, 29/29 unit/security tests and the full 14-file critical suite passed. Existing replay, webhook signature, duplicate delivery, stock and cancellation-race assertions passed. Architecture findings for the selected use case decreased 121 -> 118.
+- Compatibility: No schema, migration, provider, endpoint, DTO, state transition, or event contract change. Existing transaction options remain maxWait=15000 / timeout=30000.
+- Rollback: Revert the EX-03.2 port, adapter, DI binding, use-case injection change and focused unit test; no data rollback is needed.
+- Evidence: `docs/orchestration/runs/EX-03.2-payment-webhook-final.md`.
+- Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; independent reviewer and orchestrator audit remain required.
