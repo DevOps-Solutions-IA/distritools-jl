@@ -3,7 +3,6 @@ import { StockMovementType } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
-import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -38,8 +37,6 @@ export interface AdjustStockInput {
 @Injectable()
 export class AdjustStockUseCase {
   constructor(
-    @Inject(PrismaService)
-    private readonly prisma: PrismaService,
     @Inject(INVENTORY_REPOSITORY)
     private readonly inventoryRepository: InventoryRepository,
     @Inject(INVENTORY_REFERENCE_REPOSITORY)
@@ -66,7 +63,7 @@ export class AdjustStockUseCase {
     this.inventoryPolicyService.ensureVariantExists(variant);
     this.inventoryPolicyService.ensureWarehouseExists(warehouse);
 
-    const result = await this.prisma.$transaction(async (tx) => {
+    const result = await this.inventoryRepository.withTransaction(async (tx) => {
       const lockedItems = await this.inventoryRepository.lockMany(tx, [
         {
           variantId: input.variantId,

@@ -27,6 +27,9 @@ export interface InventoryAdjustmentRecord {
 }
 
 export interface InventoryRepository {
+  withTransaction<T>(
+    operation: (tx: PrismaTransactionClient) => Promise<T>,
+  ): Promise<T>;
   findByVariantAndWarehouse(
     variantId: string,
     warehouseId: string,
