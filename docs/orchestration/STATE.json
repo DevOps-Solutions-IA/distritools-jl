@@ -2,19 +2,20 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "85be915832f71727ad4459c68bc65d1805f591e2",
-  "state_base_sha": "85be915832f71727ad4459c68bc65d1805f591e2",
+  "validated_product_sha": "0b7286eb22a17df3ab1cf276af58899b78421ef7",
+  "state_base_sha": "0b7286eb22a17df3ab1cf276af58899b78421ef7",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
-  "updated_at": "2026-10-05",
+  "updated_at": "2026-10-06",
   "phase": "internal-hardening",
-  "active_execution": "EX-02",
+  "active_execution": "EX-03",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
     "EX-01.2",
     "EX-01.3",
     "EX-01.4",
-    "EX-01"
+    "EX-01",
+    "EX-02"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -28,7 +29,7 @@
     "frontend_build": "PASS",
     "frontend_tests": "61/61 PASS",
     "backend_unit_tests": "26/26 PASS",
-    "critical_e2e": "PASS (EX-02 orchestrator rerun: 14 files / 83 tests)",
+    "critical_e2e": "PASS (EX-02 GitHub CI and local baseline: 14 files / 83 tests)",
     "architecture_check": "DEBT_DETECTED"
   },
   "security": {
@@ -36,42 +37,34 @@
     "frontend_high": 5,
     "frontend_moderate": 0,
     "frontend_low": 0,
-    "frontend_audit_fresh": "PASS: 2026-10-03 fresh npm audit; 5 HIGH dev-tooling only, runtime audit 0 vulnerabilities",
+    "frontend_audit_fresh": "PASS: EX-02 final audit; full 0 critical/5 high/0 moderate/0 low; runtime 0 vulnerabilities",
     "backend_critical": 0,
     "backend_high": 4,
     "backend_moderate": 2,
     "backend_low": 1,
-    "backend_audit_fresh": "PASS: independently rerun by orchestrator on 2026-10-05; full audit 0 critical/4 high/2 moderate/1 low; runtime-only audit 0 critical/4 high/2 moderate/0 low"
+    "backend_audit_fresh": "PASS: EX-02 final audit; full 0 critical/4 high/2 moderate/1 low; runtime 0 critical/4 high/2 moderate/0 low"
   },
   "current_workstreams": [
     {
-      "execution": "EX-02",
-      "branch": "ci/enterprise-release-gates-2026-10",
-      "status": "REMOTE_VALIDATION_IN_PROGRESS",
-      "objective": "Establish mandatory CI, security regression gates, isolated integration services, release evidence, and branch governance before deeper architecture/runtime work.",
-      "user_impact": "NONE_EXPECTED / ENGINEERING_GOVERNANCE",
-      "hard_stop": "No production secrets or production databases in CI; no real provider calls; no weakening tests to make CI pass; workflow permissions must be least-privilege.",
-      "entry_gates": [
-        "branch from current canonical main",
-        "clean tree",
-        "inventory existing scripts/workflows and isolated test infrastructure",
-        "confirm exact local validation commands from current package manifests"
-      ],
-      "exit_gates": [
-        "PASS: workflow defines all seven stable required jobs",
-        "PASS: critical-integration uses isolated Postgres 16/Redis 7 and test-target guard",
-        "PASS: actionlint and 22/22 CI guard/helper tests",
-        "PASS: backend Prisma/typecheck/lint/build and 26/26 unit-security tests",
-        "PASS: frontend typecheck/lint/tests/build; 61/61 tests and 13 non-blocking warnings",
-        "PASS: orchestrator reran full critical suite: 14 files / 83 tests",
-        "PASS: fresh backend/frontend full+runtime audits match documented dependency baseline and fingerprints",
-        "PASS: Gitleaks diff and git diff --check",
-        "BOOTSTRAP_PENDING: workflow is new and absent from default branch, so GitHub has no PR check runs for the introduction PR",
-        "REQUIRED_AFTER_BOOTSTRAP: validation PR must show all seven checks green on exact head SHA",
-        "REQUIRED_AFTER_BOOTSTRAP: main branch protection must require all seven checks and PR-based updates"
-      ],
-      "next_action": "Validation PR #14 is open; require all seven CI checks green on the latest PR revision before branch protection and EX-02 closure.",
-      "gate_status": "LOCAL_PASS_REMOTE_PR_VALIDATION_PENDING"
+      "execution": "EX-03",
+      "branch": "architecture/ex03-boundary-2026-10",
+      "status": "READY_FOR_PR",
+      "objective": "Reduce highest-risk direct Prisma coupling incrementally without behavior change; first seam isolates AdjustStockUseCase transaction ownership behind InventoryRepository.",
+      "user_impact": "NONE_EXPECTED",
+      "hard_stop": "No schema/migrations, provider changes, checkout/payment redesign, broad controller rewrite, or behavior changes without a separately approved seam.",
+      "first_seam": {
+        "head_sha": "1715b43d57070d09d26a99be1e1e04c6508fd8c7",
+        "result": "LOCAL_AUDIT_PASS",
+        "architecture_findings": "124 -> 121; selected AdjustStockUseCase ARCH-001 findings removed",
+        "gates": "Prisma/typecheck/lint/build PASS; unit/security 27/27; targeted 17/17; full critical 14 files/83 tests; Gitleaks/diff PASS"
+      },
+      "next_seam_analysis": {
+        "branch": "analysis/ex03-next-seam-2026-10",
+        "head_sha": "ab2ea9f86218091911848878add53f7eafd6d939",
+        "target": "ProcessPaymentWebhookUseCase transaction orchestration",
+        "status": "ANALYSIS_READY"
+      },
+      "next_action": "Orchestrator integrate EX-03 first seam by PR against current main, require seven CI checks green, then activate the payment-webhook seam."
     }
   ],
   "provider_status": {
@@ -86,7 +79,7 @@
     "BullMQ/event-bus wiring incomplete",
     "Production providers must remain fail-closed",
     "EX-01.4 residual backend advisories: 4 HIGH nodes in Prisma config/deepmerge-ts/effect and 2 MODERATE nodes in Swagger/js-yaml; address only in separate approved compatibility work. Frontend has 5 dev-tooling HIGH nodes with no safe patched braces path",
-    "CI workflow is local-ready but GitHub checks and main branch protection await orchestrator PR/merge configuration"
+    "GitHub branch protection/rulesets unavailable on current private-repo plan; manual PR + 7/7 exact-head governance is active until provider capability is upgraded."
   ],
   "known_debt": [
     "PrismaService used directly in application layer",
@@ -96,13 +89,15 @@
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
   ],
   "last_transition": {
-    "execution": "EX-01.4",
-    "status": "MERGED",
-    "pr": 11,
-    "merge_sha": "85be915832f71727ad4459c68bc65d1805f591e2",
-    "result": "Safe backend dependency batch merged; backend HIGH reduced 8 -> 4, moderate 4 -> 2, low 2 -> 1; all local/critical gates passed; remaining Prisma/Swagger advisories isolated as explicit obligations."
+    "execution": "EX-02",
+    "status": "PASS_WITH_PROVIDER_GOVERNANCE_BLOCKER",
+    "pr": 14,
+    "merge_sha": "0b7286eb22a17df3ab1cf276af58899b78421ef7",
+    "validation_head_sha": "b7f93a1cff48c8dd19647250a3cc8636e428f26b",
+    "workflow_run": 37415300257,
+    "result": "All seven stable CI jobs passed on the exact PR head and PR #14 merged. Branch protection and repository rulesets are unavailable for this private repository on the current GitHub plan (API 403); manual PR + 7/7 exact-head policy remains mandatory until provider capability is upgraded."
   },
-  "next_action": "EX-02 validation PR #14 in progress. Do not close EX-02 until seven remote checks pass and main protection is verified.",
+  "next_action": "EX-03 is active. Integrate the audited AdjustStockUseCase architecture seam first; next seam analysis targets ProcessPaymentWebhookUseCase. EX-04 discovery/EX-04.1 plan are preserved but remain non-active.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -136,6 +131,19 @@
       "reason": "Runtime audit is 0 vulnerabilities; no safe patched braces path is currently available.",
       "owner": "dependency maintenance/upstream watch",
       "must_close_before": "when upstream safe fix becomes available"
+    }
+  ],
+  "governance_obligations": [
+    {
+      "id": "GOV-BRANCH-PROTECTION-001",
+      "severity": "P0_GOVERNANCE",
+      "status": "BLOCKED_PROVIDER",
+      "release_blocking": true,
+      "scope": "github-main-governance",
+      "reason": "GitHub branch protection and repository rulesets both return HTTP 403: upgrade to GitHub Pro/Team-capable private-repo plan or make repository public.",
+      "current_fallback": "Orchestrator-only manual policy: changes reach main only through PR after all seven stable CI checks pass on the exact head SHA; no force push/direct push by operating protocol.",
+      "owner": "repository/account administrator",
+      "must_close_before": "EX-12 GO or explicit documented governance risk acceptance"
     }
   ]
 }

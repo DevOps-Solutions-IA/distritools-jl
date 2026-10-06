@@ -13,11 +13,11 @@ Method: safe patch/minor/transitive batches first; isolate major migrations; no 
 Exit: critical stays 0; HIGH reduced materially; all baseline gates remain green; unresolved HIGH categorized with concrete owner/reason.
 Sub-runs: EX-01.1 frontend safe HIGH PASS; EX-01.2 Tailwind 4 PASS; EX-01.3 Next 16 PASS/MERGED; EX-01.4 backend HIGH safe remediation PASS/MERGED. Residual Prisma HIGH and Swagger moderate are explicit release obligations, not hidden findings.
 
-## EX-02 — CI, branch governance, and repeatable release gates — ACTIVE
+## EX-02 — CI, branch governance, and repeatable release gates — PASS / PROVIDER-BLOCKED GOVERNANCE
 Goal: enforce Prisma validate, lint, typecheck, builds, unit tests, critical tests, Gitleaks, no-mock production guard, artifacts, and branch protection.
 Exit: PR cannot merge when required gates fail; rollback/evidence tied to SHA.
 
-## EX-03 — Architecture boundary hardening
+## EX-03 — Architecture boundary hardening — ACTIVE
 Goal: remove highest-risk direct Prisma coupling and unsafe casts incrementally, beginning with write paths and oversized admin controller seams.
 Exit: architecture findings reduced with no behavior regression; no big-bang rewrite.
 

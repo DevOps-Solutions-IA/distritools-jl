@@ -2,7 +2,7 @@
 
 ## Status
 
-**REMOTE_VALIDATION_IN_PROGRESS — NOT FINAL**. This handoff does not declare EX-02 complete. GitHub Actions checks and branch-protection verification remain required; no merge is authorized.
+**PASS / MERGED WITH PROVIDER GOVERNANCE BLOCKER**. All seven CI checks passed on the exact PR head and PR #14 was merged. GitHub branch protection/rulesets cannot be enabled for this private repository on the current provider plan; this external governance obligation remains open and release-blocking unless the plan is upgraded or an explicit risk acceptance is recorded.
 
 ## Baseline
 
@@ -49,8 +49,8 @@ The EX-01.4 backend audit baseline is `0 critical / 4 high / 2 moderate / 1 low`
 | Gitleaks source | PASS | `gitleaks dir --redact .` in a clean versioned-source mirror containing the current changes; exact fixture fingerprint only, no leaks. Untracked local credentials/artifacts were not scanned or suppressed. |
 | Diff whitespace | PASS | `git diff --check` |
 | Independent reviewer | PASS | Read-only reviewer confirmed pool limit is scoped to `critical-integration`, preserved provider/auth semantics, and found no blocking diff or documentation issue. GitHub checks and branch protection remain separate remote gates. |
-| GitHub Actions on PR SHA | FAIL / REMEDIATION IN PROGRESS | PR run `37352851034`: 6/7 checks PASS; only `critical-integration` fails. The prior `secret-scan` failure is resolved. |
-| Main branch protection | NOT_TESTED | Orchestrator-owned after checks exist remotely |
+| GitHub Actions on PR SHA | PASS | Final validation run `37415300257` on exact head `b7f93a1cff48c8dd19647250a3cc8636e428f26b`: all seven stable checks PASS. |
+| Main branch protection | BLOCKED_PROVIDER | Branch-protection and repository-ruleset APIs both return HTTP 403 for this private repository: provider plan upgrade required. Manual PR + 7/7 exact-head governance remains active but is not equivalent enforcement. |
 
 The first critical-integration failure was diagnosed: `ADMIN_AUTH_DISABLED=true` enabled the dev-admin bypass, which replaced the authenticated actor with a non-persisted UUID and caused the shipment creator foreign-key rejection. Keeping `ADMIN_AUTH_DISABLED=false` is intentional and validates normal auth/RBAC. A later, separate remote failure expected `provider='none'` but received `internal` because the job environment and generated `.env.test` both forced `SHIPPING_PROVIDER=internal`. This correction removes those two provider defaults while retaining `AUTO_SHIPPING_MODE=disabled`, so individual tests alone choose an explicit provider. No assertions or product-source code are changed.
 
@@ -118,3 +118,13 @@ The first critical-integration failure was diagnosed: `ADMIN_AUTH_DISABLED=true`
 - Gitleaks v8.28.0 history scan PASS (86 commits, no leaks); source scan PASS from a clean `git archive` mirror with the two updated lockfiles overlaid (no leaks). `git diff --check` PASS.
 - Lockfile audit reviewed direct/transitive paths, installed versions, parent constraints and npm audit fix availability before editing. Remaining advisories are not changed in this bounded safe batch: Prisma 6.19.0 -> `@prisma/config` -> `deepmerge-ts`/`effect` remains upstream/compatibility blocked (npm suggests the prohibited Prisma 6.12.0 downgrade); Swagger 11.4.7 -> js-yaml moderate requires Swagger 12 major evaluation; frontend's five HIGH findings remain dev-tooling under eslint-config-next with no accepted safe parent remediation in this run. Owner: orchestrator to sequence separate Prisma compatibility, Swagger 12 and upstream frontend tooling tracks. Backend esbuild LOW was left unchanged as out of scope.
 - Independent diff reviewer/challenger: **PASS**, no actionable findings; confirmed only the two in-range transitive lockfile updates, no manifest/product changes, and no unrelated funding metadata churn. User-facing impact: `NONE_EXPECTED`; lockfiles only, no runtime/source or API behavior change. Rollback: revert the two lockfile entries only; no schema/data migration required.
+
+## Final remote closure
+- Final PR validation head: `b7f93a1cff48c8dd19647250a3cc8636e428f26b`.
+- Final GitHub Actions run: `37415300257`.
+- Stable checks: `backend-quality`, `backend-unit-security`, `frontend-quality`, `critical-integration`, `secret-scan`, `dependency-security`, `production-readiness-guard` — **7/7 PASS**.
+- PR #14 squash-merged at `0b7286eb22a17df3ab1cf276af58899b78421ef7`.
+- Final independent audits after compatible transitive patches: backend full 0 critical / 4 high / 2 moderate / 1 low; backend runtime 0/4/2/0; frontend full 0/5/0/0; frontend runtime 0 vulnerabilities.
+- Branch protection/rulesets: **BLOCKED_PROVIDER**, not a test failure. Both GitHub APIs return 403 with the provider plan-upgrade requirement despite admin repository permission.
+- Manual fallback until capability upgrade: PR-only orchestration policy, exact-head 7/7 CI required, no force/direct main updates by the operating process.
+- EX-02 repository/CI engineering work is complete; the branch-governance enforcement obligation remains open for EX-12 release governance.
