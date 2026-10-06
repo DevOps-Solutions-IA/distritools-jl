@@ -114,3 +114,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the cancellation port, adapter, Nest binding, use-case injection substitution, focused unit test and EX-03.4 evidence entry together; no database rollback is needed.
 - Evidence: `docs/orchestration/runs/EX-03.4-cancel-order-final.md`.
 - Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; architecture checker remains DEBT_DETECTED for 112 unrelated findings.
+
+### EX-04.1 — Event contracts and explicit handler coverage
+- Date: 2026-10-06
+- Surface: Internal domain-event publishers, in-memory subscribers, and BullMQ worker dispatch.
+- Change: Added typed/versioned `v1` contracts, runtime boundary validation, an explicit injected handler registry, and fail-closed worker processing. Preserved the in-memory publisher as the default and preserved the BullMQ envelope/job identity.
+- Expected user impact: NONE_EXPECTED for valid existing producer events. Invalid event payloads now fail before in-memory subscriber dispatch; malformed, unsupported, or unhandled BullMQ jobs reject rather than being acknowledged. No checkout, API, provider, or business rule change is intended.
+- Negative-risk review: PASS. Final focused event tests 12/12; backend unit/security 49/49; critical suite 14 files / 83 tests; Prisma validate, typecheck, lint, build, Gitleaks history/source, diff check and independent reviewer passed.
+- Compatibility: No schema/migration, dependency, external provider, transport-binding, API-response, or persisted-data change. `inventory.low_stock_detected` remains producer-missing; `order.paid` remains a known notification-template gap; no BullMQ worker route is active.
+- Rollback: Revert EX-04.1 source, tests and documentation together; no data/schema rollback is required.
+- Evidence: `docs/orchestration/runs/EX-04.1-event-contracts-final.md`.
+- Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; no commit, push, merge, or STATE transition performed.

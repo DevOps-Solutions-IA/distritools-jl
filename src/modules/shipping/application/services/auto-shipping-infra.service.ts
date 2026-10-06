@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Prisma, ShipmentStatus as PrismaShipmentStatus } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { DOMAIN_EVENT_PUBLISHER, DomainEventPublisher } from 'src/common/events/domain-event.publisher';
+import { DomainEventPayloadMap, VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 
 function redactPayload(payload: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
@@ -62,10 +63,21 @@ export class AutoShippingInfraService {
     }).catch(() => undefined);
   }
 
-  async publish(eventName: string, orderId: string, payload: Record<string, unknown>) {
-    await this.eventPublisher.publish({
+  async publish<TEventName extends ShippingDomainEventName>(
+    eventName: TEventName,
+    orderId: string,
+    payload: Omit<DomainEventPayloadMap[TEventName], 'orderId'>,
+  ) {
+    const event = {
       eventName, eventVersion: 'v1', occurredAt: new Date().toISOString(),
       payload: { orderId, ...payload },
-    });
+    } as unknown as VersionedDomainEvent;
+    await this.eventPublisher.publish(event);
   }
 }
+
+type ShippingDomainEventName =
+  | 'shipment.quote_created'
+  | 'shipment.carrier_selected'
+  | 'shipment.guide_created'
+  | 'shipment.auto_shipping_failed';

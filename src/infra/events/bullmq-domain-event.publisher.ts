@@ -2,7 +2,8 @@ import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, Job } from 'bullmq';
 import { v7 as uuidv7 } from 'uuid';
-import { DomainEvent, DomainEventPublisher } from 'src/common/events/domain-event.publisher';
+import { DomainEventPublisher, VersionedDomainEvent } from 'src/common/events/domain-event.publisher';
+import { validateDomainEvent } from 'src/common/events/domain-event.contracts';
 
 const DOMAIN_EVENTS_QUEUE = 'domain-events';
 
@@ -12,17 +13,18 @@ export class BullMqDomainEventPublisher implements DomainEventPublisher, OnModul
 
   constructor(@InjectQueue(DOMAIN_EVENTS_QUEUE) private readonly queue: Queue) {}
 
-  async publish<TPayload>(event: DomainEvent<TPayload>): Promise<void> {
-    const eventId = event.eventId ?? uuidv7();
+  async publish(event: VersionedDomainEvent): Promise<void> {
+    const validatedEvent = validateDomainEvent(event);
+    const eventId = validatedEvent.eventId ?? uuidv7();
 
     try {
-      await this.queue.add(event.eventName, {
+      await this.queue.add(validatedEvent.eventName, {
         eventId,
-        eventName: event.eventName,
-        eventVersion: event.eventVersion,
-        payload: event.payload,
-        occurredAt: event.occurredAt,
-        correlationId: event.correlationId,
+        eventName: validatedEvent.eventName,
+        eventVersion: validatedEvent.eventVersion,
+        payload: validatedEvent.payload,
+        occurredAt: validatedEvent.occurredAt,
+        correlationId: validatedEvent.correlationId,
       }, {
         jobId: eventId,
         attempts: 3,
@@ -31,7 +33,7 @@ export class BullMqDomainEventPublisher implements DomainEventPublisher, OnModul
         removeOnFail: 50,
       });
     } catch (error) {
-      this.logger.error(`Failed to publish domain event ${event.eventName}`, error instanceof Error ? error.stack : String(error));
+      this.logger.error(`Failed to publish domain event ${validatedEvent.eventName}`, error instanceof Error ? error.stack : String(error));
       throw error;
     }
   }

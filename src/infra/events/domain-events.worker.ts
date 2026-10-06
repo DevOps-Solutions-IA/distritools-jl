@@ -1,45 +1,21 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
-
-interface DomainEventJob {
-  eventId: string;
-  eventName: string;
-  eventVersion: string;
-  payload: Record<string, unknown>;
-  occurredAt: string;
-  correlationId?: string;
-}
-
-type EventHandler = (event: DomainEventJob) => Promise<void>;
+import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
+import { validateDomainEvent } from 'src/common/events/domain-event.contracts';
 
 @Processor('domain-events')
 @Injectable()
 export class DomainEventsWorker extends WorkerHost {
-  private readonly logger = new Logger(DomainEventsWorker.name);
-  private readonly handlers = new Map<string, EventHandler>();
-
-  registerHandler(eventName: string, handler: EventHandler): void {
-    this.handlers.set(eventName, handler);
+  constructor(
+    @Inject(DomainEventHandlerRegistry)
+    private readonly handlerRegistry: DomainEventHandlerRegistry,
+  ) {
+    super();
   }
 
-  async process(job: Job<DomainEventJob>): Promise<void> {
-    const event = job.data;
-    const handler = this.handlers.get(event.eventName);
-
-    if (!handler) {
-      this.logger.warn(`No handler registered for event: ${event.eventName}`);
-      return;
-    }
-
-    try {
-      await handler(event);
-    } catch (error) {
-      this.logger.error(
-        `Handler failed for event ${event.eventName} (${event.eventId})`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      throw error;
-    }
+  async process(job: Job<unknown>): Promise<void> {
+    const event = validateDomainEvent(job.data, { requireEventId: true });
+    await this.handlerRegistry.dispatch(event);
   }
 }
