@@ -2,8 +2,8 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "1cda8391f8bc4d9d40b9d5a435a5abcd8d7133e1",
-  "state_base_sha": "1cda8391f8bc4d9d40b9d5a435a5abcd8d7133e1",
+  "validated_product_sha": "cb942c9b355c3dfe65809da8a0b95978a5550752",
+  "state_base_sha": "cb942c9b355c3dfe65809da8a0b95978a5550752",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-06",
   "phase": "internal-hardening",
@@ -16,7 +16,8 @@
     "EX-01.4",
     "EX-01",
     "EX-02",
-    "EX-03.1"
+    "EX-03.1",
+    "EX-03.2"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -29,9 +30,9 @@
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
     "frontend_tests": "61/61 PASS",
-    "backend_unit_tests": "26/26 PASS",
-    "critical_e2e": "PASS (EX-02 GitHub CI and local baseline: 14 files / 83 tests)",
-    "architecture_check": "DEBT_DETECTED (121 findings after EX-03.1; selected AdjustStockUseCase direct-Prisma finding removed)"
+    "backend_unit_tests": "29/29 PASS",
+    "critical_e2e": "PASS (EX-03.2 local + PR CI: 14 files / 83 tests)",
+    "architecture_check": "DEBT_DETECTED (118 findings after EX-03.2; selected AdjustStockUseCase and ProcessPaymentWebhookUseCase direct-Prisma findings removed)"
   },
   "security": {
     "frontend_critical": 0,
@@ -47,28 +48,31 @@
   },
   "current_workstreams": [
     {
-      "execution": "EX-03.2",
+      "execution": "EX-03.3",
       "parent": "EX-03",
-      "branch": "architecture/ex03-payment-webhook-uow-2026-10",
+      "branch": "architecture/ex03-create-order-uow-2026-10",
       "status": "PLANNED",
-      "objective": "Isolate ProcessPaymentWebhookUseCase transaction creation behind a narrow application-facing unit-of-work without changing webhook, payment, order, inventory, idempotency, audit or event semantics.",
+      "objective": "Isolate CreateOrderUseCase transaction creation behind a narrow application-facing unit-of-work while preserving stock reservation, order/items atomicity, totals, promotions, audit/event timing and API behavior.",
       "user_impact": "NONE_EXPECTED",
-      "hard_stop": "No schema/migrations, payment state rule changes, provider calls, event/outbox changes, retries, API response changes, or weakening of replay/race tests.",
-      "prior_seam": {
-        "execution": "EX-03.1",
-        "pr": 16,
-        "merge_sha": "1cda8391f8bc4d9d40b9d5a435a5abcd8d7133e1",
-        "result": "PASS / MERGED",
-        "architecture_findings": "124 -> 121"
-      },
-      "analysis": {
-        "branch": "analysis/ex03-next-seam-2026-10",
-        "head_sha": "ab2ea9f86218091911848878add53f7eafd6d939",
-        "artifact": "docs/orchestration/runs/EX-03-next-seam-analysis.md",
-        "status": "ANALYSIS_READY"
-      },
-      "runbook": "docs/orchestration/runs/EX-03.2-payment-webhook-plan.md",
-      "next_action": "INICIA FASE EX-03.2"
+      "hard_stop": "No schema/migrations, order/tax/promotion/inventory behavior changes, retries, event/outbox changes, API/DTO changes, provider calls, or weakening of concurrency/failure-injection tests.",
+      "prior_seams": [
+        {
+          "execution": "EX-03.1",
+          "pr": 16,
+          "merge_sha": "1cda8391f8bc4d9d40b9d5a435a5abcd8d7133e1",
+          "result": "PASS / MERGED",
+          "architecture_findings": "124 -> 121"
+        },
+        {
+          "execution": "EX-03.2",
+          "pr": 18,
+          "merge_sha": "cb942c9b355c3dfe65809da8a0b95978a5550752",
+          "result": "PASS / MERGED",
+          "architecture_findings": "121 -> 118"
+        }
+      ],
+      "runbook": "docs/orchestration/runs/EX-03.3-create-order-plan.md",
+      "next_action": "INICIA FASE EX-03.3"
     }
   ],
   "provider_status": {
@@ -93,15 +97,15 @@
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
   ],
   "last_transition": {
-    "execution": "EX-03.1",
+    "execution": "EX-03.2",
     "status": "MERGED",
-    "pr": 16,
-    "merge_sha": "1cda8391f8bc4d9d40b9d5a435a5abcd8d7133e1",
-    "validation_head_sha": "9ea1fc419383b4d9d2885f2e407827ab9e86c8a0",
-    "workflow_run": 37416074711,
-    "result": "First EX-03 architecture seam merged after 7/7 CI. AdjustStockUseCase no longer directly owns PrismaService transaction creation; architecture findings reduced 124 -> 121."
+    "pr": 18,
+    "merge_sha": "cb942c9b355c3dfe65809da8a0b95978a5550752",
+    "validation_head_sha": "a3c9a357d9e03b26853614cffe65a1956545f7b6",
+    "workflow_run": 37418884860,
+    "result": "Payment webhook transaction boundary merged after 7/7 CI. ProcessPaymentWebhookUseCase no longer directly owns PrismaService transaction creation; architecture findings reduced 121 -> 118."
   },
-  "next_action": "INICIA FASE EX-03.2 — payment webhook transaction boundary. EX-04 discovery and EX-04.1 plan are preserved for later activation.",
+  "next_action": "INICIA FASE EX-03.3 — CreateOrderUseCase transaction boundary. EX-04 discovery/EX-04.1 plan remain preserved for later activation.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
