@@ -6,12 +6,12 @@ import {
   DomainEvent,
   DomainEventPublisher,
 } from 'src/common/events/domain-event.publisher';
+import { DomainEventName, VersionedDomainEvent, validateDomainEvent } from 'src/common/events/domain-event.contracts';
 import { BullMqDomainEventPublisher } from 'src/infra/events/bullmq-domain-event.publisher';
 import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
+import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
 
-type DomainEventHandler<TPayload = Record<string, unknown>> = (
-  event: DomainEvent<TPayload>,
-) => Promise<void> | void;
+type DomainEventHandler = (event: DomainEvent<Record<string, unknown>>) => Promise<void> | void;
 
 @Injectable()
 export class InMemoryDomainEventPublisher
@@ -24,11 +24,9 @@ export class InMemoryDomainEventPublisher
     this.emitter.setMaxListeners(100);
   }
 
-  async publish<TPayload>(event: DomainEvent<TPayload>): Promise<void> {
-    const enrichedEvent: DomainEvent<TPayload> = {
-      ...event,
-      eventId: event.eventId ?? uuidv7(),
-    };
+  async publish(event: VersionedDomainEvent): Promise<void> {
+    const validatedEvent = validateDomainEvent(event);
+    const enrichedEvent: VersionedDomainEvent = { ...validatedEvent, eventId: validatedEvent.eventId ?? uuidv7() } as VersionedDomainEvent;
 
     this.logger.log(
       JSON.stringify({
@@ -44,20 +42,20 @@ export class InMemoryDomainEventPublisher
     await Promise.all(
       listeners.map((listener) =>
         Promise.resolve(
-          (listener as DomainEventHandler<TPayload>)(enrichedEvent),
+        (listener as DomainEventHandler)(enrichedEvent),
         ),
       ),
     );
   }
 
   subscribe<TPayload>(
-    eventName: string,
-    handler: DomainEventHandler<TPayload>,
+    eventName: DomainEventName,
+    handler: DomainEventHandler,
   ): () => void {
-    this.emitter.on(eventName, handler as DomainEventHandler);
+    this.emitter.on(eventName, handler);
 
     return () => {
-      this.emitter.off(eventName, handler as DomainEventHandler);
+      this.emitter.off(eventName, handler);
     };
   }
 
@@ -71,13 +69,19 @@ export class InMemoryDomainEventPublisher
   providers: [
     InMemoryDomainEventPublisher,
     BullMqDomainEventPublisher,
+    DomainEventHandlerRegistry,
     DomainEventsWorker,
     {
       provide: DOMAIN_EVENT_PUBLISHER,
       useExisting: InMemoryDomainEventPublisher,
     },
   ],
-  exports: [InMemoryDomainEventPublisher, BullMqDomainEventPublisher, DOMAIN_EVENT_PUBLISHER],
+  exports: [
+    InMemoryDomainEventPublisher,
+    BullMqDomainEventPublisher,
+    DomainEventHandlerRegistry,
+    DOMAIN_EVENT_PUBLISHER,
+  ],
 })
 export class DomainEventsModule {}
 

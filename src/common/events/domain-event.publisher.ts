@@ -1,3 +1,5 @@
+import type { VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
+
 export interface DomainEvent<TPayload = Record<string, unknown>> {
   eventId?: string;
   eventName: string;
@@ -7,8 +9,10 @@ export interface DomainEvent<TPayload = Record<string, unknown>> {
   correlationId?: string;
 }
 
+export type { VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
+
 export interface DomainEventPublisher {
-  publish<TPayload>(event: DomainEvent<TPayload>): Promise<void>;
+  publish(event: VersionedDomainEvent): Promise<void>;
 }
 
 export const DOMAIN_EVENT_PUBLISHER = Symbol('DOMAIN_EVENT_PUBLISHER');
