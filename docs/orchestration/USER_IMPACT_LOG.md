@@ -103,3 +103,14 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Rollback: Revert the port, adapter, Nest binding, use-case injection substitution, focused test and EX-03.3 evidence entry as one set; no database rollback is needed.
 - Evidence: `docs/orchestration/runs/EX-03.3-create-order-final.md`.
 - Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; overall architecture checker remains DEBT_DETECTED for 115 unrelated findings.
+
+### EX-03.4 — Cancel order transaction boundary
+- Date: 2026-10-06
+- Surface: Order cancellation / inventory reservation release application-infrastructure boundary.
+- Change: Replaced direct Prisma transaction ownership in `CancelOrderUseCase` with an application-facing `CancelOrderUnitOfWork` backed by a Prisma adapter. Stock release and order cancellation remain atomic; permission/policy checks remain pre-transaction and cancellation audit/event remain post-commit.
+- Expected user impact: NONE_EXPECTED. No intended change to cancellation authorization, cancellation policy, inventory semantics, public response, audit/event behavior or payment/webhook race outcome.
+- Negative-risk review: PASS. Focused adapter tests 2/2; backend unit/security 33/33; focused orders/payment/inventory 12/12; concurrency 8/8 including cancel-vs-webhook race; full critical 14 files/83 tests; Prisma/typecheck/lint/build, Gitleaks history/source and diff check passed. Independent reviewer/challenger PASS.
+- Compatibility: No schema/migration, API/DTO, dependency, transaction-option, retry, isolation, event/outbox, or provider change.
+- Rollback: Revert the cancellation port, adapter, Nest binding, use-case injection substitution, focused unit test and EX-03.4 evidence entry together; no database rollback is needed.
+- Evidence: `docs/orchestration/runs/EX-03.4-cancel-order-final.md`.
+- Status: PASS / PHASE_LOCAL_READY_FOR_AUDIT; architecture checker remains DEBT_DETECTED for 112 unrelated findings.

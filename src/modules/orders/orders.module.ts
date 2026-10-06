@@ -3,6 +3,7 @@ import { AuthModule } from 'src/modules/auth/auth.module';
 import { InventoryModule } from 'src/modules/inventory/inventory.module';
 import { CreateOrderUseCase } from 'src/modules/orders/application/use-cases/create-order.use-case';
 import { CREATE_ORDER_UNIT_OF_WORK } from 'src/modules/orders/application/ports/create-order-unit-of-work.port';
+import { CANCEL_ORDER_UNIT_OF_WORK } from 'src/modules/orders/application/ports/cancel-order-unit-of-work.port';
 import { CreateGuestCheckoutOrderUseCase } from 'src/modules/orders/application/use-cases/create-guest-checkout-order.use-case';
 import { CancelOrderUseCase } from 'src/modules/orders/application/use-cases/cancel-order.use-case';
 import { GetOrderUseCase } from 'src/modules/orders/application/use-cases/get-order.use-case';
@@ -25,6 +26,7 @@ import { PrismaOrderRepository } from 'src/modules/orders/infrastructure/reposit
 import { PrismaOrderVariantRepository } from 'src/modules/orders/infrastructure/repositories/prisma-order-variant.repository';
 import { PrismaTrackingProvider } from 'src/modules/orders/infrastructure/providers/prisma-tracking.provider';
 import { PrismaCreateOrderUnitOfWork } from 'src/modules/orders/infrastructure/transactions/prisma-create-order-unit-of-work';
+import { PrismaCancelOrderUnitOfWork } from 'src/modules/orders/infrastructure/transactions/prisma-cancel-order-unit-of-work';
 import {
   ORDER_ITEM_REPOSITORY,
 } from 'src/modules/order-items/domain/repositories/order-item.repository';
@@ -49,9 +51,14 @@ import { ShippingModule } from 'src/modules/shipping/shipping.module';
     PrismaOrderItemRepository,
     PrismaTrackingProvider,
     PrismaCreateOrderUnitOfWork,
+    PrismaCancelOrderUnitOfWork,
     {
       provide: CREATE_ORDER_UNIT_OF_WORK,
       useExisting: PrismaCreateOrderUnitOfWork,
+    },
+    {
+      provide: CANCEL_ORDER_UNIT_OF_WORK,
+      useExisting: PrismaCancelOrderUnitOfWork,
     },
     {
       provide: ORDER_REPOSITORY,

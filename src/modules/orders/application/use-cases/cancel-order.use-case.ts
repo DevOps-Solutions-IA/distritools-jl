@@ -5,12 +5,15 @@ import {
 } from 'src/common/events/domain-event.publisher';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
-import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
 } from 'src/modules/auth/domain/repositories/audit.repository';
 import { ReleaseStockUseCase } from 'src/modules/inventory/application/use-cases/release-stock.use-case';
+import {
+  CANCEL_ORDER_UNIT_OF_WORK,
+  CancelOrderUnitOfWork,
+} from 'src/modules/orders/application/ports/cancel-order-unit-of-work.port';
 import {
   ORDER_ITEM_REPOSITORY,
   OrderItemRepository,
@@ -34,8 +37,8 @@ export interface CancelOrderInput {
 @Injectable()
 export class CancelOrderUseCase {
   constructor(
-    @Inject(PrismaService)
-    private readonly prisma: PrismaService,
+    @Inject(CANCEL_ORDER_UNIT_OF_WORK)
+    private readonly cancelOrderUnitOfWork: CancelOrderUnitOfWork,
     @Inject(ORDER_REPOSITORY)
     private readonly orderRepository: OrderRepository,
     @Inject(ORDER_ITEM_REPOSITORY)
@@ -62,7 +65,7 @@ export class CancelOrderUseCase {
 
     const orderItems = await this.orderItemRepository.findByOrderId(order.id);
 
-    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+    const updatedOrder = await this.cancelOrderUnitOfWork.run(async (tx) => {
       await this.releaseStockUseCase.execute({
         actor: input.actor,
         referenceType: 'order',
