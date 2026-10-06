@@ -17,12 +17,12 @@ Sub-runs: EX-01.1 frontend safe HIGH PASS; EX-01.2 Tailwind 4 PASS; EX-01.3 Next
 Goal: enforce Prisma validate, lint, typecheck, builds, unit tests, critical tests, Gitleaks, no-mock production guard, artifacts, and branch protection.
 Exit: PR cannot merge when required gates fail; rollback/evidence tied to SHA.
 
-## EX-03 — Architecture boundary hardening — ACTIVE
+## EX-03 — Architecture boundary hardening — PASS
 Goal: remove highest-risk direct Prisma coupling and unsafe casts incrementally, beginning with write paths and oversized admin controller seams.
 Exit: architecture findings reduced with no behavior regression; no big-bang rewrite.
-Sub-runs: EX-03.1 AdjustStockUseCase transaction boundary PASS/MERGED via PR #16; EX-03.2 ProcessPaymentWebhookUseCase transaction boundary PASS/MERGED via PR #18; EX-03.3 CreateOrderUseCase transaction boundary PASS/MERGED via PR #20; EX-03.4 CancelOrderUseCase transaction boundary ACTIVE/PLANNED.
+Sub-runs: EX-03.1 AdjustStockUseCase PASS/MERGED via PR #16; EX-03.2 ProcessPaymentWebhookUseCase PASS/MERGED via PR #18; EX-03.3 CreateOrderUseCase PASS/MERGED via PR #20; EX-03.4 CancelOrderUseCase PASS/MERGED via PR #22. Architecture findings reduced 124 -> 112 without behavior changes.
 
-## EX-04 — Event bus / BullMQ / idempotency / failure semantics
+## EX-04 — Event bus / BullMQ / idempotency / failure semantics — ACTIVE
 Goal: replace accidental in-memory-only production path, register handlers explicitly, define Redis failure behavior, dedupe/retry semantics, and decide transactional outbox strategy.
 Exit: domain events reach intended consumer once logically, retry safely, and fail closed where required.
 

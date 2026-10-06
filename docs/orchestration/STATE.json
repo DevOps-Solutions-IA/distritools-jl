@@ -2,12 +2,12 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "7ebadf14449111518673ddb023ab644b6a724192",
-  "state_base_sha": "7ebadf14449111518673ddb023ab644b6a724192",
+  "validated_product_sha": "da80867a3e7175445d457a87bbb054a6951b696e",
+  "state_base_sha": "da80867a3e7175445d457a87bbb054a6951b696e",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-06",
   "phase": "internal-hardening",
-  "active_execution": "EX-03",
+  "active_execution": "EX-04.1",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -18,7 +18,9 @@
     "EX-02",
     "EX-03.1",
     "EX-03.2",
-    "EX-03.3"
+    "EX-03.3",
+    "EX-03.4",
+    "EX-03"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -31,9 +33,9 @@
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
     "frontend_tests": "61/61 PASS",
-    "backend_unit_tests": "31/31 PASS",
-    "critical_e2e": "PASS (EX-03.3 local + PR CI: 14 files / 83 tests)",
-    "architecture_check": "DEBT_DETECTED (115 findings after EX-03.3; selected AdjustStockUseCase, ProcessPaymentWebhookUseCase and CreateOrderUseCase direct-Prisma findings removed)"
+    "backend_unit_tests": "33/33 PASS",
+    "critical_e2e": "PASS (EX-03.4 local + PR CI: 14 files / 83 tests)",
+    "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
     "frontend_critical": 0,
@@ -49,38 +51,16 @@
   },
   "current_workstreams": [
     {
-      "execution": "EX-03.4",
-      "parent": "EX-03",
-      "branch": "architecture/ex03-cancel-order-uow-2026-10",
+      "execution": "EX-04.1",
+      "parent": "EX-04",
+      "branch": "events/ex04-1-contracts-handlers-2026-10",
       "status": "PLANNED",
-      "objective": "Isolate CancelOrderUseCase transaction creation behind a narrow application-facing unit-of-work while preserving authorization, stock release, order cancellation, audit/event timing and API behavior.",
+      "objective": "Introduce typed/versioned domain-event contracts and explicit handler registration so unsupported or missing handlers fail instead of being acknowledged, while preserving the current in-memory runtime binding.",
       "user_impact": "NONE_EXPECTED",
-      "hard_stop": "No schema/migrations, permission changes, cancellation policy changes, stock semantics changes, retries, event/outbox changes, API/DTO changes, provider calls, or weakening of cancel-vs-webhook race tests.",
-      "prior_seams": [
-        {
-          "execution": "EX-03.1",
-          "pr": 16,
-          "merge_sha": "1cda8391f8bc4d9d40b9d5a435a5abcd8d7133e1",
-          "result": "PASS / MERGED",
-          "architecture_findings": "124 -> 121"
-        },
-        {
-          "execution": "EX-03.2",
-          "pr": 18,
-          "merge_sha": "cb942c9b355c3dfe65809da8a0b95978a5550752",
-          "result": "PASS / MERGED",
-          "architecture_findings": "121 -> 118"
-        },
-        {
-          "execution": "EX-03.3",
-          "pr": 20,
-          "merge_sha": "7ebadf14449111518673ddb023ab644b6a724192",
-          "result": "PASS / MERGED",
-          "architecture_findings": "118 -> 115"
-        }
-      ],
-      "runbook": "docs/orchestration/runs/EX-03.4-cancel-order-plan.md",
-      "next_action": "INICIA FASE EX-03.4"
+      "hard_stop": "No outbox schema, no production transport switch, no provider calls, no business behavior/API changes, no silent/no-op handlers.",
+      "runbook": "docs/orchestration/runs/EX-04.1-event-contracts-plan.md",
+      "discovery": "docs/orchestration/runs/EX-04-eventbus-discovery.md",
+      "next_action": "INICIA FASE EX-04.1"
     }
   ],
   "provider_status": {
@@ -105,15 +85,15 @@
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
   ],
   "last_transition": {
-    "execution": "EX-03.3",
+    "execution": "EX-03.4",
     "status": "MERGED",
-    "pr": 20,
-    "merge_sha": "7ebadf14449111518673ddb023ab644b6a724192",
-    "validation_head_sha": "f69f3fc2c014d1a8ccbf981d546e04d412ec750c",
-    "workflow_run": 37422131159,
-    "result": "CreateOrderUseCase transaction boundary merged after 7/7 CI. CreateOrderUseCase no longer directly owns PrismaService transaction creation; architecture findings reduced 118 -> 115."
+    "pr": 22,
+    "merge_sha": "da80867a3e7175445d457a87bbb054a6951b696e",
+    "validation_head_sha": "7bb255fa1307ba08c671105a7d30a1c313e77cf0",
+    "workflow_run": 37427138818,
+    "result": "CancelOrderUseCase transaction boundary merged after 7/7 CI. Architecture findings reduced 115 -> 112. EX-03 exit criteria satisfied: highest-risk transaction seams reduced incrementally with no behavior regression."
   },
-  "next_action": "INICIA FASE EX-03.4 — CancelOrderUseCase transaction boundary. EX-04 discovery/EX-04.1 plan remain preserved for later activation.",
+  "next_action": "INICIA FASE EX-04.1 — typed event contracts and explicit handler coverage. Do not implement outbox or switch production transport in this sub-run.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
