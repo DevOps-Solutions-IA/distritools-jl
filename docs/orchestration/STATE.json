@@ -2,12 +2,12 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "43003774fb0ba3424908a0219a99a2e581ad08b2",
-  "state_base_sha": "43003774fb0ba3424908a0219a99a2e581ad08b2",
+  "validated_product_sha": "a7eb83885b55d93fc2f44821d737d0f61b20d324",
+  "state_base_sha": "a7eb83885b55d93fc2f44821d737d0f61b20d324",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-06",
   "phase": "internal-hardening",
-  "active_execution": "EX-04.2",
+  "active_execution": "EX-04.3",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -21,7 +21,8 @@
     "EX-03.3",
     "EX-03.4",
     "EX-03",
-    "EX-04.1"
+    "EX-04.1",
+    "EX-04.2"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -34,8 +35,8 @@
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
     "frontend_tests": "61/61 PASS",
-    "backend_unit_tests": "33/33 PASS",
-    "critical_e2e": "PASS (EX-03.4 local + PR CI: 14 files / 83 tests)",
+    "backend_unit_tests": "57/57 PASS (EX-04.2 local + PR #26 CI)",
+    "critical_e2e": "PASS (EX-04.2 local + PR #26 CI: 15 files / 107 tests)",
     "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
@@ -52,18 +53,18 @@
   },
   "current_workstreams": [
     {
-      "execution": "EX-04.2",
+      "execution": "EX-04.3",
       "parent": "EX-04",
-      "branch": "events/ex04-2-durable-outbox-2026-10",
-      "status": "READY_FOR_PR",
-      "objective": "Persist critical domain-event intent atomically with business state and relay it durably with stable event IDs, without switching production providers or weakening current request semantics.",
-      "user_impact": "NONE_EXPECTED",
-      "hard_stop": "No provider calls, no broad transport switch, no event contract rename, no checkout/payment behavior change, no exactly-once claims, no destructive migration.",
+      "branch": "events/ex04-3-consumer-idempotency-2026-10",
+      "status": "PLANNED",
+      "objective": "Prevent duplicate logical consumer DB effects and recover durable notification rows whose BullMQ enqueue failed, with shared legacy/durable idempotency and explicit held-history reconciliation.",
+      "user_impact": "NOTIFICATION",
+      "hard_stop": "No real provider calls, production transport activation, historical held auto-promotion, invented templates/producers, business/API contract changes, exactly-once claims or destructive migration.",
       "discovery": "docs/orchestration/runs/EX-04-eventbus-discovery.md",
-      "prior": "EX-04.1 typed contracts/handler coverage PASS/MERGED via PR #24",
-      "relay_policy": "RESOLVED: mandatory atomic capture; legacy runtime preserved; persisted held records excluded from automatic relay; relay validated only in isolated tests; handlers/inbox/idempotency and historical cutover deferred to EX-04.3.",
-      "runbook": "docs/orchestration/runs/EX-04.2-durable-outbox-plan.md",
-      "next_action": "ORCHESTRATOR: PR, exact-head CI, remote diff audit and squash merge for EX-04.2."
+      "prior": "EX-04.2 durable transactional outbox PASS/MERGED via PR #26; product merge a7eb83885b55d93fc2f44821d737d0f61b20d324",
+      "relay_policy": "Mandatory atomic capture and legacy runtime remain active; normal relay disabled. A new inbox does not authorize historical held replay. EX-04.3 prepares real idempotent consumers and notification recovery; operational production cutover remains deferred.",
+      "runbook": "docs/orchestration/runs/EX-04.3-consumer-idempotency-plan.md",
+      "next_action": "INICIA FASE EX-04.3"
     }
   ],
   "provider_status": {
@@ -75,7 +76,7 @@
     "servientrega_real": "BLOCKED_PROVIDER"
   },
   "known_p0": [
-    "BullMQ/event-bus wiring incomplete",
+    "BullMQ/event-bus production wiring remains incomplete: EX-04.2 atomic intent is merged; consumer idempotency, held-history reconciliation and production cutover remain pending.",
     "Production providers must remain fail-closed",
     "EX-01.4 residual backend advisories: 4 HIGH nodes in Prisma config/deepmerge-ts/effect and 2 MODERATE nodes in Swagger/js-yaml; address only in separate approved compatibility work. Frontend has 5 dev-tooling HIGH nodes with no safe patched braces path",
     "GitHub branch protection/rulesets unavailable on current private-repo plan; manual PR + 7/7 exact-head governance is active until provider capability is upgraded."
@@ -88,15 +89,15 @@
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
   ],
   "last_transition": {
-    "execution": "EX-04.1",
+    "execution": "EX-04.2",
     "status": "MERGED",
-    "pr": 24,
-    "merge_sha": "43003774fb0ba3424908a0219a99a2e581ad08b2",
-    "validation_head_sha": "7bca1a6ee15e2ac231eb31672b94f71d5980731e",
-    "workflow_run": 37435018001,
-    "result": "Typed/versioned event contracts and explicit handler coverage merged after 7/7 CI. In-memory runtime binding remains active; outbox/transport/provider work remains deferred."
+    "pr": 26,
+    "merge_sha": "a7eb83885b55d93fc2f44821d737d0f61b20d324",
+    "validation_head_sha": "41007efafa7c403a4d30bfe4b422b4a62092ea8a",
+    "workflow_run": 37518205916,
+    "result": "Atomic critical-event outbox capture and isolated BullMQ relay merged after 7/7 exact-head CI and remote diff audit. Runtime keeps legacy publication and held records; consumer idempotency/reconciliation and production activation remain deferred."
   },
-  "next_action": "ORCHESTRATOR: integrate EX-04.2 only after all seven CI checks pass on the exact PR head; retain production in-memory transport.",
+  "next_action": "INICIA FASE EX-04.3",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
