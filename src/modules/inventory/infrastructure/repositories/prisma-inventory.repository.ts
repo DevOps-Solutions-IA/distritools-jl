@@ -14,6 +14,10 @@ import {
 export class PrismaInventoryRepository implements InventoryRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  withTransaction<T>(operation: (tx: PrismaTransactionClient) => Promise<T>) {
+    return this.prisma.$transaction(operation);
+  }
+
   async findByVariantAndWarehouse(variantId: string, warehouseId: string) {
     return this.prisma.inventoryItem.findUnique({
       where: {
