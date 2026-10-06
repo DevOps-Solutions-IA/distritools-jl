@@ -20,7 +20,7 @@ Exit: PR cannot merge when required gates fail; rollback/evidence tied to SHA.
 ## EX-03 — Architecture boundary hardening — ACTIVE
 Goal: remove highest-risk direct Prisma coupling and unsafe casts incrementally, beginning with write paths and oversized admin controller seams.
 Exit: architecture findings reduced with no behavior regression; no big-bang rewrite.
-Sub-runs: EX-03.1 AdjustStockUseCase transaction boundary PASS/MERGED via PR #16; EX-03.2 ProcessPaymentWebhookUseCase transaction boundary ACTIVE/PLANNED.
+Sub-runs: EX-03.1 AdjustStockUseCase transaction boundary PASS/MERGED via PR #16; EX-03.2 ProcessPaymentWebhookUseCase transaction boundary PASS/MERGED via PR #18; EX-03.3 CreateOrderUseCase transaction boundary ACTIVE/PLANNED.
 
 ## EX-04 — Event bus / BullMQ / idempotency / failure semantics
 Goal: replace accidental in-memory-only production path, register handlers explicitly, define Redis failure behavior, dedupe/retry semantics, and decide transactional outbox strategy.
