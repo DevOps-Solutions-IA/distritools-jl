@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   ContentIndexSource,
@@ -10,6 +11,14 @@ import {
 @Injectable()
 export class PrismaSearchRepository implements SearchRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+
+  async lockVariantProjection(tx: Prisma.TransactionClient, variantId: string) {
+    await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`search:variant:${variantId}`}, 0))::text`);
+  }
+
+  async lockContentProjection(tx: Prisma.TransactionClient, contentId: string) {
+    await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`search:content:${contentId}`}, 0))::text`);
+  }
 
   async search(
     query: string,
@@ -61,16 +70,18 @@ export class PrismaSearchRepository implements SearchRepository {
     return [...new Set(results.map((result: (typeof results)[number]) => result.sku || result.title))];
   }
 
-  async upsertVariantDocuments(documents: VariantIndexSource[]) {
+  async upsertVariantDocuments(documents: VariantIndexSource[], tx?: Prisma.TransactionClient): Promise<void> {
+    if (!tx) return this.prisma.$transaction((transaction) => this.upsertVariantDocuments(documents, transaction));
+    const client = tx ?? this.prisma;
     for (const document of documents) {
-      const existing = await this.prisma.searchDocument.findFirst({
+      const existing = await client.searchDocument.findFirst({
         where: {
           variantId: document.id,
           documentType: 'variant',
         },
       });
 
-      await this.prisma.searchDocument.upsert({
+      await client.searchDocument.upsert({
         where: {
           id: existing?.id ?? uuidv7(),
         },
@@ -131,16 +142,18 @@ export class PrismaSearchRepository implements SearchRepository {
     }
   }
 
-  async upsertContentDocuments(documents: ContentIndexSource[]) {
+  async upsertContentDocuments(documents: ContentIndexSource[], tx?: Prisma.TransactionClient): Promise<void> {
+    if (!tx) return this.prisma.$transaction((transaction) => this.upsertContentDocuments(documents, transaction));
+    const client = tx ?? this.prisma;
     for (const document of documents) {
-      const existing = await this.prisma.searchDocument.findFirst({
+      const existing = await client.searchDocument.findFirst({
         where: {
           contentBlockId: document.id,
           documentType: 'content',
         },
       });
 
-      await this.prisma.searchDocument.upsert({
+      await client.searchDocument.upsert({
         where: {
           id: existing?.id ?? uuidv7(),
         },

@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 export interface SearchResultRecord {
   id: string;
   documentType: 'variant' | 'content';
@@ -43,8 +45,10 @@ export interface SearchRepository {
     options?: { limit?: number; brandSlug?: string; categorySlug?: string },
   ): Promise<SearchResultRecord[]>;
   autocomplete(query: string, limit?: number): Promise<string[]>;
-  upsertVariantDocuments(documents: VariantIndexSource[]): Promise<void>;
-  upsertContentDocuments(documents: ContentIndexSource[]): Promise<void>;
+  lockVariantProjection(tx: Prisma.TransactionClient, variantId: string): Promise<void>;
+  lockContentProjection(tx: Prisma.TransactionClient, contentId: string): Promise<void>;
+  upsertVariantDocuments(documents: VariantIndexSource[], tx?: Prisma.TransactionClient): Promise<void>;
+  upsertContentDocuments(documents: ContentIndexSource[], tx?: Prisma.TransactionClient): Promise<void>;
 }
 
 export const SEARCH_REPOSITORY = Symbol('SEARCH_REPOSITORY');

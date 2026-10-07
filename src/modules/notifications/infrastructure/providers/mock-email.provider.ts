@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
+import { NotificationDeliveryError } from 'src/modules/notifications/application/ports/notification-delivery-error';
 import {
   EmailProviderPort,
   EmailProviderSendInput,
@@ -16,7 +17,7 @@ export class MockEmailProvider implements EmailProviderPort {
     }
 
     if (input.to.includes('fail-email')) {
-      throw new Error('Mock email delivery failure');
+      throw new NotificationDeliveryError('MOCK_EMAIL_NOT_SENT');
     }
 
     const providerMessageId = `local-file-email-${uuidv7()}`;
