@@ -83,14 +83,58 @@ async function freePort(): Promise<number> {
   return port;
 }
 
-async function startDisposableRedis(port: number, dir: string): Promise<ChildProcess> {
-  const child = spawn('redis-server', [
-    '--bind', '127.0.0.1', '--port', String(port), '--protected-mode', 'yes', '--save', '',
-    '--appendonly', 'no', '--dir', dir, '--loglevel', 'warning',
-  ], { stdio: 'ignore' });
-  const deadline = Date.now() + 4_000;
+type DisposableRedis =
+  | { kind: 'process'; child: ChildProcess }
+  | { kind: 'docker'; child: ChildProcess; name: string };
+
+function disposableRedisExited(server: DisposableRedis): boolean {
+  return server.child.exitCode !== null;
+}
+
+async function stopDisposableRedis(server: DisposableRedis): Promise<void> {
+  if (server.child.exitCode !== null) return;
+  if (server.kind === 'process') {
+    const stopped = new Promise<void>((resolve) => server.child.once('exit', () => resolve()));
+    server.child.kill('SIGTERM');
+    await stopped;
+    return;
+  }
+  const result = spawnSync('docker', ['stop', '-t', '1', server.name], { stdio: 'ignore' });
+  assert.equal(result.status, 0, 'owned disposable Redis container must stop cleanly');
+  if (server.child.exitCode === null) {
+    await new Promise<void>((resolve) => server.child.once('exit', () => resolve()));
+  }
+}
+
+async function startDisposableRedis(port: number, dir: string): Promise<DisposableRedis> {
+  const forceDocker = process.env.EX044_FORCE_DOCKER_REDIS === 'true';
+  const hasRedisServer = !forceDocker && spawnSync('redis-server', ['--version'], { stdio: 'ignore' }).status === 0;
+  let server: DisposableRedis;
+  if (hasRedisServer) {
+    server = {
+      kind: 'process',
+      child: spawn('redis-server', [
+        '--bind', '127.0.0.1', '--port', String(port), '--protected-mode', 'yes', '--save', '',
+        '--appendonly', 'no', '--dir', dir, '--loglevel', 'warning',
+      ], { stdio: 'ignore' }),
+    };
+  } else {
+    assert.equal(spawnSync('docker', ['version'], { stdio: 'ignore' }).status, 0,
+      'redis-server or Docker is required for isolated Redis fault injection');
+    const name = `distritools-ex044-${randomUUID()}`;
+    server = {
+      kind: 'docker',
+      name,
+      child: spawn('docker', [
+        'run', '--rm', '--name', name, '-p', `127.0.0.1:${port}:6379`, 'redis:7-alpine',
+        'redis-server', '--protected-mode', 'no', '--save', '', '--appendonly', 'no', '--loglevel', 'warning',
+      ], { stdio: 'ignore' }),
+    };
+  }
+
+  const deadline = Date.now() + 8_000;
   while (Date.now() < deadline) {
-    if (child.exitCode !== null) throw new Error('Disposable Redis exited before readiness');
+    if (disposableRedisExited(server)) throw new Error('Disposable Redis exited before readiness');
     const probe = new Redis(`redis://127.0.0.1:${port}`, {
       lazyConnect: true, maxRetriesPerRequest: 1, retryStrategy: () => null, connectTimeout: 250,
     });
@@ -99,13 +143,13 @@ async function startDisposableRedis(port: number, dir: string): Promise<ChildPro
       await probe.connect();
       assert.equal(await probe.ping(), 'PONG');
       await probe.quit();
-      return child;
+      return server;
     } catch {
       probe.disconnect();
     }
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
-  child.kill('SIGTERM');
+  await stopDisposableRedis(server).catch(() => undefined);
   throw new Error('Disposable Redis readiness deadline exceeded');
 }
 
@@ -141,8 +185,6 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
 
   before(async () => {
     assertIsolatedTargets();
-    assert.equal(spawnSync('redis-server', ['--version'], { stdio: 'ignore' }).status, 0,
-      'redis-server binary required only for isolated fault-injection child');
     await resetDatabase();
     seeded = await seedBaseData();
     const url = redisDb15Url();
@@ -414,7 +456,7 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
   it('does not spend consumer retry budget on a real worker Redis outage during dispatch', { timeout: 15_000 }, async () => {
     const port = await freePort();
     const dir = mkdtempSync(path.join(tmpdir(), 'ex044-active-worker-outage-'));
-    let server: ChildProcess | undefined;
+    let server: DisposableRedis | undefined;
     let producer: Queue | undefined;
     let worker: Worker | undefined;
     let events: QueueEvents | undefined;
@@ -474,9 +516,7 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
         jobId: message.eventId, attempts: 1, backoff: { type: 'exponential', delay: 25 }, removeOnFail: false,
       });
       await started;
-      const stopped = new Promise<void>((resolve) => server!.once('exit', () => resolve()));
-      server.kill('SIGTERM');
-      await stopped;
+      await stopDisposableRedis(server!);
       const disconnectDeadline = Date.now() + 2_000;
       while (Date.now() < disconnectDeadline && workerConnection.status === 'ready') await new Promise((resolve) => setTimeout(resolve, 20));
       assert.notEqual(workerConnection.status, 'ready');
@@ -546,10 +586,8 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       workerConnection?.disconnect();
       eventConnection?.disconnect();
       producerConnection?.disconnect();
-      if (server && server.exitCode === null) {
-        const stopped = new Promise<void>((resolve) => server!.once('exit', () => resolve()));
-        server.kill('SIGTERM');
-        await stopped;
+      if (server && !disposableRedisExited(server)) {
+        await stopDisposableRedis(server);
       }
       rmSync(dir, { recursive: true, force: true });
     }
@@ -798,7 +836,7 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
   it('recreates the same outbox job after a real isolated Redis process outage and recreation', { timeout: 15_000 }, async () => {
     const port = await freePort();
     const dir = mkdtempSync(path.join(tmpdir(), 'ex044-redis-fault-'));
-    let server: ChildProcess | undefined;
+    let server: DisposableRedis | undefined;
     let queue: Queue | undefined;
     try {
       server = await startDisposableRedis(port, dir);
@@ -808,9 +846,7 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       await queue.waitUntilReady();
       const message = event();
       const row = await durableEvent(message, 'pending');
-      const stopped = new Promise<void>((resolve) => server!.once('exit', () => resolve()));
-      server.kill('SIGTERM');
-      await stopped;
+      await stopDisposableRedis(server!);
       const publisher = new BullMqDomainEventPublisher(queue, 400);
       const repository = new PrismaDomainEventOutboxRepository(prisma as never);
       const failed = await new DomainEventOutboxRelay(repository, publisher).runIsolatedBatch({ batchSize: 1, leaseMs: 5_000 });
@@ -836,10 +872,8 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       assert.equal(job.id, row.eventId);
       assert.equal(job.data.eventId, row.eventId);
     } finally {
-      if (server && server.exitCode === null) {
-        const stopped = new Promise<void>((resolve) => server!.once('exit', () => resolve()));
-        server.kill('SIGTERM');
-        await stopped;
+      if (server && !disposableRedisExited(server)) {
+        await stopDisposableRedis(server);
       }
       await queue?.obliterate({ force: true }).catch(() => undefined);
       await queue?.close().catch(() => undefined);
@@ -852,7 +886,7 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'ex044-worker-reconnect-'));
     const url = `redis://127.0.0.1:${port}`;
     const name = `${TEST_PREFIX}-worker-reconnect`;
-    let server: ChildProcess | undefined;
+    let server: DisposableRedis | undefined;
     let worker: Worker | undefined;
     let producer: Queue | undefined;
     let events: QueueEvents | undefined;
@@ -881,9 +915,7 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       const first = await producer.add('probe', { value: 'before-outage' });
       assert.equal(await first.waitUntilFinished(events, 2_000), 'before-outage');
 
-      const stopped = new Promise<void>((resolve) => server!.once('exit', () => resolve()));
-      server.kill('SIGTERM');
-      await stopped;
+      await stopDisposableRedis(server!);
       const outageDeadline = Date.now() + 2_000;
       while (Date.now() < outageDeadline && workerClient.status === 'ready') await new Promise((resolve) => setTimeout(resolve, 20));
       assert.notEqual(workerClient.status, 'ready', 'worker must observe Redis loss after readiness');
@@ -918,10 +950,8 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       await producer?.close().catch(() => undefined);
       producer?.disconnect();
       clients.forEach((client) => client.disconnect());
-      if (server && server.exitCode === null) {
-        const stopped = new Promise<void>((resolve) => server!.once('exit', () => resolve()));
-        server.kill('SIGTERM');
-        await stopped;
+      if (server && !disposableRedisExited(server)) {
+        await stopDisposableRedis(server);
       }
       rmSync(dir, { recursive: true, force: true });
     }
