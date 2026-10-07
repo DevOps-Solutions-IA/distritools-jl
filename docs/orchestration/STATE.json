@@ -2,12 +2,12 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "d38a11f774aea513638e1da7e9236d05f16e1101",
-  "state_base_sha": "d38a11f774aea513638e1da7e9236d05f16e1101",
+  "validated_product_sha": "ba0a2f220c13ebf56fb6dcac8da2f579a01b25dc",
+  "state_base_sha": "ba0a2f220c13ebf56fb6dcac8da2f579a01b25dc",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-07",
   "phase": "internal-hardening",
-  "active_execution": "EX-04.5",
+  "active_execution": "EX-05.1",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -24,7 +24,9 @@
     "EX-04.1",
     "EX-04.2",
     "EX-04.3",
-    "EX-04.4"
+    "EX-04.4",
+    "EX-04.5",
+    "EX-04"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -36,9 +38,9 @@
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
-    "frontend_tests": "61/61 PASS (PR #30 CI)",
-    "backend_unit_tests": "84/84 PASS (PR #30 CI; EX-04.4 executor local 66/66)",
-    "critical_e2e": "PASS (PR #30 CI: 17 files / 137 tests, plus 4 separate test-environment guard cases)",
+    "frontend_tests": "61/61 PASS (EX-04.5 PR #32 CI)",
+    "backend_unit_tests": "95/95 PASS (EX-04.5 PR #32 CI)",
+    "critical_e2e": "PASS (EX-04.5 PR #32 CI: 19 files / 147 tests, plus test-environment guard cases)",
     "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
@@ -46,27 +48,25 @@
     "frontend_high": 5,
     "frontend_moderate": 0,
     "frontend_low": 0,
-    "frontend_audit_fresh": "PASS: EX-04.4 PR #30 CI run 37652904614; full 0 critical/5 high/0 moderate/0 low; runtime 0 vulnerabilities",
+    "frontend_audit_fresh": "PASS: EX-04.5 PR #32 CI run 37683738400; known dev-tooling residual unchanged; runtime audit remains 0 vulnerabilities",
     "backend_critical": 0,
     "backend_high": 4,
     "backend_moderate": 2,
     "backend_low": 1,
-    "backend_audit_fresh": "PASS: EX-04.4 PR #30 CI run 37652904614; full 0 critical/4 high/2 moderate/1 low; runtime 0 critical/4 high/2 moderate/0 low"
+    "backend_audit_fresh": "PASS: EX-04.5 PR #32 CI run 37683738400; known Prisma/Swagger residual baseline unchanged"
   },
   "current_workstreams": [
     {
-      "execution": "EX-04.5",
-      "parent": "EX-04",
-      "branch": "events/ex04-5-cutover-readiness-2026-10",
+      "execution": "EX-05.1",
+      "parent": "EX-05",
+      "branch": "security/ex05-1-auth-session-baseline-2026-10",
       "status": "PLANNED",
-      "objective": "Prove full-bootstrap Redis failure bounds, a persisted per-event routing boundary, complete required-consumer disposition evidence and controlled cutover/rollback dry-runs without production activation.",
-      "user_impact": "NOTIFICATION",
-      "hard_stop": "No real provider calls, production relay/worker activation, historical held mutation/replay, invented business effects/templates/producers, process-clock-only routing, automatic legacy fallback after durable failure, exactly-once claims or destructive deployment migration.",
-      "discovery": "docs/orchestration/runs/EX-04-eventbus-discovery.md",
-      "prior": "EX-04.4 retry/DLQ/Redis outage operations PASS/MERGED via PR #30; product merge d38a11f774aea513638e1da7e9236d05f16e1101",
-      "relay_policy": "Legacy publication plus mandatory held capture remains the normal runtime. EX-04.5 may add and prove a persisted routing boundary only with safe defaults and isolated activation; historical held stays immutable and production cutover remains unauthorized.",
-      "runbook": "docs/orchestration/runs/EX-04.5-cutover-readiness-plan.md",
-      "next_action": "INICIA FASE EX-04.5"
+      "objective": "Build and prove the current authentication/RBAC/session/2FA security matrix, then remediate concrete fail-open or replay defects within the existing product contract.",
+      "user_impact": "SECURITY",
+      "hard_stop": "No real provider calls or credentials, auth/RBAC weakening, broader dev bypass, guessed role/password/lockout/token-lifetime policy, destructive migration, secret leakage or security-baseline suppression.",
+      "prior": "EX-04.5 persisted cutover routing boundary PASS/MERGED via PR #32; product merge ba0a2f220c13ebf56fb6dcac8da2f579a01b25dc. Event-bus production cutover remains deferred behind cutover_pending, downstream business gaps and release authorization.",
+      "runbook": "docs/orchestration/runs/EX-05.1-auth-rbac-session-plan.md",
+      "next_action": "INICIA FASE EX-05.1"
     }
   ],
   "provider_status": {
@@ -78,7 +78,7 @@
     "servientrega_real": "BLOCKED_PROVIDER"
   },
   "known_p0": [
-    "BullMQ/event-bus production cutover remains incomplete: EX-04.4 retry/DLQ/Redis outage/replay operations are merged; full-bootstrap Redis-startup evidence, complete required-consumer dispositions, persisted routing boundary, historical held classification and controlled production cutover remain pending.",
+    "Production event-bus cutover remains intentionally deferred after EX-04 PASS: EX-04.5 readiness and mixed-version cutover_pending fence are merged, but order.paid notification disposition is owned by EX-07, inventory.low_stock_detected producer disposition is owned by EX-06, and no cutover may occur until those gaps close, old binaries are absent, and release authorization is explicit.",
     "Production providers must remain fail-closed",
     "EX-01.4 residual backend advisories: 4 HIGH nodes in Prisma config/deepmerge-ts/effect and 2 MODERATE nodes in Swagger/js-yaml; address only in separate approved compatibility work. Frontend has 5 dev-tooling HIGH nodes with no safe patched braces path",
     "GitHub branch protection/rulesets unavailable on current private-repo plan; manual PR + 7/7 exact-head governance is active until provider capability is upgraded."
@@ -91,15 +91,15 @@
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
   ],
   "last_transition": {
-    "execution": "EX-04.4",
+    "execution": "EX-04.5",
     "status": "MERGED",
-    "pr": 30,
-    "merge_sha": "d38a11f774aea513638e1da7e9236d05f16e1101",
-    "validation_head_sha": "43880c174e726362b0f058b8c88d2c8804b060c5",
-    "workflow_run": 37652904614,
-    "result": "Bounded retries, durable parking/replay, Redis outage/data-loss recovery, safe shutdown and readiness semantics merged after corrected 7/7 exact-head CI and remote diff audit. Production relay/history/providers remain unactivated; EX-04.5 proves persisted routing and cutover readiness only."
+    "pr": 32,
+    "merge_sha": "ba0a2f220c13ebf56fb6dcac8da2f579a01b25dc",
+    "validation_head_sha": "c42c765865b2400da29cdd44732cb5dad4992bcd",
+    "workflow_run": 37683738400,
+    "result": "Persisted routing, read-only cutover readiness, Redis/bootstrap evidence and the mixed-version cutover_pending fence merged after 7/7 exact-head CI and remote diff audit. EX-04 is complete with production cutover explicitly deferred; EX-05.1 begins auth/RBAC/session hardening."
   },
-  "next_action": "INICIA FASE EX-04.5",
+  "next_action": "INICIA FASE EX-05.1",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
