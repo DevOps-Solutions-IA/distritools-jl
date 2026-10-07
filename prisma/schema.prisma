@@ -30,6 +30,22 @@ model DomainEventOutbox {
   @@map("domain_event_outbox")
 }
 
+model DomainEventInbox {
+  id            String   @id @db.Uuid
+  consumerKey   String   @map("consumer_key")
+  eventId       String   @map("event_id") @db.Uuid
+  envelopeHash  String   @map("envelope_hash")
+  status        String   @default("completed")
+  progressCursor String? @map("progress_cursor") @db.Uuid
+  progressUpperBound String? @map("progress_upper_bound") @db.Uuid
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([consumerKey, eventId])
+  @@index([createdAt])
+  @@map("domain_event_inbox")
+}
+
 model User {
   id                       String                  @id @db.Uuid
   fullName                 String                  @map("full_name")
@@ -554,12 +570,33 @@ model Notification {
   payload           Json?
   sentAt            DateTime?           @map("sent_at")
   failedAt          DateTime?           @map("failed_at")
+  dispatchClaimToken String?            @map("dispatch_claim_token") @db.Uuid
+  dispatchLeaseUntil DateTime?          @map("dispatch_lease_until")
+  lastErrorCode      String?            @map("last_error_code")
+  dispatchEligible   Boolean            @default(false) @map("dispatch_eligible")
   createdAt         DateTime            @default(now()) @map("created_at")
   updatedAt         DateTime            @updatedAt @map("updated_at")
 
   @@unique([eventId, channel, recipient])
   @@index([eventName, status, createdAt])
+  @@index([dispatchEligible, status, dispatchLeaseUntil, createdAt], map: "notifications_dispatch_recovery_idx")
   @@map("notifications")
+}
+
+// Notification-only audit intents: state and intent commit together; delivery never waits on audit recovery.
+model NotificationAuditIntent {
+  id             String    @id @db.Uuid
+  notificationId String    @map("notification_id") @db.Uuid
+  transitionKey  String    @map("transition_key")
+  action         String
+  eventId        String    @map("event_id")
+  afterData      Json      @map("after_data")
+  recordedAt     DateTime? @map("recorded_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@unique([notificationId, transitionKey])
+  @@index([recordedAt, createdAt])
+  @@map("notification_audit_intents")
 }
 
 model Customer {
@@ -927,8 +964,10 @@ enum NotificationChannel {
 
 enum NotificationStatus {
   queued
+  sending
   sent
   failed
+  uncertain
 }
 
 enum SearchDocumentType {

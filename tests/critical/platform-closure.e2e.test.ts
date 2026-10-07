@@ -1,6 +1,7 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
 import {
   disconnectDatabase,
@@ -79,6 +80,36 @@ describe('Platform closure modules', async () => {
   after(async () => {
     await app.close();
     await disconnectDatabase();
+  });
+
+  await it('serializes sending/uncertain through read-only admin auth without claim internals', async () => {
+    const ids: string[] = [randomUUID(), randomUUID()];
+    await prisma.notification.createMany({ data: ids.map((id, index) => ({
+      id, eventId: randomUUID(), eventName: 'synthetic.serialization', channel: 'internal' as const,
+      recipient: 'internal-team', content: 'status fixture', provider: 'internal',
+      status: index === 0 ? 'sending' as const : 'uncertain' as const,
+      dispatchEligible: false, dispatchClaimToken: randomUUID(),
+      dispatchLeaseUntil: new Date(Date.now() + 300_000),
+      payload: { customerEmail: 'synthetic@example.test', token: 'synthetic-redact' },
+    })) });
+    const before = await prisma.notification.findMany({ where: { id: { in: ids } }, orderBy: { id: 'asc' } });
+    assert.equal((await http.get('/api/v1/admin/notifications')).status, 401);
+    const viewer = await loginAsAdmin(http, seeded.users.viewerEmail, seeded.users.viewerPassword, seeded.users.twoFactorSecret);
+    assert.equal((await http.get('/api/v1/admin/notifications').set('Authorization', `Bearer ${viewer.accessToken}`)).status, 403);
+    const result = await http.get('/api/v1/admin/notifications').set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(result.status, 200);
+    const rows = result.body.data.filter((row: { id: string }) => ids.includes(row.id));
+    assert.deepEqual(rows.map((row: { status: string }) => row.status).sort(), ['sending', 'uncertain']);
+    for (const row of rows) {
+      assert.deepEqual(Object.keys(row).sort(), [
+        'id', 'eventId', 'eventName', 'channel', 'recipient', 'subject', 'content', 'provider', 'status',
+        'providerMessageId', 'attempts', 'lastError', 'payload', 'sentAt', 'failedAt', 'createdAt', 'updatedAt',
+      ].sort());
+      assert.equal(row.payload.token, '[redacted]');
+      assert.notEqual(row.payload.customerEmail, 'synthetic@example.test');
+      assert.ok(!Number.isNaN(Date.parse(row.updatedAt)));
+    }
+    assert.deepEqual(await prisma.notification.findMany({ where: { id: { in: ids } }, orderBy: { id: 'asc' } }), before);
   });
 
   await it('audita flujos críticos y expone lectura segura del trail', async () => {
@@ -287,6 +318,25 @@ describe('Platform closure modules', async () => {
       search.body.data.some((entry: { documentType: string }) => entry.documentType === 'content'),
       true,
     );
+
+    const fullReindex = await http.post('/api/v1/admin/search/reindex/content')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(fullReindex.status, 201);
+    const sourceCount = await prisma.contentBlock.count();
+    assert.ok(sourceCount > 0);
+    assert.equal(fullReindex.body.reindexed, sourceCount);
+    const projections = () => prisma.searchDocument.findMany({
+      where: { documentType: 'content' }, orderBy: { contentBlockId: 'asc' },
+      select: { contentBlockId: true, title: true, searchText: true, isActive: true, priority: true },
+    });
+    const expectedProjections = await projections();
+    assert.equal(expectedProjections.length, sourceCount);
+    await prisma.searchDocument.deleteMany({ where: { documentType: 'content' } });
+    const emptyIdsReindex = await http.post('/api/v1/admin/search/reindex/content')
+      .set('Authorization', `Bearer ${adminToken}`).send({ ids: [] });
+    assert.equal(emptyIdsReindex.status, 201);
+    assert.equal(emptyIdsReindex.body.reindexed, fullReindex.body.reindexed);
+    assert.deepEqual(await projections(), expectedProjections);
   });
 
   await it('aplica promociones de forma determinística y mantiene snapshot correcto en pedidos', async () => {
@@ -373,6 +423,22 @@ describe('Platform closure modules', async () => {
       .post('/api/v1/admin/search/reindex/variants')
       .set('Authorization', `Bearer ${adminToken}`);
     assert.equal(reindex.status, 201);
+
+    const sourceCount = await prisma.variant.count();
+    assert.ok(sourceCount > 1);
+    assert.equal(reindex.body.reindexed, sourceCount);
+    const projections = () => prisma.searchDocument.findMany({
+      where: { documentType: 'variant' }, orderBy: { variantId: 'asc' },
+      select: { variantId: true, sku: true, title: true, searchText: true, isActive: true, availability: true },
+    });
+    const expectedProjections = await projections();
+    assert.equal(expectedProjections.length, sourceCount);
+    await prisma.searchDocument.deleteMany({ where: { documentType: 'variant' } });
+    const emptyIdsReindex = await http.post('/api/v1/admin/search/reindex/variants')
+      .set('Authorization', `Bearer ${adminToken}`).send({ ids: [] });
+    assert.equal(emptyIdsReindex.status, 201);
+    assert.equal(emptyIdsReindex.body.reindexed, reindex.body.reindexed);
+    assert.deepEqual(await projections(), expectedProjections);
 
     const search = await http.get('/api/v1/search').query({ q: 'TOTAL-TG109136' });
     assert.equal(search.status, 200);

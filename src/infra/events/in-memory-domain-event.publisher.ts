@@ -12,6 +12,7 @@ import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
 import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
 import { DOMAIN_EVENT_OUTBOX_REPOSITORY } from 'src/common/events/domain-event-outbox.port';
 import { PrismaDomainEventOutboxRepository } from 'src/infra/events/prisma-domain-event-outbox.repository';
+import { PrismaDomainEventInboxRepository } from 'src/infra/events/prisma-domain-event-inbox.repository';
 
 type DomainEventHandler = (event: DomainEvent<Record<string, unknown>>) => Promise<void> | void;
 
@@ -74,6 +75,7 @@ export class InMemoryDomainEventPublisher
     DomainEventHandlerRegistry,
     DomainEventsWorker,
     PrismaDomainEventOutboxRepository,
+    PrismaDomainEventInboxRepository,
     { provide: DOMAIN_EVENT_OUTBOX_REPOSITORY, useExisting: PrismaDomainEventOutboxRepository },
     {
       provide: DOMAIN_EVENT_PUBLISHER,
@@ -86,6 +88,7 @@ export class InMemoryDomainEventPublisher
     DomainEventHandlerRegistry,
     DOMAIN_EVENT_PUBLISHER,
     DOMAIN_EVENT_OUTBOX_REPOSITORY,
+    PrismaDomainEventInboxRepository,
   ],
 })
 export class DomainEventsModule {}

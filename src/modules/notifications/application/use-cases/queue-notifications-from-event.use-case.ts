@@ -1,72 +1,44 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 import { v7 as uuidv7 } from 'uuid';
 import { DomainEvent } from 'src/common/events/domain-event.publisher';
-import {
-  AUDIT_REPOSITORY,
-  AuditRepository,
-} from 'src/modules/auth/domain/repositories/audit.repository';
-import {
-  NOTIFICATION_REPOSITORY,
-  NotificationRepository,
-} from 'src/modules/notifications/domain/repositories/notification.repository';
+import { PrismaDomainEventInboxRepository } from 'src/infra/events/prisma-domain-event-inbox.repository';
 import { NotificationTemplateService } from 'src/modules/notifications/domain/services/notification-template.service';
-import { NOTIFICATIONS_QUEUE_NAME } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
+import { NotificationDispatchRecoveryService } from 'src/modules/notifications/infrastructure/queue/notification-dispatch-recovery.service';
 
 @Injectable()
 export class QueueNotificationsFromEventUseCase {
   constructor(
-    @Inject(NOTIFICATION_REPOSITORY)
-    private readonly notificationRepository: NotificationRepository,
-    @Inject(AUDIT_REPOSITORY)
-    private readonly auditRepository: AuditRepository,
-    @Inject(NotificationTemplateService)
-    private readonly templateService: NotificationTemplateService,
-    @InjectQueue(NOTIFICATIONS_QUEUE_NAME)
-    private readonly notificationsQueue: Queue,
+    @Inject(NotificationTemplateService) private readonly templateService: NotificationTemplateService,
+    @Inject(PrismaDomainEventInboxRepository) private readonly inbox: PrismaDomainEventInboxRepository,
+    @Inject(NotificationDispatchRecoveryService) private readonly dispatchRecovery: NotificationDispatchRecoveryService,
   ) {}
 
   async execute(event: DomainEvent<Record<string, unknown>>) {
     const templates = this.templateService.resolveTemplates(event);
-
-    for (const template of templates) {
-      const creation = await this.notificationRepository.createIfAbsent({
-        id: uuidv7(),
-        eventId: event.eventId!,
-        eventName: event.eventName,
-        channel: template.channel,
-        recipient: template.recipient,
-        subject: template.subject ?? null,
-        content: template.content,
-        provider: template.provider,
-        payload: event.payload,
-      });
-
-      if (!creation.inserted) {
-        continue;
+    await this.inbox.runOnce('notifications.v1', event as never, async (tx) => {
+      for (const template of templates) {
+        const inserted = await tx.notification.createMany({
+          data: [{
+            id: uuidv7(), eventId: event.eventId!, eventName: event.eventName,
+            channel: template.channel, recipient: template.recipient,
+            subject: template.subject ?? null, content: template.content,
+            provider: template.provider, payload: event.payload as never, dispatchEligible: true,
+          }],
+          skipDuplicates: true,
+        });
+        if (!inserted.count) continue;
+        const notification = await tx.notification.findUniqueOrThrow({ where: {
+          eventId_channel_recipient: { eventId: event.eventId!, channel: template.channel, recipient: template.recipient },
+        } });
+        await tx.notificationAuditIntent.createMany({ data: [{
+          id: uuidv7(), notificationId: notification.id, transitionKey: 'queued',
+          action: 'notification.queued', eventId: event.eventId!,
+          afterData: { status: 'queued', dispatch: 'durable_intent' },
+        }], skipDuplicates: true });
       }
+    });
 
-      await this.notificationsQueue.add(
-        'send-notification',
-        {
-          notificationId: creation.notification.id,
-        },
-        {
-          jobId: creation.notification.id,
-          attempts: 3,
-          removeOnComplete: 50,
-          removeOnFail: 50,
-        },
-      );
-
-      await this.auditRepository.write({
-        action: 'notification.queued',
-        entityType: 'notification',
-        entityId: creation.notification.id,
-        afterData: creation.notification,
-        correlationId: event.eventId,
-      });
-    }
+    // A completed inbox receipt does not suppress recovery of the committed notification intent.
+    await this.dispatchRecovery.enqueueEvent(event.eventId!);
   }
 }

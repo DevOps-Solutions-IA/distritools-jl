@@ -126,6 +126,7 @@ describe('EX-04.2 held capture and isolated durable transport', { concurrency: f
   let repository: PrismaDomainEventOutboxRepository;
   let legacy: InMemoryDomainEventPublisher;
   let published: VersionedDomainEvent[];
+  let observerCompletions: Promise<void>[];
   let unsubscribers: Array<() => void> = [];
   const transports: Array<{ queue: Queue; redis: Redis }> = [];
 
@@ -136,6 +137,7 @@ describe('EX-04.2 held capture and isolated durable transport', { concurrency: f
     await resetDatabase();
     seeded = await seedBaseData();
     published = [];
+    observerCompletions = [];
     legacy = new InMemoryDomainEventPublisher();
     // Explicit providers exercise real use cases/transactions without importing AppModule,
     // creating a Worker, binding a socket, or instantiating business provider adapters.
@@ -171,7 +173,8 @@ describe('EX-04.2 held capture and isolated durable transport', { concurrency: f
     ] }).compile();
     db = moduleRef.get(PrismaService);
     repository = moduleRef.get(PrismaDomainEventOutboxRepository);
-    unsubscribers = criticalNames.map((name) => legacy.subscribe(name, async (event) => {
+    unsubscribers = criticalNames.map((name) => legacy.subscribe(name, (event) => {
+      const completion = (async () => {
       assert.match(event.eventId!, uuidPattern);
       const row = await prisma.domainEventOutbox.findUniqueOrThrow({ where: { eventId: event.eventId! } });
       assert.equal(row.eventName, event.eventName);
@@ -181,6 +184,9 @@ describe('EX-04.2 held capture and isolated durable transport', { concurrency: f
       assert.equal(row.eligibility, 'held');
       assert.equal(row.state, 'pending');
       published.push(event as VersionedDomainEvent);
+      })();
+      observerCompletions.push(completion);
+      return completion;
     }));
   });
 
@@ -232,6 +238,8 @@ describe('EX-04.2 held capture and isolated durable transport', { concurrency: f
   }
 
   async function assertHeld(names: readonly string[]) {
+    // Failing listeners may leave earlier async observers in flight.
+    await Promise.all(observerCompletions);
     const rows = await prisma.domainEventOutbox.findMany({ orderBy: { eventName: 'asc' } });
     assert.deepEqual(rows.map((row) => row.eventName), [...names].sort());
     for (const row of rows) {
@@ -382,6 +390,9 @@ describe('EX-04.2 held capture and isolated durable transport', { concurrency: f
     try {
       await assert.rejects(moduleRef!.get(ProcessPaymentWebhookUseCase).execute(input), /EX042_LEGACY_FAILURE/);
     } finally { unsubscribe(); }
+    // A synchronous failing listener does not cancel earlier async observers.
+    // Await their actual completion before establishing the replay baseline.
+    await Promise.all(observerCompletions);
     const snapshot = await businessSnapshot();
     assert.equal(snapshot.orders.find((row) => row.id === order.id)!.status, 'paid');
     assert.equal(snapshot.payments.find((row) => row.id === payment.id)!.status, 'approved');

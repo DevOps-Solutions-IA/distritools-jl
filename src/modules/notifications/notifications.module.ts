@@ -21,6 +21,7 @@ import { NotificationsEventSubscriber } from 'src/modules/notifications/infrastr
 import { NotificationsProcessor } from 'src/modules/notifications/infrastructure/queue/notifications.processor';
 import { NOTIFICATIONS_QUEUE_NAME } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
 import { PrismaNotificationRepository } from 'src/modules/notifications/infrastructure/repositories/prisma-notification.repository';
+import { NotificationDispatchRecoveryService } from 'src/modules/notifications/infrastructure/queue/notification-dispatch-recovery.service';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { PrismaNotificationRepository } from 'src/modules/notifications/infrastr
     MockWhatsAppProvider,
     NotificationsEventSubscriber,
     NotificationsProcessor,
+    NotificationDispatchRecoveryService,
     {
       provide: NOTIFICATION_REPOSITORY,
       useExisting: PrismaNotificationRepository,
