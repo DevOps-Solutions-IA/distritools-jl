@@ -22,14 +22,15 @@ Goal: remove highest-risk direct Prisma coupling and unsafe casts incrementally,
 Exit: architecture findings reduced with no behavior regression; no big-bang rewrite.
 Sub-runs: EX-03.1 AdjustStockUseCase PASS/MERGED via PR #16; EX-03.2 ProcessPaymentWebhookUseCase PASS/MERGED via PR #18; EX-03.3 CreateOrderUseCase PASS/MERGED via PR #20; EX-03.4 CancelOrderUseCase PASS/MERGED via PR #22. Architecture findings reduced 124 -> 112 without behavior changes.
 
-## EX-04 — Event bus / BullMQ / idempotency / failure semantics — ACTIVE
+## EX-04 — Event bus / BullMQ / idempotency / failure semantics — PASS / CUTOVER DEFERRED
 Goal: replace accidental in-memory-only production path, register handlers explicitly, define Redis failure behavior, dedupe/retry semantics, and decide transactional outbox strategy.
 Exit: domain events reach intended consumer once logically, retry safely, and fail closed where required.
-Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox PASS/MERGED via PR #26; EX-04.3 consumer idempotency/notification recovery PASS/MERGED via PR #28; EX-04.4 Retry/DLQ and Redis Outage Operations PASS/MERGED via PR #30 (7/7 exact-head CI, product merge d38a11f774aea513638e1da7e9236d05f16e1101); EX-04.5 Cutover Readiness and Persisted Routing Boundary is PLANNED next. Runbook: docs/orchestration/runs/EX-04.5-cutover-readiness-plan.md. Production relay remains disabled; historical held records remain immutable and require explicit evidence before any future cutover.
+Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox PASS/MERGED via PR #26; EX-04.3 consumer idempotency/notification recovery PASS/MERGED via PR #28; EX-04.4 Retry/DLQ and Redis Outage Operations PASS/MERGED via PR #30; EX-04.5 Cutover Readiness and Persisted Routing Boundary PASS/MERGED via PR #32 (7/7 exact-head CI, product merge ba0a2f220c13ebf56fb6dcac8da2f579a01b25dc). Production relay/worker remains disabled and new durable intents are fenced as cutover_pending. Production cutover is deferred until the EX-06 inventory producer gap, EX-07 order.paid notification disposition, mixed-version retirement and release authorization are closed.
 
-## EX-05 — Auth, RBAC, sessions, audit, secrets, readiness
+## EX-05 — Auth, RBAC, sessions, audit, secrets, readiness — ACTIVE
 Goal: verify login/2FA/session rotation/revocation, permissions, audit redaction, throttling, CORS/trusted proxy, production auth guards, and secret handling.
 Exit: security matrix green with explicit production blockers.
+Sub-runs: EX-05.1 Auth/RBAC/Session Security Baseline is PLANNED next. Runbook: docs/orchestration/runs/EX-05.1-auth-rbac-session-plan.md.
 
 ## EX-06 — Inventory, orders, checkout, payments internal correctness
 Goal: harden stock allocation/reserve/commit/release, order transitions, idempotency, webhook replay, cancellation races, payment state semantics, and PSE failure UX contract.
