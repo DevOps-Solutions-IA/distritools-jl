@@ -140,6 +140,22 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci
+      - name: Configure isolated queue Redis contract
+        run: |
+          node --input-type=module <<'NODE'
+          import Redis from 'ioredis';
+          const redis = new Redis(process.env.REDIS_URL, { maxRetriesPerRequest: 1 });
+          await redis.config('SET', 'appendonly', 'yes');
+          await redis.config('SET', 'appendfsync', 'always');
+          await redis.config('SET', 'maxmemory-policy', 'noeviction');
+          const appendonly = await redis.config('GET', 'appendonly');
+          const appendfsync = await redis.config('GET', 'appendfsync');
+          const policy = await redis.config('GET', 'maxmemory-policy');
+          if (appendonly[1] !== 'yes' || appendfsync[1] !== 'always' || policy[1] !== 'noeviction') {
+            throw new Error('isolated queue Redis contract was not applied');
+          }
+          await redis.quit();
+          NODE
       - name: Create isolated test environment file
         run: |
           cat > .env.test <<'EOF'
