@@ -10,3 +10,10 @@ END $$;
 
 DROP TABLE "domain_event_routing_decisions";
 DROP FUNCTION prevent_domain_event_routing_decision_mutation();
+
+ALTER TABLE "domain_event_outbox"
+    DROP CONSTRAINT "outbox_eligibility";
+
+ALTER TABLE "domain_event_outbox"
+    ADD CONSTRAINT "outbox_eligibility"
+    CHECK ("eligibility" IN ('held', 'eligible'));

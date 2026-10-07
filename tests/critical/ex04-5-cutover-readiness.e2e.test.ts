@@ -169,6 +169,13 @@ describe('EX-04.5 persisted routing and isolated cutover readiness', { concurren
     await prisma.$transaction(async (tx) => { await outbox.captureHeld(tx as never, durable); });
     const durableDecision = await prisma.domainEventRoutingDecision.findUniqueOrThrow({ where: { eventId: durable.eventId } });
     assert.equal(durableDecision.route, 'durable');
+    const durableOutbox = await prisma.domainEventOutbox.findUniqueOrThrow({ where: { eventId: durable.eventId } });
+    assert.equal(durableOutbox.eligibility, 'cutover_pending');
+    const legacyRelayVisible = await prisma.domainEventOutbox.count({
+      where: { eventId: durable.eventId, eligibility: 'eligible' },
+    });
+    assert.equal(legacyRelayVisible, 0,
+      'an EX-04.4 relay predicate must not see EX-04.5 durable intents during mixed deployment');
     await legacy.publish(durable, durableDecision.route as 'durable');
     assert.equal(legacyCount, 0, 'durable route suppresses legacy publication');
 
@@ -207,7 +214,7 @@ describe('EX-04.5 persisted routing and isolated cutover readiness', { concurren
     await prisma.domainEventOutbox.create({ data: {
       eventId: pendingAfterQueueLoss.eventId, eventName: pendingAfterQueueLoss.eventName,
       eventVersion: pendingAfterQueueLoss.eventVersion, payload: pendingAfterQueueLoss.payload as unknown as Prisma.InputJsonValue,
-      occurredAt: new Date(pendingAfterQueueLoss.occurredAt), eligibility: 'eligible', holdReason: null,
+      occurredAt: new Date(pendingAfterQueueLoss.occurredAt), eligibility: 'cutover_pending', holdReason: null,
       state: 'enqueued', enqueuedAt: new Date(), routingDecision: { create: {
         route: 'durable', reason: 'TEST_ONLY_DURABLE', policyVersion: 'ex045.v1',
       } },

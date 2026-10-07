@@ -1,3 +1,10 @@
+ALTER TABLE "domain_event_outbox"
+    DROP CONSTRAINT "outbox_eligibility";
+
+ALTER TABLE "domain_event_outbox"
+    ADD CONSTRAINT "outbox_eligibility"
+    CHECK ("eligibility" IN ('held', 'eligible', 'cutover_pending'));
+
 CREATE TABLE "domain_event_routing_decisions" (
     "event_id" UUID NOT NULL,
     "route" TEXT NOT NULL,

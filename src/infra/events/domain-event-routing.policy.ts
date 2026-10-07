@@ -6,6 +6,7 @@ import {
 import { requiredConsumerKeys } from 'src/infra/events/domain-event-replay-policy';
 
 export type DomainEventRoute = 'legacy_hold' | 'durable';
+export const EX045_DURABLE_PENDING_ELIGIBILITY = 'cutover_pending' as const;
 export type DomainEventRouteReason =
   | 'DEFAULT_LEGACY_HOLD'
   | 'TEST_ONLY_DURABLE'

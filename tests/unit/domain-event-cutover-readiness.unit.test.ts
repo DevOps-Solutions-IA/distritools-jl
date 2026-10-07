@@ -9,7 +9,7 @@ describe('persisted domain-event cutover readiness dry-run', () => {
     const prisma = {
       domainEventOutbox: { findMany: async () => [
         { eventId: '00000000-0000-7000-8000-000000000001', eventName: 'order.created', eventVersion: 'v1',
-          eligibility: 'eligible', holdReason: null, state: 'enqueued', createdAt: at,
+          eligibility: 'cutover_pending', holdReason: null, state: 'enqueued', createdAt: at,
           routingDecision: { route: 'durable', reason: 'TEST_ONLY_DURABLE', policyVersion: 'ex045.v1' }, payload: { customerEmail: 'private@example.test' } },
         { eventId: '00000000-0000-7000-8000-000000000002', eventName: 'order.paid', eventVersion: 'v1',
           eligibility: 'held', holdReason: 'legacy_delivery_requires_reconciliation', state: 'pending', createdAt: at,
@@ -35,6 +35,7 @@ describe('persisted domain-event cutover readiness dry-run', () => {
     assert.ok(result.consumerDispositionMatrix.some((item) => item.eventName === 'inventory.low_stock_detected' && !item.eligible));
     assert.equal(result.items[0].cutoverEligible, false);
     assert.ok(result.items[0].ineligibilityReasons.includes('NOTIFICATION_OUTCOME_UNCERTAIN'));
+    assert.ok(result.items[0].ineligibilityReasons.includes('MIXED_VERSION_FENCE_NOT_ACTIVATED'));
     assert.deepEqual(result.items[0].completedConsumers, ['notifications.v1']);
     assert.equal(result.items[1].held, true);
     assert.ok(result.items[1].ineligibilityReasons.includes('PERSISTED_ROUTE_IS_LEGACY_HOLD'));

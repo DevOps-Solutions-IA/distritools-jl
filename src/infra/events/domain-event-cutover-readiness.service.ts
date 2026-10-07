@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import { DOMAIN_EVENT_CONTRACTS, DOMAIN_EVENT_NAMES, DomainEventName } from 'src/common/events/domain-event.contracts';
-import { buildDomainEventDispositionMatrix, declaredConsumerKeys } from 'src/infra/events/domain-event-routing.policy';
+import { buildDomainEventDispositionMatrix, declaredConsumerKeys, EX045_DURABLE_PENDING_ELIGIBILITY } from 'src/infra/events/domain-event-routing.policy';
 import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
 
 const MAX_LIMIT = 50;
@@ -75,7 +75,8 @@ export class DomainEventCutoverReadinessService {
       const route = row.routingDecision?.route ?? 'legacy_hold';
       const reasons: string[] = [];
       if (route !== 'durable') reasons.push('PERSISTED_ROUTE_IS_LEGACY_HOLD');
-      if (row.eligibility !== 'eligible') reasons.push('OUTBOX_INTENT_IS_HELD');
+      if (row.eligibility === EX045_DURABLE_PENDING_ELIGIBILITY) reasons.push('MIXED_VERSION_FENCE_NOT_ACTIVATED');
+      else if (row.eligibility !== 'eligible') reasons.push('OUTBOX_INTENT_IS_HELD');
       if (!disposition?.eligible) reasons.push(disposition?.reason ?? 'EVENT_CONTRACT_UNAVAILABLE');
       if (hasUnsafeParking) reasons.push('PARKING_OR_UNCERTAIN_DELIVERY_REQUIRES_OPERATOR_REVIEW');
       if (hasUncertainNotification) reasons.push('NOTIFICATION_OUTCOME_UNCERTAIN');
@@ -101,7 +102,7 @@ export class DomainEventCutoverReadinessService {
           failureClass: entry.failureClass, errorCategory: entry.errorCategory,
         })),
         notificationStates: notificationCounts,
-        held: route !== 'durable' || row.eligibility === 'held',
+        held: route !== 'durable' || row.eligibility === 'held' || row.eligibility === EX045_DURABLE_PENDING_ELIGIBILITY,
         cutoverEligible,
         ineligibilityReasons: cutoverEligible ? [] : [...new Set(reasons)],
         requiredConsumerGap: !contract || contract.disposition === 'known_consumer_gap' || contract.disposition === 'producer_missing',

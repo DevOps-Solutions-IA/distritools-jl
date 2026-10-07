@@ -6,7 +6,7 @@ import type { DomainEventOutboxRepository, OutboxClaim, OutboxRelayRepository, P
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
-import { resolveDomainEventRoute } from 'src/infra/events/domain-event-routing.policy';
+import { EX045_DURABLE_PENDING_ELIGIBILITY, resolveDomainEventRoute } from 'src/infra/events/domain-event-routing.policy';
 
 @Injectable()
 export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepository, OutboxRelayRepository {
@@ -22,7 +22,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
       eventId: event.eventId!, eventName: event.eventName, eventVersion: event.eventVersion,
       payload: JSON.parse(JSON.stringify(event.payload)) as Prisma.InputJsonValue,
       occurredAt: new Date(event.occurredAt), correlationId: event.correlationId,
-      eligibility: routing.route === 'durable' ? 'eligible' : 'held',
+      eligibility: routing.route === 'durable' ? EX045_DURABLE_PENDING_ELIGIBILITY : 'held',
       holdReason: routing.route === 'durable' ? null : 'legacy_delivery_requires_reconciliation', state: 'pending',
     } });
     await tx.domainEventRoutingDecision.create({ data: {
@@ -44,7 +44,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
     }>>(Prisma.sql`
       WITH candidates AS (
         SELECT event_id FROM domain_event_outbox
-        WHERE eligibility = 'eligible' AND next_attempt_at <= clock_timestamp()
+        WHERE eligibility IN ('eligible', 'cutover_pending') AND next_attempt_at <= clock_timestamp()
           AND EXISTS (SELECT 1 FROM domain_event_routing_decisions AS routing
             WHERE routing.event_id = domain_event_outbox.event_id AND routing.route = 'durable')
           AND (state = 'pending' OR (state = 'claimed' AND lease_until <= clock_timestamp()))
@@ -70,7 +70,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
     if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new Error('Invalid reconciliation batch size');
     return this.prisma.domainEventOutbox.findMany({
       where: {
-        eligibility: 'eligible', state: 'enqueued',
+        eligibility: { in: ['eligible', EX045_DURABLE_PENDING_ELIGIBILITY] }, state: 'enqueued',
         routingDecision: { is: { route: 'durable' } },
         ...(after ? { OR: [
           { createdAt: { gt: after.createdAt } },
@@ -90,7 +90,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
     const changed = await this.prisma.$executeRaw(Prisma.sql`
       UPDATE domain_event_outbox SET state = 'enqueued', enqueued_at = clock_timestamp(),
         claim_token = NULL, lease_until = NULL, last_error_code = NULL
-      WHERE event_id = ${eventId}::uuid AND eligibility = 'eligible' AND state = 'claimed'
+      WHERE event_id = ${eventId}::uuid AND eligibility IN ('eligible', 'cutover_pending') AND state = 'claimed'
         AND claim_token = ${claimToken}::uuid AND lease_until > clock_timestamp()
     `);
     return changed === 1;
@@ -104,7 +104,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
     const changed = await this.prisma.$executeRaw(Prisma.sql`
       UPDATE domain_event_outbox SET state = 'pending', claim_token = NULL, lease_until = NULL,
         last_error_code = ${errorCode}, next_attempt_at = clock_timestamp() + ${delayMs} * interval '1 millisecond'
-      WHERE event_id = ${eventId}::uuid AND eligibility = 'eligible' AND state = 'claimed'
+      WHERE event_id = ${eventId}::uuid AND eligibility IN ('eligible', 'cutover_pending') AND state = 'claimed'
         AND claim_token = ${claimToken}::uuid AND lease_until > clock_timestamp()
     `);
     return changed === 1;
@@ -117,7 +117,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
     return this.prisma.$transaction(async (tx) => {
       const [row] = await tx.$queryRaw<Array<{ event_id: string; event_name: string; attempts: number }>>(Prisma.sql`
         SELECT event_id, event_name, attempts FROM domain_event_outbox
-        WHERE event_id = ${eventId}::uuid AND eligibility = 'eligible' AND state = 'claimed'
+        WHERE event_id = ${eventId}::uuid AND eligibility IN ('eligible', 'cutover_pending') AND state = 'claimed'
           AND claim_token = ${claimToken}::uuid AND lease_until > clock_timestamp()
         FOR UPDATE
       `);
@@ -135,7 +135,7 @@ export class PrismaDomainEventOutboxRepository implements DomainEventOutboxRepos
         },
       });
       const updated = await tx.domainEventOutbox.updateMany({
-        where: { eventId, eligibility: 'eligible', state: 'claimed', claimToken },
+        where: { eventId, eligibility: { in: ['eligible', EX045_DURABLE_PENDING_ELIGIBILITY] }, state: 'claimed', claimToken },
         data: { state: 'pending', claimToken: null, leaseUntil: null, lastErrorCode: errorCategory },
       });
       return updated.count === 1;

@@ -74,7 +74,7 @@ describe('durable event outbox boundaries', () => {
       const captured = await repository.captureHeld(tx as unknown as PrismaTransactionClient, event);
       assert.deepEqual(writes.map((write) => write.table), ['outbox', 'routing']);
       assert.equal(writes[0]?.data.eventId, captured.eventId);
-      assert.equal(writes[0]?.data.eligibility, 'eligible');
+      assert.equal(writes[0]?.data.eligibility, 'cutover_pending');
       assert.equal(writes[1]?.data.eventId, captured.eventId);
       assert.equal(writes[1]?.data.route, 'durable');
       assert.equal(captured.route, 'durable');

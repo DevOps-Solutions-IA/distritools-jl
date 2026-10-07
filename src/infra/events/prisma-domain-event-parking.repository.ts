@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import type { DeliveryFailureClass } from 'src/infra/events/domain-event-delivery-policy';
+import { EX045_DURABLE_PENDING_ELIGIBILITY } from 'src/infra/events/domain-event-routing.policy';
 
 export const DOMAIN_EVENT_PARKING_CATEGORIES = [
   'INVALID_ENVELOPE', 'UNSUPPORTED_VERSION', 'MISSING_REQUIRED_CONSUMER',
@@ -25,7 +26,7 @@ export class PrismaDomainEventParkingRepository {
       where: { eventId, eventName }, select: { eligibility: true, routingDecision: { select: { route: true } } },
     });
     if (row?.eligibility === 'held') return 'held';
-    return row?.eligibility === 'eligible' && row.routingDecision?.route === 'durable' ? 'eligible' : null;
+    return (row?.eligibility === 'eligible' || row?.eligibility === EX045_DURABLE_PENDING_ELIGIBILITY) && row.routingDecision?.route === 'durable' ? 'eligible' : null;
   }
 
   async recordFailure(input: {
@@ -51,7 +52,7 @@ export class PrismaDomainEventParkingRepository {
         clock_timestamp(), clock_timestamp()
       FROM domain_event_outbox AS o
       WHERE o.event_id = ${input.eventId}::uuid AND o.event_name = ${input.eventName}
-        AND o.eligibility IN ('eligible', 'held')
+        AND o.eligibility IN ('eligible', 'cutover_pending', 'held')
       ON CONFLICT (event_id, consumer_key) DO UPDATE SET
         event_name = EXCLUDED.event_name,
         failure_class = EXCLUDED.failure_class,
@@ -76,7 +77,7 @@ export class PrismaDomainEventParkingRepository {
         'transient', 'CONSUMER_RETRYABLE_FAILURE', 1, 0, 'retrying', clock_timestamp(), clock_timestamp()
       FROM domain_event_outbox AS o
       WHERE o.event_id = ${input.eventId}::uuid AND o.event_name = ${input.eventName}
-        AND o.eligibility IN ('eligible', 'held')
+        AND o.eligibility IN ('eligible', 'cutover_pending', 'held')
       ON CONFLICT (event_id, consumer_key) DO UPDATE SET
         event_name = EXCLUDED.event_name,
         failure_class = 'transient',
