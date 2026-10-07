@@ -25,7 +25,7 @@ Sub-runs: EX-03.1 AdjustStockUseCase PASS/MERGED via PR #16; EX-03.2 ProcessPaym
 ## EX-04 — Event bus / BullMQ / idempotency / failure semantics — ACTIVE
 Goal: replace accidental in-memory-only production path, register handlers explicitly, define Redis failure behavior, dedupe/retry semantics, and decide transactional outbox strategy.
 Exit: domain events reach intended consumer once logically, retry safely, and fail closed where required.
-Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox PASS/MERGED via PR #26 (7/7 exact-head CI, merge a7eb83885b55d93fc2f44821d737d0f61b20d324); EX-04.3 consumer idempotency and notification recovery is PLANNED and next to execute. Runbook: docs/orchestration/runs/EX-04.3-consumer-idempotency-plan.md. Production relay remains disabled and historical held records require explicit reconciliation.
+Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox PASS/MERGED via PR #26; EX-04.3 consumer idempotency/notification recovery PASS/MERGED via PR #28 (7/7 exact-head CI, merge a782d553a17362f213908f9e53f891aa8ef14fa0); EX-04.4 Retry/DLQ and Redis Outage Operations is PLANNED and next to execute. Runbook: docs/orchestration/runs/EX-04.4-retry-dlq-redis-plan.md. Production relay remains disabled; historical held records require explicit per-consumer reconciliation and a separate controlled cutover.
 
 ## EX-05 — Auth, RBAC, sessions, audit, secrets, readiness
 Goal: verify login/2FA/session rotation/revocation, permissions, audit redaction, throttling, CORS/trusted proxy, production auth guards, and secret handling.
