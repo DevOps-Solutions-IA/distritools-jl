@@ -31,6 +31,15 @@ function canonicalize(value: unknown): string {
 export class PrismaDomainEventInboxRepository {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
+  async completedConsumerKeys(eventId: string, consumerKeys: readonly string[]): Promise<string[]> {
+    if (!consumerKeys.length) return [];
+    const receipts = await this.prisma.domainEventInbox.findMany({
+      where: { eventId, consumerKey: { in: [...consumerKeys] }, status: 'completed' },
+      select: { consumerKey: true },
+    });
+    return receipts.map((receipt) => receipt.consumerKey);
+  }
+
   async runBatches(
     consumerKey: string, input: VersionedDomainEvent,
     upperBound: (tx: PrismaTransactionClient) => Promise<string | null>,

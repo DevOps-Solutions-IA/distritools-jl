@@ -17,6 +17,7 @@ import { InMemoryDomainEventPublisher } from 'src/infra/events/in-memory-domain-
 import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
 import { MissingDomainEventHandlerError } from 'src/infra/events/domain-event-handler.registry';
 import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
+import { PrismaDomainEventParkingRepository } from 'src/infra/events/prisma-domain-event-parking.repository';
 import { PrismaDomainEventInboxRepository } from 'src/infra/events/prisma-domain-event-inbox.repository';
 import { SearchEventSubscriber } from 'src/modules/search/infrastructure/jobs/search-event.subscriber';
 import { ReindexContentUseCase } from 'src/modules/search/application/use-cases/reindex-content.use-case';
@@ -59,6 +60,14 @@ function isolatedTargets() {
 
 function event(name: 'order.created' | 'content.published', payload: Record<string, unknown>): VersionedDomainEvent & { eventId: string } {
   return { eventId: randomUUID(), eventName: name, eventVersion: 'v1', occurredAt: new Date().toISOString(), payload } as never;
+}
+
+async function persistEligibleIntent(message: VersionedDomainEvent & { eventId: string }): Promise<void> {
+  await prisma.domainEventOutbox.create({ data: {
+    eventId: message.eventId, eventName: message.eventName, eventVersion: message.eventVersion,
+    payload: message.payload as never, occurredAt: new Date(message.occurredAt),
+    eligibility: 'eligible', state: 'enqueued', enqueuedAt: new Date(), nextAttemptAt: new Date(0),
+  } });
 }
 
 async function waitFor<T>(read: () => Promise<T | null>, message: string): Promise<T> {
@@ -117,7 +126,7 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
     searchSubscriber = new SearchEventSubscriber(publisher, searchContent, searchVariants, registry, inbox);
     searchSubscriber.onModuleInit();
 
-    const domainWorker = new DomainEventsWorker(registry);
+    const domainWorker = new DomainEventsWorker(registry, new PrismaDomainEventParkingRepository(prisma as never));
     worker = new Worker(eventQueueName, (job) => domainWorker.process(job), { connection: workerConnection });
     await worker.waitUntilReady();
   });
@@ -136,6 +145,7 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
       customerEmail: `customer-${token}@example.test`, customerPhone: null,
       items: [{ sku: 'SKU-EX043', name: 'Synthetic item', quantity: 1, unitPrice: '10', lineTotal: '10' }],
     });
+    await persistEligibleIntent(message);
     const job = await eventQueue.add(message.eventName, message, { jobId: message.eventId });
     await Promise.all([job.waitUntilFinished(events, 5000), publisher.publish(message)]);
 
@@ -169,6 +179,7 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
     });
     let durableCompletion: Promise<unknown> | undefined;
     try {
+      await persistEligibleIntent(message);
       const job = await eventQueue.add(message.eventName, message, { jobId: message.eventId });
       const finished = job.waitUntilFinished(events, 5000);
       durableCompletion = finished;
@@ -331,6 +342,7 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
       placementKey: `ex043-${token}`, body: { text: 'projection fixture' }, isPublished: true,
     } });
     const message = event('content.published', { contentId, placementKey: `ex043-${token}`, title: 'EX043 searchable evidence' });
+    await persistEligibleIntent(message);
     const job = await eventQueue.add(message.eventName, message, { jobId: message.eventId });
     await Promise.all([job.waitUntilFinished(events, 5000), publisher.publish(message)]);
 
@@ -547,14 +559,17 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
         return notificationQueue.add(...args);
       },
     };
-    const recovery = new NotificationDispatchRecoveryService(repository, queuePort as never);
+    const recovery = new NotificationDispatchRecoveryService(repository, queuePort as never, 5_000, 10);
     const useCase = new QueueNotificationsFromEventUseCase(new NotificationTemplateService(), new PrismaDomainEventInboxRepository(prisma as never), recovery);
 
     await useCase.execute(message);
     const persisted = await prisma.notification.findMany({ where: { eventId: message.eventId }, orderBy: { id: 'asc' } });
     assert.equal(persisted.length, 2);
     const firstAttemptJobs = await notificationQueue.getJobs(['waiting']);
-    assert.equal(firstAttemptJobs.filter((job) => persisted.some((row) => row.id === job.id)).length, 1);
+    assert.equal(firstAttemptJobs.filter((job) => persisted.some((row) => row.id === job.id)).length, 0,
+      'a Redis enqueue failure must release claims and circuit-break immediate retries');
+    await new Promise((resolve) => setTimeout(resolve, 15));
+    await recovery.recoverBatch();
     await useCase.execute(message);
 
     const recovered = await notificationQueue.getJobs(['waiting']);

@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { DomainEventOutboxRelay } from 'src/infra/events/domain-event-outbox-relay';
+import { DomainEventEnqueueOutcomeUnknownError } from 'src/infra/events/bullmq-domain-event.publisher';
 import { PrismaDomainEventOutboxRepository } from 'src/infra/events/prisma-domain-event-outbox.repository';
 import type { OutboxClaim, OutboxRelayRepository } from 'src/common/events/domain-event-outbox.port';
 import type { PrismaService } from 'src/infra/db/prisma/prisma.service';
@@ -122,5 +123,31 @@ describe('durable event outbox boundaries', () => {
     };
     assert.deepEqual(await new DomainEventOutboxRelay(repo, { publish: async () => {} }).runIsolatedBatch(),
       { claimed: 1, enqueued: 0, failed: 0, lostClaims: 1 });
+  }));
+
+  it('opens an outage circuit and defers the remaining batch without consuming consumer attempts', async () => isolated(async () => {
+    const claims: OutboxClaim[] = Array.from({ length: 3 }, (_, index) => ({
+      eventId: `event-${index}`, claimToken: `claim-${index}`, attempts: 1, event: { ...event, eventId: `event-${index}` },
+    }));
+    let claimCalls = 0;
+    const deferred: string[] = [];
+    const repo: OutboxRelayRepository = {
+      claimEligible: async () => { claimCalls += 1; return claims; },
+      markEnqueued: async () => { throw new Error('outage cannot be acknowledged'); },
+      defer: async (id, _token, code) => { assert.equal(code, 'REDIS_OUTAGE'); deferred.push(id); return true; },
+    };
+    let publishes = 0;
+    const relay = new DomainEventOutboxRelay(repo, { publish: async () => {
+      publishes += 1;
+      throw new DomainEventEnqueueOutcomeUnknownError();
+    } });
+    const first = await relay.runIsolatedBatch({ batchSize: 3 });
+    assert.deepEqual(first, { claimed: 3, enqueued: 0, failed: 3, lostClaims: 0 });
+    assert.equal(publishes, 1);
+    assert.equal(claimCalls, 1);
+    assert.equal(deferred.length, 3);
+    assert.deepEqual(await relay.runIsolatedBatch({ batchSize: 3 }),
+      { claimed: 0, enqueued: 0, failed: 0, lostClaims: 0 });
+    assert.equal(claimCalls, 1);
   }));
 });

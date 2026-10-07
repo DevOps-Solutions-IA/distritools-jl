@@ -272,6 +272,7 @@ describe('Platform closure modules', async () => {
           },
         }),
       (row) => !!row && row.status === 'failed' && row.attempts >= 3,
+      15_000,
     );
 
     assert.equal(failedNotification?.status, 'failed');

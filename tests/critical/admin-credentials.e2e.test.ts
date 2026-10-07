@@ -211,6 +211,7 @@ describe('Secure admin credential bootstrap', async () => {
     const password = securePassword();
     const twoFactorSecret = generateSecret();
     const nextTwoFactorSecret = generateSecret();
+    let setupFilePath: string | undefined;
 
     await runScript('scripts/admin-bootstrap.ts', {
       ADMIN_BOOTSTRAP_EMAIL: 'secure-admin@distritools.local',
@@ -240,8 +241,8 @@ describe('Secure admin credential bootstrap', async () => {
 
       const match = reset.stdout.match(/Archivo local 2FA creado con permisos 0600: (.+)/);
       assert.ok(match?.[1]);
-      const filePath = match[1].trim();
-      const mode = fs.statSync(filePath).mode & 0o777;
+      setupFilePath = match[1].trim();
+      const mode = fs.statSync(setupFilePath).mode & 0o777;
       assert.equal(mode, 0o600);
 
       const activeSessions = await prisma.authSession.count({
@@ -261,6 +262,7 @@ describe('Secure admin credential bootstrap', async () => {
       assert.ok(session.accessToken);
     } finally {
       await testApp.app.close();
+      if (setupFilePath) fs.rmSync(setupFilePath, { force: true });
     }
   });
 

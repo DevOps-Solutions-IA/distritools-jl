@@ -66,6 +66,8 @@ export const ADMIN_PERMISSION_CATALOG = [
   ['audit.export', 'audit'],
   ['notifications.read', 'notifications'],
   ['notifications.retry', 'notifications'],
+  ['domain_events.replay', 'domain_events'],
+  ['domain_events.reconcile', 'domain_events'],
   ['notifications.template.write', 'notifications'],
   ['notifications.provider.write', 'notifications'],
   ['search.reindex', 'search'],

@@ -24,10 +24,35 @@ model DomainEventOutbox {
   enqueuedAt    DateTime? @map("enqueued_at")
   lastErrorCode String?   @map("last_error_code")
   createdAt     DateTime  @default(now()) @map("created_at")
+  parkedDeliveries DomainEventParking[]
 
   @@index([eligibility, state, nextAttemptAt, leaseUntil])
   @@index([eligibility, createdAt])
   @@map("domain_event_outbox")
+}
+
+model DomainEventParking {
+  id                 String   @id @db.Uuid
+  eventId            String   @map("event_id") @db.Uuid
+  consumerKey        String   @map("consumer_key")
+  eventName          String   @map("event_name")
+  failureClass       String   @map("failure_class")
+  errorCategory      String   @map("error_category")
+  businessAttempts   Int      @default(0) @map("business_attempts")
+  replayAttemptBaseline Int    @default(0) @map("replay_attempt_baseline")
+  status             String   @default("parked")
+  firstFailedAt      DateTime @default(now()) @map("first_failed_at")
+  lastFailedAt       DateTime @default(now()) @map("last_failed_at")
+  replayCount        Int      @default(0) @map("replay_count")
+  replayClaimToken   String?  @map("replay_claim_token") @db.Uuid
+  replayLeaseUntil   DateTime? @map("replay_lease_until")
+  lastReplayById     String?  @map("last_replay_by_id") @db.Uuid
+  outbox             DomainEventOutbox @relation(fields: [eventId], references: [eventId], onDelete: Restrict)
+
+  @@unique([eventId, consumerKey])
+  @@index([status, lastFailedAt])
+  @@index([eventId])
+  @@map("domain_event_parking")
 }
 
 model DomainEventInbox {

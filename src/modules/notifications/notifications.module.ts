@@ -22,12 +22,18 @@ import { NotificationsProcessor } from 'src/modules/notifications/infrastructure
 import { NOTIFICATIONS_QUEUE_NAME } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
 import { PrismaNotificationRepository } from 'src/modules/notifications/infrastructure/repositories/prisma-notification.repository';
 import { NotificationDispatchRecoveryService } from 'src/modules/notifications/infrastructure/queue/notification-dispatch-recovery.service';
+import { ConfigService } from '@nestjs/config';
+import { createProducerRedisOptions } from 'src/infra/queue/redis-role-connection-options';
 
 @Module({
   imports: [
     AuthModule,
-    BullModule.registerQueue({
+    BullModule.registerQueueAsync({
       name: NOTIFICATIONS_QUEUE_NAME,
+      useFactory: (configService: ConfigService) => ({
+        connection: createProducerRedisOptions(configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379'),
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [NotificationsController],

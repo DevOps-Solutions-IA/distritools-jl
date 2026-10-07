@@ -13,8 +13,17 @@ import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handle
 import { DOMAIN_EVENT_OUTBOX_REPOSITORY } from 'src/common/events/domain-event-outbox.port';
 import { PrismaDomainEventOutboxRepository } from 'src/infra/events/prisma-domain-event-outbox.repository';
 import { PrismaDomainEventInboxRepository } from 'src/infra/events/prisma-domain-event-inbox.repository';
+import { PrismaDomainEventParkingRepository } from 'src/infra/events/prisma-domain-event-parking.repository';
+import { DomainEventReplayService } from 'src/infra/events/domain-event-replay.service';
+import { DomainEventOperationsController } from 'src/infra/events/domain-event-operations.controller';
+import { DomainEventQueueReconciler } from 'src/infra/events/domain-event-queue-reconciler';
+import { isIsolatedDomainEventRuntime } from 'src/infra/events/domain-event-replay-policy';
 
 type DomainEventHandler = (event: DomainEvent<Record<string, unknown>>) => Promise<void> | void;
+export function getDomainEventsWorkerProvider() {
+  return isIsolatedDomainEventRuntime() ? DomainEventsWorker : { provide: DomainEventsWorker, useValue: null };
+}
+const domainEventsWorkerProvider = getDomainEventsWorkerProvider();
 
 @Injectable()
 export class InMemoryDomainEventPublisher
@@ -69,13 +78,17 @@ export class InMemoryDomainEventPublisher
 
 @Global()
 @Module({
+  controllers: [DomainEventOperationsController],
   providers: [
     InMemoryDomainEventPublisher,
     BullMqDomainEventPublisher,
     DomainEventHandlerRegistry,
-    DomainEventsWorker,
+    domainEventsWorkerProvider,
     PrismaDomainEventOutboxRepository,
     PrismaDomainEventInboxRepository,
+    PrismaDomainEventParkingRepository,
+    DomainEventReplayService,
+    DomainEventQueueReconciler,
     { provide: DOMAIN_EVENT_OUTBOX_REPOSITORY, useExisting: PrismaDomainEventOutboxRepository },
     {
       provide: DOMAIN_EVENT_PUBLISHER,
@@ -86,9 +99,12 @@ export class InMemoryDomainEventPublisher
     InMemoryDomainEventPublisher,
     BullMqDomainEventPublisher,
     DomainEventHandlerRegistry,
+    DomainEventsWorker,
     DOMAIN_EVENT_PUBLISHER,
     DOMAIN_EVENT_OUTBOX_REPOSITORY,
     PrismaDomainEventInboxRepository,
+    PrismaDomainEventParkingRepository,
+    DomainEventReplayService,
   ],
 })
 export class DomainEventsModule {}
