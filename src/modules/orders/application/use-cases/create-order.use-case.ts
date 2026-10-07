@@ -54,6 +54,7 @@ export interface CreateOrderInput {
     shippingTotal?: number;
   };
   items: CreateOrderLineInput[];
+  emitGuestCheckoutEvent?: boolean;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -208,10 +209,17 @@ export class CreateOrderUseCase {
         },
       });
 
+      const guestCheckoutEvent = input.emitGuestCheckoutEvent ? await this.outbox.captureHeld(tx, {
+        eventName: 'checkout.guest_order_created', eventVersion: 'v1', occurredAt: new Date().toISOString(),
+        payload: { orderId: createdOrder.id, orderNumber: createdOrder.orderNumber,
+          status: createdOrder.status, total: createdOrder.grandTotal },
+      }) : undefined;
+
       return {
         order: createdOrder,
         items: createdItems,
         event,
+        guestCheckoutEvent,
       };
     });
 
@@ -230,7 +238,10 @@ export class CreateOrderUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish(order.event);
+    await this.domainEventPublisher.publish(order.event, order.event.route);
+    if (order.guestCheckoutEvent) {
+      await this.domainEventPublisher.publish(order.guestCheckoutEvent, order.guestCheckoutEvent.route);
+    }
 
     return {
       order: orderEntity.toAdminResponse(

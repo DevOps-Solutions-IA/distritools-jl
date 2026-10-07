@@ -22,9 +22,10 @@ export class PrismaDomainEventParkingRepository {
 
   async getOutboxEligibility(eventId: string, eventName: string): Promise<'eligible' | 'held' | null> {
     const row = await this.prisma.domainEventOutbox.findFirst({
-      where: { eventId, eventName }, select: { eligibility: true },
+      where: { eventId, eventName }, select: { eligibility: true, routingDecision: { select: { route: true } } },
     });
-    return row?.eligibility === 'eligible' || row?.eligibility === 'held' ? row.eligibility : null;
+    if (row?.eligibility === 'held') return 'held';
+    return row?.eligibility === 'eligible' && row.routingDecision?.route === 'durable' ? 'eligible' : null;
   }
 
   async recordFailure(input: {

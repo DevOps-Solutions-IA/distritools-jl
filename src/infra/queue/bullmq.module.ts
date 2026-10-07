@@ -11,9 +11,7 @@ const DOMAIN_EVENTS_QUEUE = 'domain-events';
   imports: [
     BullModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
-        connection: {
-          url: configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379',
-        },
+        connection: createProducerRedisOptions(configService.get<string>('REDIS_URL') ?? 'redis://localhost:6379'),
       }),
       inject: [ConfigService],
     }),

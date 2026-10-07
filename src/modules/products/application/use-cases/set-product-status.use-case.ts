@@ -17,6 +17,8 @@ import {
 import { evaluateProductSellability } from 'src/modules/products/domain/services/catalog-sellability.service';
 import { ProductPolicyService } from 'src/modules/products/domain/services/product-policy.service';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 
 export interface SetProductStatusInput {
   actor: CurrentUser;
@@ -39,6 +41,8 @@ export class SetProductStatusUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: SetProductStatusInput) {
@@ -73,9 +77,19 @@ export class SetProductStatusUseCase {
       }
     }
 
-    const updated = await this.productRepository.update({
-      id: current.id,
-      isActive: input.isActive,
+    const envelope = {
+      eventName: 'product.status_changed' as const,
+      eventVersion: 'v1' as const,
+      occurredAt: new Date().toISOString(),
+      payload: { productId: current.id, slug: current.slug, isActive: input.isActive },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.product.update({
+        where: { id: current.id }, data: { isActive: input.isActive },
+        include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } },
+      });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
     await this.auditRepository.write({
@@ -89,16 +103,7 @@ export class SetProductStatusUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'product.status_changed',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        productId: updated.id,
-        slug: updated.slug,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return ProductEntity.fromState(updated).toAdminResponse();
   }

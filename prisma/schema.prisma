@@ -25,10 +25,23 @@ model DomainEventOutbox {
   lastErrorCode String?   @map("last_error_code")
   createdAt     DateTime  @default(now()) @map("created_at")
   parkedDeliveries DomainEventParking[]
+  routingDecision DomainEventRoutingDecision?
 
   @@index([eligibility, state, nextAttemptAt, leaseUntil])
   @@index([eligibility, createdAt])
   @@map("domain_event_outbox")
+}
+
+model DomainEventRoutingDecision {
+  eventId       String           @id @map("event_id") @db.Uuid
+  route         String
+  reason        String
+  policyVersion String           @map("policy_version")
+  decidedAt     DateTime         @default(now()) @map("decided_at")
+  outbox        DomainEventOutbox @relation(fields: [eventId], references: [eventId], onDelete: Restrict)
+
+  @@index([route, decidedAt])
+  @@map("domain_event_routing_decisions")
 }
 
 model DomainEventParking {

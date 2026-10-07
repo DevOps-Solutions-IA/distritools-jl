@@ -37,3 +37,18 @@ test('readiness is degraded when PostgreSQL is unavailable', async () => {
   assert.equal(response.code, 503);
   assert.equal(readiness.checks.database, 'unavailable');
 });
+
+test('API-role readiness does not require the disabled durable domain worker', async () => {
+  const response = { code: 200, status(code: number) { this.code = code; return this; } };
+  const controller = new MonitoringController(
+    { $queryRaw: async () => [{ ok: 1 }] } as never,
+    { waitUntilReady: async () => undefined, client: Promise.resolve({ ping: async () => 'PONG' }) } as never,
+    null,
+    { snapshot: () => ({}) } as never,
+    15,
+  );
+  const readiness = await controller.getReadiness(response as never);
+  assert.equal(readiness.status, 'ready');
+  assert.equal(readiness.checks.queueWorker, 'not_required_for_api_role');
+  assert.equal(response.code, 200);
+});

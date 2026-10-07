@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { NOTIFICATION_REPOSITORY, NotificationRepository } from 'src/modules/notifications/domain/repositories/notification.repository';
@@ -16,8 +16,8 @@ export class NotificationDispatchRecoveryService implements OnModuleInit, OnModu
   constructor(
     @Inject(NOTIFICATION_REPOSITORY) private readonly notifications: NotificationRepository,
     @InjectQueue(NOTIFICATIONS_QUEUE_NAME) private readonly queue: Queue,
-    private readonly shutdownDeadlineMs = 5_000,
-    private readonly outageBaseMs = 5_000,
+    @Optional() @Inject('NOTIFICATION_RECOVERY_SHUTDOWN_DEADLINE_MS') private readonly shutdownDeadlineMs = 5_000,
+    @Optional() @Inject('NOTIFICATION_RECOVERY_OUTAGE_BASE_MS') private readonly outageBaseMs = 5_000,
   ) {}
 
   onModuleInit() {

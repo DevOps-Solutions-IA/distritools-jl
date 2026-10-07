@@ -5,6 +5,9 @@ import {
 } from 'src/common/events/domain-event.publisher';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -27,6 +30,8 @@ export interface SetBrandActiveInput {
 @Injectable()
 export class SetBrandActiveUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(BRAND_REPOSITORY)
     private readonly brandRepository: BrandRepository,
     @Inject(BrandPolicyService)
@@ -35,6 +40,8 @@ export class SetBrandActiveUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: SetBrandActiveInput) {
@@ -44,9 +51,14 @@ export class SetBrandActiveUseCase {
       await this.brandRepository.findById(input.brandId),
     );
 
-    const updated = await this.brandRepository.update({
-      id: current.id,
-      isActive: input.isActive,
+    const envelope = {
+      eventName: 'brand.status_changed' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { brandId: current.id, slug: current.slug, isActive: input.isActive },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.brand.update({ where: { id: current.id }, data: { isActive: input.isActive } });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
     await this.auditRepository.write({
@@ -60,16 +72,7 @@ export class SetBrandActiveUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'brand.status_changed',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        brandId: updated.id,
-        slug: updated.slug,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return BrandEntity.fromState(updated).toAdminResponse();
   }

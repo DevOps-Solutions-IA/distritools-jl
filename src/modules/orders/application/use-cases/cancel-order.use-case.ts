@@ -102,7 +102,7 @@ export class CancelOrderUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish(event);
+    await this.domainEventPublisher.publish(event, event.route);
 
     return OrderEntity.fromState(updatedOrder).toPublicResponse();
   }

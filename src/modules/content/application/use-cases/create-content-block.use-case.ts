@@ -1,5 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import {
@@ -18,12 +22,16 @@ import {
 @Injectable()
 export class CreateContentBlockUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(CONTENT_REPOSITORY)
     private readonly contentRepository: ContentRepository,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(
@@ -42,9 +50,20 @@ export class CreateContentBlockUseCase {
   ) {
     assertHasPermissions(actor.permissions, ['content.manage']);
 
-    const contentBlock = await this.contentRepository.create({
+    const contentData = {
       id: uuidv7(),
       ...input,
+    };
+    const envelope = contentData.isPublished ? {
+      eventName: 'content.published' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { contentId: contentData.id, placementKey: contentData.placementKey, title: contentData.title },
+    } : null;
+    const { contentBlock, event } = await this.prisma.$transaction(async (tx) => {
+      const contentBlock = await tx.contentBlock.create({
+        data: { ...contentData, body: contentData.body as Prisma.InputJsonValue },
+      });
+      const event = envelope ? await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope) : null;
+      return { contentBlock, event };
     });
 
     await this.auditRepository.write({
@@ -55,18 +74,7 @@ export class CreateContentBlockUseCase {
       afterData: contentBlock,
     });
 
-    if (contentBlock.isPublished) {
-      await this.domainEventPublisher.publish({
-        eventName: 'content.published',
-        eventVersion: 'v1',
-        occurredAt: new Date().toISOString(),
-        payload: {
-          contentId: contentBlock.id,
-          placementKey: contentBlock.placementKey,
-          title: contentBlock.title,
-        },
-      });
-    }
+    if (event) await this.domainEventPublisher.publish(event, event.route);
 
     return contentBlock;
   }

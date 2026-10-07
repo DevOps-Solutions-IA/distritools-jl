@@ -1,5 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import {
   DOMAIN_EVENT_PUBLISHER,
   DomainEventPublisher,
@@ -32,6 +35,8 @@ export interface CreateCategoryInput {
 @Injectable()
 export class CreateCategoryUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(CATEGORY_REPOSITORY)
     private readonly categoryRepository: CategoryRepository,
     @Inject(CategoryPolicyService)
@@ -40,6 +45,8 @@ export class CreateCategoryUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CreateCategoryInput) {
@@ -60,7 +67,7 @@ export class CreateCategoryUseCase {
       );
     }
 
-    const category = await this.categoryRepository.create({
+    const categoryData = {
       id: uuidv7(),
       parentId: input.parentId ?? null,
       name: this.categoryPolicyService.normalizeName(input.name),
@@ -68,6 +75,15 @@ export class CreateCategoryUseCase {
       description: input.description?.trim() || null,
       isActive: input.isActive ?? true,
       sortOrder: input.sortOrder ?? 0,
+    };
+    const envelope = {
+      eventName: 'category.created' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { categoryId: categoryData.id, parentId: categoryData.parentId, slug: categoryData.slug, isActive: categoryData.isActive },
+    };
+    const { category, event } = await this.prisma.$transaction(async (tx) => {
+      const category = await tx.category.create({ data: categoryData });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { category, event };
     });
 
     await this.auditRepository.write({
@@ -80,17 +96,7 @@ export class CreateCategoryUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'category.created',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        categoryId: category.id,
-        parentId: category.parentId,
-        slug: category.slug,
-        isActive: category.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return CategoryEntity.fromState(category).toAdminResponse();
   }

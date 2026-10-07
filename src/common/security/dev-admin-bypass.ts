@@ -59,6 +59,7 @@ export const DEV_ADMIN_PERMISSIONS = [
   'audit.export',
   'notifications.read',
   'notifications.retry',
+  'domain_events.cutover.read',
   'notifications.template.write',
   'notifications.provider.write',
   'search.reindex',

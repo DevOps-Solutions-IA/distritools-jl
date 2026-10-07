@@ -5,6 +5,9 @@ import {
 } from 'src/common/events/domain-event.publisher';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -28,6 +31,8 @@ export interface UpdateCategoryTreeInput {
 @Injectable()
 export class UpdateCategoryTreeUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(CATEGORY_REPOSITORY)
     private readonly categoryRepository: CategoryRepository,
     @Inject(CategoryPolicyService)
@@ -36,6 +41,8 @@ export class UpdateCategoryTreeUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: UpdateCategoryTreeInput) {
@@ -65,10 +72,14 @@ export class UpdateCategoryTreeUseCase {
       this.categoryPolicyService.ensureNoParentCycle(current.id, ancestry);
     }
 
-    const updated = await this.categoryRepository.update({
-      id: current.id,
-      parentId,
-      sortOrder: input.sortOrder,
+    const envelope = {
+      eventName: 'category.tree_updated' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { categoryId: current.id, parentId, sortOrder: input.sortOrder, isActive: current.isActive },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.category.update({ where: { id: current.id }, data: { parentId, sortOrder: input.sortOrder } });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
     await this.auditRepository.write({
@@ -82,17 +93,7 @@ export class UpdateCategoryTreeUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'category.tree_updated',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        categoryId: updated.id,
-        parentId: updated.parentId,
-        sortOrder: updated.sortOrder,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return CategoryEntity.fromState(updated).toAdminResponse();
   }

@@ -11,16 +11,21 @@ class RedisProvider implements OnModuleDestroy {
   constructor(@Optional() configService?: ConfigService) {
     const url = configService?.get<string>('REDIS_URL') || process.env.REDIS_URL || 'redis://localhost:6379';
 
-    this.client = new Redis(url);
+    this.client = new Redis(url, {
+      connectTimeout: 5_000,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
+      retryStrategy: (attempt) => attempt >= 5 ? null : Math.min(1_000, attempt * 200),
+    });
   }
 
   getClient(): Redis {
     return this.client;
   }
 
-  async onModuleDestroy(): Promise<void> {
+  onModuleDestroy(): void {
     if (this.client.status !== 'end') {
-      await this.client.quit();
+      this.client.disconnect();
     }
   }
 }

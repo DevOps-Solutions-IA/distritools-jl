@@ -17,7 +17,9 @@ import { PrismaDomainEventParkingRepository } from 'src/infra/events/prisma-doma
 import { DomainEventReplayService } from 'src/infra/events/domain-event-replay.service';
 import { DomainEventOperationsController } from 'src/infra/events/domain-event-operations.controller';
 import { DomainEventQueueReconciler } from 'src/infra/events/domain-event-queue-reconciler';
+import { DomainEventCutoverReadinessService } from 'src/infra/events/domain-event-cutover-readiness.service';
 import { isIsolatedDomainEventRuntime } from 'src/infra/events/domain-event-replay-policy';
+import type { DomainEventRoute } from 'src/infra/events/domain-event-routing.policy';
 
 type DomainEventHandler = (event: DomainEvent<Record<string, unknown>>) => Promise<void> | void;
 export function getDomainEventsWorkerProvider() {
@@ -36,9 +38,14 @@ export class InMemoryDomainEventPublisher
     this.emitter.setMaxListeners(100);
   }
 
-  async publish(event: VersionedDomainEvent): Promise<void> {
+  async publish(event: VersionedDomainEvent, persistedRoute?: DomainEventRoute): Promise<void> {
     const validatedEvent = validateDomainEvent(event);
     const enrichedEvent: VersionedDomainEvent = { ...validatedEvent, eventId: validatedEvent.eventId ?? uuidv7() } as VersionedDomainEvent;
+
+    if (persistedRoute === 'durable') {
+      this.logger.debug(JSON.stringify({ eventId: enrichedEvent.eventId, eventName: enrichedEvent.eventName, route: 'durable' }));
+      return;
+    }
 
     this.logger.log(
       JSON.stringify({
@@ -89,6 +96,7 @@ export class InMemoryDomainEventPublisher
     PrismaDomainEventParkingRepository,
     DomainEventReplayService,
     DomainEventQueueReconciler,
+    DomainEventCutoverReadinessService,
     { provide: DOMAIN_EVENT_OUTBOX_REPOSITORY, useExisting: PrismaDomainEventOutboxRepository },
     {
       provide: DOMAIN_EVENT_PUBLISHER,

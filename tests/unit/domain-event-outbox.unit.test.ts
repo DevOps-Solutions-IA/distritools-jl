@@ -8,6 +8,7 @@ import type { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { DomainEventsModule, InMemoryDomainEventPublisher } from 'src/infra/events/in-memory-domain-event.publisher';
 import { DOMAIN_EVENT_PUBLISHER } from 'src/common/events/domain-event.publisher';
+import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
 
 const event = {
   eventName: 'order.cancelled', eventVersion: 'v1', occurredAt: '2026-10-06T18:00:00.000Z',
@@ -34,7 +35,11 @@ describe('durable event outbox boundaries', () => {
   };
   it('captures with the supplied transaction, stable ID and immutable held routing', async () => {
     let data: Record<string, unknown> | undefined;
-    const tx = { domainEventOutbox: { create: async (input: { data: Record<string, unknown> }) => { data = input.data; } } };
+    let routing: Record<string, unknown> | undefined;
+    const tx = {
+      domainEventOutbox: { create: async (input: { data: Record<string, unknown> }) => { data = input.data; } },
+      domainEventRoutingDecision: { create: async (input: { data: Record<string, unknown> }) => { routing = input.data; } },
+    };
     const repository = new PrismaDomainEventOutboxRepository({} as PrismaService);
     const captured = await repository.captureHeld(tx as unknown as PrismaTransactionClient, event);
     assert.match(captured.eventId, /^[0-9a-f-]{36}$/);
@@ -42,7 +47,42 @@ describe('durable event outbox boundaries', () => {
     assert.equal(data?.eligibility, 'held');
     assert.equal(data?.state, 'pending');
     assert.equal(data?.holdReason, 'legacy_delivery_requires_reconciliation');
+    assert.equal(routing?.eventId, captured.eventId);
+    assert.equal(routing?.route, 'legacy_hold');
+    assert.equal(captured.route, 'legacy_hold');
     assert.deepEqual(captured.payload, event.payload);
+  });
+
+  it('persists test-only durable routing beside the outbox intent in the supplied transaction', async () => {
+    const previous = {
+      NODE_ENV: process.env.NODE_ENV,
+      APP_ENV: process.env.APP_ENV,
+      EX045_TEST_DURABLE_ROUTING: process.env.EX045_TEST_DURABLE_ROUTING,
+    };
+    process.env.NODE_ENV = 'test';
+    process.env.APP_ENV = 'test';
+    process.env.EX045_TEST_DURABLE_ROUTING = 'true';
+    const writes: Array<{ table: string; data: Record<string, unknown> }> = [];
+    const tx = {
+      domainEventOutbox: { create: async ({ data }: { data: Record<string, unknown> }) => { writes.push({ table: 'outbox', data }); } },
+      domainEventRoutingDecision: { create: async ({ data }: { data: Record<string, unknown> }) => { writes.push({ table: 'routing', data }); } },
+    };
+    const registry = new DomainEventHandlerRegistry();
+    registry.register('order.cancelled', 'notifications.v1', async () => undefined);
+    try {
+      const repository = new PrismaDomainEventOutboxRepository({} as PrismaService, registry);
+      const captured = await repository.captureHeld(tx as unknown as PrismaTransactionClient, event);
+      assert.deepEqual(writes.map((write) => write.table), ['outbox', 'routing']);
+      assert.equal(writes[0]?.data.eventId, captured.eventId);
+      assert.equal(writes[0]?.data.eligibility, 'eligible');
+      assert.equal(writes[1]?.data.eventId, captured.eventId);
+      assert.equal(writes[1]?.data.route, 'durable');
+      assert.equal(captured.route, 'durable');
+    } finally {
+      for (const [key, value] of Object.entries(previous)) {
+        if (value === undefined) delete process.env[key]; else process.env[key] = value;
+      }
+    }
   });
 
   it('propagates an insert error so the caller transaction can roll back', async () => {

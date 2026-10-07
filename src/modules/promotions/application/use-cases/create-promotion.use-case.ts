@@ -1,5 +1,9 @@
+import { Prisma } from '@prisma/client';
 import { Inject, Injectable, ConflictException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import {
@@ -39,12 +43,16 @@ export interface CreatePromotionInput {
 @Injectable()
 export class CreatePromotionUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(PROMOTION_REPOSITORY)
     private readonly promotionRepository: PromotionRepository,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CreatePromotionInput) {
@@ -57,7 +65,7 @@ export class CreatePromotionUseCase {
       throw new ConflictException('Promotion slug already exists');
     }
 
-    const promotion = await this.promotionRepository.create({
+    const promotionData = {
       id: uuidv7(),
       name: input.name.trim(),
       slug: normalizedSlug,
@@ -74,30 +82,36 @@ export class CreatePromotionUseCase {
       startsAt: input.startsAt ?? null,
       endsAt: input.endsAt ?? null,
       isActive: input.isActive ?? false,
+    };
+    const envelope = promotionData.isActive ? {
+      eventName: 'promotion.activated' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { promotionId: promotionData.id, slug: promotionData.slug },
+    } : null;
+    const { promotion, event } = await this.prisma.$transaction(async (tx) => {
+      const promotion = await tx.promotion.create({
+        data: { ...promotionData, targetIds: promotionData.targetIds as unknown as Prisma.InputJsonValue },
+      });
+      const event = envelope ? await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope) : null;
+      return { promotion, event };
     });
 
+    const promotionState = {
+      ...promotion,
+      value: promotion.value.toFixed(2),
+      minSubtotal: promotion.minSubtotal?.toFixed(2) ?? null,
+    };
     await this.auditRepository.write({
       actorUserId: input.actor.sub,
       action: 'promotion.created',
       entityType: 'promotion',
       entityId: promotion.id,
-      afterData: promotion,
+      afterData: promotionState,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
     });
 
-    if (promotion.isActive) {
-      await this.domainEventPublisher.publish({
-        eventName: 'promotion.activated',
-        eventVersion: 'v1',
-        occurredAt: new Date().toISOString(),
-        payload: {
-          promotionId: promotion.id,
-          slug: promotion.slug,
-        },
-      });
-    }
+    if (event) await this.domainEventPublisher.publish(event, event.route);
 
-    return promotion;
+    return promotionState;
   }
 }

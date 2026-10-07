@@ -63,7 +63,7 @@ export class DomainEventQueueReconciler {
       const requiredKeys = requiredConsumerKeys(contract.inMemoryConsumers);
       const completedConsumers = await this.inbox.completedConsumerKeys(event.eventId!, requiredKeys);
       const eligibility = assessDomainEventReplayEligibility({
-        eligibility: 'eligible', disposition: contract.disposition,
+        eligibility: row.routingDecision?.route === 'durable' ? 'eligible' : 'held', disposition: contract.disposition,
         requiredConsumers: contract.inMemoryConsumers, registeredConsumers, completedConsumers,
       });
       if (!eligibility.eligible) {

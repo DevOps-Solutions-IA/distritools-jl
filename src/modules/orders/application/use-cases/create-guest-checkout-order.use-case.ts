@@ -5,10 +5,6 @@ import {
   Injectable,
 } from '@nestjs/common';
 import {
-  DOMAIN_EVENT_PUBLISHER,
-  DomainEventPublisher,
-} from 'src/common/events/domain-event.publisher';
-import {
   AUDIT_REPOSITORY,
   AuditRepository,
 } from 'src/modules/auth/domain/repositories/audit.repository';
@@ -72,8 +68,6 @@ export class CreateGuestCheckoutOrderUseCase {
     private readonly orderPolicyService: OrderPolicyService,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
-    @Inject(DOMAIN_EVENT_PUBLISHER)
-    private readonly domainEventPublisher: DomainEventPublisher,
     @Inject(AutoShippingService)
     private readonly autoShippingService: AutoShippingService,
   ) {}
@@ -159,6 +153,7 @@ export class CreateGuestCheckoutOrderUseCase {
         shippingTotal: 0,
       },
       items: resolvedLines,
+      emitGuestCheckoutEvent: true,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
     });
@@ -176,18 +171,6 @@ export class CreateGuestCheckoutOrderUseCase {
       },
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
-    });
-
-    await this.domainEventPublisher.publish({
-      eventName: 'checkout.guest_order_created',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        orderId: created.order.id,
-        orderNumber: created.order.orderNumber,
-        status: created.order.status,
-        total: created.order.totals.grandTotal,
-      },
     });
 
     const autoShipping = await this.autoShippingService.runAfterCheckout({

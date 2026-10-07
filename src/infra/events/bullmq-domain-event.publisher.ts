@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, Job } from 'bullmq';
 import { v7 as uuidv7 } from 'uuid';
@@ -23,7 +23,7 @@ export class BullMqDomainEventPublisher implements DomainEventPublisher, OnModul
 
   constructor(
     @InjectQueue(DOMAIN_EVENTS_QUEUE) private readonly queue: Queue,
-    private readonly enqueueDeadlineMs = ENQUEUE_DEADLINE_MS,
+    @Optional() @Inject('DOMAIN_EVENT_ENQUEUE_DEADLINE_MS') private readonly enqueueDeadlineMs = ENQUEUE_DEADLINE_MS,
   ) {}
 
   async publish(event: VersionedDomainEvent): Promise<void> {
