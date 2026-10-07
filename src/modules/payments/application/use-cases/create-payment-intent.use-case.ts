@@ -30,6 +30,8 @@ import {
   PaymentRepository,
 } from 'src/modules/payments/domain/repositories/payment.repository';
 import { PaymentPolicyService } from 'src/modules/payments/domain/services/payment-policy.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 
 export interface CreatePaymentIntentInput {
   actor?: CurrentUser;
@@ -56,6 +58,8 @@ export class CreatePaymentIntentUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CreatePaymentIntentInput) {
@@ -90,8 +94,8 @@ export class CreatePaymentIntentUseCase {
       currency: 'COP',
     });
 
-    const payment = await this.prisma.$transaction(async (tx) =>
-      this.paymentRepository.create(tx, {
+    const { payment, event } = await this.prisma.$transaction(async (tx) => {
+      const payment = await this.paymentRepository.create(tx, {
         id: paymentId,
         orderId: order.id,
         gateway: input.gateway,
@@ -100,8 +104,16 @@ export class CreatePaymentIntentUseCase {
         currency: 'COP',
         status: 'pending',
         expiresAt: intent.expiresAt,
-      }),
-    );
+      });
+      const event = await this.outbox.captureHeld(tx as unknown as PrismaTransactionClient, {
+        eventName: 'payment.intent_created', eventVersion: 'v1', occurredAt: new Date().toISOString(),
+        payload: {
+          paymentId: payment.id, orderId: payment.orderId, gateway: payment.gateway,
+          gatewayReference: payment.gatewayReference, status: payment.status,
+        },
+      });
+      return { payment, event };
+    });
 
     await this.auditRepository.write({
       actorUserId: input.actor?.sub,
@@ -113,18 +125,7 @@ export class CreatePaymentIntentUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'payment.intent_created',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        paymentId: payment.id,
-        orderId: payment.orderId,
-        gateway: payment.gateway,
-        gatewayReference: payment.gatewayReference,
-        status: payment.status,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return {
       payment: {

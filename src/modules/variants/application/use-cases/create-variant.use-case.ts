@@ -7,6 +7,8 @@ import {
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -43,6 +45,8 @@ export class CreateVariantUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CreateVariantInput) {
@@ -64,7 +68,7 @@ export class CreateVariantUseCase {
       }
     }
 
-    const variant = await this.variantRepository.create({
+    const variantData = {
       id: uuidv7(),
       productId: input.productId ?? null,
       sku,
@@ -72,30 +76,41 @@ export class CreateVariantUseCase {
       price: this.variantPolicyService.ensurePrice(input.price),
       taxRate: this.variantPolicyService.ensureTaxRate(input.taxRate ?? '0'),
       isActive: input.isActive ?? true,
+    };
+    const envelope = {
+      eventName: 'variant.created' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { variantId: variantData.id, productId: variantData.productId, sku: variantData.sku, isActive: variantData.isActive },
+    };
+    const { variant, event } = await this.prisma.$transaction(async (tx) => {
+      const variant = await tx.variant.create({
+        data: variantData,
+        include: { product: { include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } } } },
+      });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { variant, event };
     });
 
+    const variantState = {
+      ...variant,
+      price: variant.price.toFixed(2),
+      taxRate: variant.taxRate.toFixed(2),
+      product: variant.product ? {
+        id: variant.product.id, name: variant.product.name, slug: variant.product.slug,
+        isActive: variant.product.isActive, brand: variant.product.brand, category: variant.product.category,
+      } : null,
+    };
     await this.auditRepository.write({
       actorUserId: input.actor.sub,
       action: 'variant.created',
       entityType: 'variant',
       entityId: variant.id,
-      afterData: variant,
+      afterData: variantState,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'variant.created',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        variantId: variant.id,
-        productId: variant.productId,
-        sku: variant.sku,
-        isActive: variant.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
-    return VariantEntity.fromState(variant).toAdminResponse();
+    return VariantEntity.fromState(variantState).toAdminResponse();
   }
 }

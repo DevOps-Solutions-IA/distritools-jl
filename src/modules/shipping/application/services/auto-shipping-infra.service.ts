@@ -4,6 +4,8 @@ import { v7 as uuidv7 } from 'uuid';
 import { DOMAIN_EVENT_PUBLISHER, DomainEventPublisher } from 'src/common/events/domain-event.publisher';
 import { DomainEventPayloadMap, VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository, PersistedDomainEvent } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 
 function redactPayload(payload: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (!payload || typeof payload !== 'object') return Prisma.JsonNull;
@@ -32,6 +34,7 @@ export class AutoShippingInfraService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(DOMAIN_EVENT_PUBLISHER) private readonly eventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY) private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async shipmentEvent(shipmentId: string, status: PrismaShipmentStatus, providerStatus: string, description: string, rawPayload?: Record<string, unknown>) {
@@ -63,16 +66,21 @@ export class AutoShippingInfraService {
     }).catch(() => undefined);
   }
 
-  async publish<TEventName extends ShippingDomainEventName>(
+  capture<TEventName extends ShippingDomainEventName>(
+    tx: PrismaTransactionClient,
     eventName: TEventName,
     orderId: string,
     payload: Omit<DomainEventPayloadMap[TEventName], 'orderId'>,
-  ) {
+  ): Promise<PersistedDomainEvent> {
     const event = {
       eventName, eventVersion: 'v1', occurredAt: new Date().toISOString(),
       payload: { orderId, ...payload },
     } as unknown as VersionedDomainEvent;
-    await this.eventPublisher.publish(event);
+    return this.outbox.captureHeld(tx, event);
+  }
+
+  publish(event: PersistedDomainEvent) {
+    return this.eventPublisher.publish(event, event.route);
   }
 }
 

@@ -216,7 +216,7 @@ export class ProcessPaymentWebhookUseCase {
       afterData: result,
     });
 
-    for (const event of events) await this.domainEventPublisher.publish(event);
+    for (const event of events) await this.domainEventPublisher.publish(event, event.route);
 
     return {
       ok: true,

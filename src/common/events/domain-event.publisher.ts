@@ -1,4 +1,5 @@
 import type { VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
+import type { DomainEventRoute } from 'src/infra/events/domain-event-routing.policy';
 
 export interface DomainEvent<TPayload = Record<string, unknown>> {
   eventId?: string;
@@ -12,7 +13,7 @@ export interface DomainEvent<TPayload = Record<string, unknown>> {
 export type { VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
 
 export interface DomainEventPublisher {
-  publish(event: VersionedDomainEvent): Promise<void>;
+  publish(event: VersionedDomainEvent, persistedRoute?: DomainEventRoute): Promise<void>;
 }
 
 export const DOMAIN_EVENT_PUBLISHER = Symbol('DOMAIN_EVENT_PUBLISHER');

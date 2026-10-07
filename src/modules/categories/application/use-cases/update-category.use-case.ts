@@ -5,6 +5,9 @@ import {
 } from 'src/common/events/domain-event.publisher';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -31,6 +34,8 @@ export interface UpdateCategoryInput {
 @Injectable()
 export class UpdateCategoryUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(CATEGORY_REPOSITORY)
     private readonly categoryRepository: CategoryRepository,
     @Inject(CategoryPolicyService)
@@ -39,6 +44,8 @@ export class UpdateCategoryUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: UpdateCategoryInput) {
@@ -64,7 +71,7 @@ export class UpdateCategoryUseCase {
       this.categoryPolicyService.ensureValidSortOrder(input.sortOrder);
     }
 
-    const updated = await this.categoryRepository.update({
+    const updateData = {
       id: current.id,
       name:
         input.name !== undefined
@@ -75,6 +82,16 @@ export class UpdateCategoryUseCase {
         input.description !== undefined ? input.description?.trim() || null : current.description,
       isActive: input.isActive ?? current.isActive,
       sortOrder: input.sortOrder ?? current.sortOrder,
+    };
+    const envelope = {
+      eventName: 'category.updated' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { categoryId: current.id, parentId: current.parentId, slug: updateData.slug, isActive: updateData.isActive },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const { id, ...data } = updateData;
+      const updated = await tx.category.update({ where: { id }, data });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
     await this.auditRepository.write({
@@ -88,17 +105,7 @@ export class UpdateCategoryUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'category.updated',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        categoryId: updated.id,
-        parentId: updated.parentId,
-        slug: updated.slug,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return CategoryEntity.fromState(updated).toAdminResponse();
   }

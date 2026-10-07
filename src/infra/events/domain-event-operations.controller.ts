@@ -5,6 +5,7 @@ import { Permissions } from 'src/common/decorators/permissions.decorator';
 import type { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { DomainEventReplayService } from 'src/infra/events/domain-event-replay.service';
 import { DomainEventQueueReconciler } from 'src/infra/events/domain-event-queue-reconciler';
+import { DomainEventCutoverReadinessService } from 'src/infra/events/domain-event-cutover-readiness.service';
 
 @ApiTags('admin-domain-events')
 @ApiBearerAuth()
@@ -13,7 +14,16 @@ export class DomainEventOperationsController {
   constructor(
     @Inject(DomainEventReplayService) private readonly replayService: DomainEventReplayService,
     @Inject(DomainEventQueueReconciler) private readonly reconciler: DomainEventQueueReconciler,
+    @Inject(DomainEventCutoverReadinessService) private readonly cutoverReadiness: DomainEventCutoverReadinessService,
   ) {}
+
+  @Permissions('domain_events.cutover.read')
+  @Get('cutover-readiness')
+  readiness(@Query('limit') rawLimit?: string, @Query('cursor') cursor?: string) {
+    const limit = rawLimit === undefined ? 25 : Number(rawLimit);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50) throw new BadRequestException('Invalid cutover page limit');
+    return this.cutoverReadiness.evaluate({ limit, cursor });
+  }
 
   @Permissions('domain_events.reconcile')
   @Post('reconcile')

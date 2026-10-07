@@ -1,4 +1,7 @@
 import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   DOMAIN_EVENT_PUBLISHER,
@@ -26,6 +29,8 @@ function asMetadata(value: unknown): Record<string, unknown> {
 @Injectable()
 export class ArchiveProductUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: ProductRepository,
     @Inject(ProductPolicyService)
@@ -34,6 +39,8 @@ export class ArchiveProductUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: {
@@ -55,10 +62,19 @@ export class ArchiveProductUseCase {
       archiveReason: input.reason?.trim() || 'Archivo administrativo',
     };
 
-    const updated = await this.productRepository.update({
-      id: current.id,
-      isActive: false,
-      metadata: metadata as Prisma.InputJsonValue,
+    const envelope = {
+      eventName: 'product.archived' as const,
+      eventVersion: 'v1' as const,
+      occurredAt: new Date().toISOString(),
+      payload: { productId: current.id, slug: current.slug, isActive: false },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.product.update({
+        where: { id: current.id }, data: { isActive: false, metadata: metadata as Prisma.InputJsonValue },
+        include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } },
+      });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
     await this.auditRepository.write({
@@ -75,18 +91,8 @@ export class ArchiveProductUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'product.archived',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        productId: updated.id,
-        slug: updated.slug,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return ProductEntity.fromState(updated).toAdminResponse();
   }
 }
-

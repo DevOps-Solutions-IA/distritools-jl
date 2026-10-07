@@ -81,6 +81,17 @@ describe('Auto-shipping post-checkout', () => {
     assert.equal(JSON.stringify(shipment.packageSnapshot).includes('selectedCarrier'), true);
     assert.equal(shipment.events.some((event) => event.providerStatus === 'shipment.carrier_selected'), true);
 
+    const shippingEvents = await prisma.domainEventOutbox.findMany({
+      where: { eventName: { in: ['shipment.quote_created', 'shipment.carrier_selected', 'shipment.guide_created'] } },
+      include: { routingDecision: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    assert.deepEqual(shippingEvents.map((event) => event.eventName).sort(), [
+      'shipment.carrier_selected', 'shipment.guide_created', 'shipment.quote_created',
+    ]);
+    assert.ok(shippingEvents.every((event) => event.routingDecision?.route === 'legacy_hold'));
+    assert.ok(shippingEvents.every((event) => event.routingDecision?.eventId === event.eventId));
+
     const tracking = await http.get('/api/v1/orders/track').query({ query: response.body.trackingCode });
     assert.equal(tracking.status, 200);
     assert.equal(tracking.body.carrier, 'tcc');

@@ -78,4 +78,21 @@ describe('domain event publishers', () => {
     assert.equal(calls, 0);
     publisher.onModuleDestroy();
   });
+
+  it('suppresses legacy subscribers for a persisted durable route without fallback', async () => {
+    const publisher = new InMemoryDomainEventPublisher();
+    let calls = 0;
+    publisher.subscribe('order.cancelled', () => { calls += 1; });
+    const event = {
+      eventId: '00000000-0000-7000-8000-000000000001', eventName: 'order.cancelled' as const,
+      eventVersion: 'v1' as const, occurredAt: '2026-10-07T00:00:00.000Z',
+      payload: { orderId: 'order-1', orderNumber: 'DT-1', status: 'cancelled', customerEmail: null, customerPhone: null },
+    };
+
+    await publisher.publish(event, 'durable');
+    assert.equal(calls, 0);
+    await publisher.publish(event, 'legacy_hold');
+    assert.equal(calls, 1);
+    publisher.onModuleDestroy();
+  });
 });

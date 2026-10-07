@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Res } from '@nestjs/common';
+import { Controller, Get, Inject, Optional, Res } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { InjectQueue } from '@nestjs/bullmq';
@@ -21,7 +21,7 @@ export class MonitoringController {
     private readonly domainWorker: DomainEventsWorker | null,
     @Inject(MetricsService)
     private readonly metricsService: MetricsService,
-    private readonly readinessDeadlineMs = 750,
+    @Optional() @Inject('READINESS_DEADLINE_MS') private readonly readinessDeadlineMs = 750,
   ) {}
 
   @Public()
@@ -51,8 +51,8 @@ export class MonitoringController {
     ]);
     const databaseReady = database.ok;
     const producerReady = producer.ok && producer.value === 'PONG';
-    const workerReady = worker.ok && worker.value === 'PONG';
-    const ready = databaseReady && producerReady && workerReady;
+    const workerReady = domainWorker ? worker.ok && worker.value === 'PONG' : undefined;
+    const ready = databaseReady && producerReady && (workerReady ?? true);
     response.status(ready ? 200 : 503);
 
     return {
@@ -61,7 +61,7 @@ export class MonitoringController {
       checks: {
         database: databaseReady ? 'ok' : 'unavailable',
         queueProducer: producerReady ? 'ready' : 'unavailable',
-        queueWorker: workerReady ? 'ready' : 'unavailable',
+        queueWorker: workerReady === undefined ? 'not_required_for_api_role' : workerReady ? 'ready' : 'unavailable',
       },
       timestamp: new Date().toISOString(),
     };

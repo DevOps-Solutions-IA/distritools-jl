@@ -1,4 +1,7 @@
 import { Prisma } from '@prisma/client';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import { Inject, Injectable } from '@nestjs/common';
 import {
   DOMAIN_EVENT_PUBLISHER,
@@ -31,6 +34,8 @@ export interface UpdateBrandInput {
 @Injectable()
 export class UpdateBrandUseCase {
   constructor(
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
     @Inject(BRAND_REPOSITORY)
     private readonly brandRepository: BrandRepository,
     @Inject(BrandPolicyService)
@@ -39,6 +44,8 @@ export class UpdateBrandUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: UpdateBrandInput) {
@@ -58,7 +65,7 @@ export class UpdateBrandUseCase {
       this.brandPolicyService.ensureSlugAvailable(existing, current.id);
     }
 
-    const updated = await this.brandRepository.update({
+    const updateData = {
       id: current.id,
       name:
         input.name !== undefined
@@ -73,6 +80,16 @@ export class UpdateBrandUseCase {
           : current.metadata === null
             ? Prisma.JsonNull
             : current.metadata,
+    };
+    const envelope = {
+      eventName: 'brand.updated' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { brandId: current.id, slug: updateData.slug, isActive: current.isActive },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const { id, ...data } = updateData;
+      const updated = await tx.brand.update({ where: { id }, data });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
     await this.auditRepository.write({
@@ -86,16 +103,7 @@ export class UpdateBrandUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'brand.updated',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        brandId: updated.id,
-        slug: updated.slug,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return BrandEntity.fromState(updated).toAdminResponse();
   }

@@ -126,7 +126,9 @@ export class DomainEventReplayService {
       where: { eventId_consumerKey: { eventId, consumerKey } },
     });
     if (!parking || !['parked', 'replay_requested'].includes(parking.status)) throw new NotFoundException('Parked delivery not found');
-    const outbox = await this.prisma.domainEventOutbox.findUnique({ where: { eventId } });
+    const outbox = await this.prisma.domainEventOutbox.findUnique({
+      where: { eventId }, include: { routingDecision: { select: { route: true } } },
+    });
     if (!outbox) throw new NotFoundException('Durable event intent not found');
     let event: ReturnType<typeof validateDomainEvent>;
     try {
@@ -148,7 +150,7 @@ export class DomainEventReplayService {
       select: { consumerKey: true },
     });
     return assessDomainEventReplayEligibility({
-      eligibility: item.outbox.eligibility,
+      eligibility: item.outbox.routingDecision?.route === 'durable' ? item.outbox.eligibility : 'held',
       disposition: contract.disposition,
       requiredConsumers: contract.inMemoryConsumers,
       registeredConsumers: this.registry.consumerKeys(item.event.eventName),

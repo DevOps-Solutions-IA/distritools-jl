@@ -6,6 +6,8 @@ import {
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 import {
   AUDIT_REPOSITORY,
   AuditRepository,
@@ -43,6 +45,8 @@ export class UpdateVariantUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: UpdateVariantInput) {
@@ -78,7 +82,7 @@ export class UpdateVariantUseCase {
       }
     }
 
-    const updated = await this.variantRepository.update({
+    const updateData = {
       id: current.id,
       productId: nextProductId,
       sku,
@@ -98,31 +102,43 @@ export class UpdateVariantUseCase {
         input.isActive !== undefined
           ? input.isActive
           : current.isActive,
+    };
+    const envelope = {
+      eventName: 'variant.updated' as const, eventVersion: 'v1' as const, occurredAt: new Date().toISOString(),
+      payload: { variantId: current.id, productId: updateData.productId, sku: updateData.sku, isActive: updateData.isActive },
+    };
+    const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      const { id, ...data } = updateData;
+      const updated = await tx.variant.update({
+        where: { id }, data,
+        include: { product: { include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } } } },
+      });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { updated, event };
     });
 
+    const updatedState = {
+      ...updated,
+      price: updated.price.toFixed(2),
+      taxRate: updated.taxRate.toFixed(2),
+      product: updated.product ? {
+        id: updated.product.id, name: updated.product.name, slug: updated.product.slug,
+        isActive: updated.product.isActive, brand: updated.product.brand, category: updated.product.category,
+      } : null,
+    };
     await this.auditRepository.write({
       actorUserId: input.actor.sub,
       action: 'variant.updated',
       entityType: 'variant',
       entityId: updated.id,
       beforeData: current,
-      afterData: updated,
+      afterData: updatedState,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'variant.updated',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        variantId: updated.id,
-        productId: updated.productId,
-        sku: updated.sku,
-        isActive: updated.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
-    return VariantEntity.fromState(updated).toAdminResponse();
+    return VariantEntity.fromState(updatedState).toAdminResponse();
   }
 }

@@ -5,6 +5,7 @@ import {
   DOMAIN_EVENT_PUBLISHER,
   DomainEventPublisher,
 } from 'src/common/events/domain-event.publisher';
+import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
@@ -18,6 +19,7 @@ import {
   ProductRepository,
 } from 'src/modules/products/domain/repositories/product.repository';
 import { ProductPolicyService } from 'src/modules/products/domain/services/product-policy.service';
+import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
 
 export interface CreateProductInput {
   actor: CurrentUser;
@@ -45,6 +47,8 @@ export class CreateProductUseCase {
     private readonly auditRepository: AuditRepository,
     @Inject(DOMAIN_EVENT_PUBLISHER)
     private readonly domainEventPublisher: DomainEventPublisher,
+    @Inject(DOMAIN_EVENT_OUTBOX_REPOSITORY)
+    private readonly outbox: DomainEventOutboxRepository,
   ) {}
 
   async execute(input: CreateProductInput) {
@@ -96,7 +100,7 @@ export class CreateProductUseCase {
       category,
     });
 
-    const product = await this.productRepository.create({
+    const productData = {
       id: uuidv7(),
       brandId: input.brandId ?? null,
       categoryId: input.categoryId ?? null,
@@ -105,6 +109,27 @@ export class CreateProductUseCase {
       description: input.description?.trim() || null,
       metadata: input.metadata ?? null,
       isActive: input.isActive ?? true,
+    };
+    const envelope = {
+      eventName: 'product.created' as const,
+      eventVersion: 'v1' as const,
+      occurredAt: new Date().toISOString(),
+      payload: {
+        productId: productData.id,
+        slug: productData.slug,
+        isActive: productData.isActive,
+      },
+    };
+    const { product, event } = await this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          ...productData,
+          metadata: productData.metadata === null ? Prisma.JsonNull : productData.metadata,
+        },
+        include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } },
+      });
+      const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
+      return { product, event };
     });
 
     await this.auditRepository.write({
@@ -117,16 +142,7 @@ export class CreateProductUseCase {
       userAgent: input.userAgent,
     });
 
-    await this.domainEventPublisher.publish({
-      eventName: 'product.created',
-      eventVersion: 'v1',
-      occurredAt: new Date().toISOString(),
-      payload: {
-        productId: product.id,
-        slug: product.slug,
-        isActive: product.isActive,
-      },
-    });
+    await this.domainEventPublisher.publish(event, event.route);
 
     return ProductEntity.fromState(product).toAdminResponse();
   }

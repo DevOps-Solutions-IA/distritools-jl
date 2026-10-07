@@ -1,8 +1,13 @@
 import type { VersionedDomainEvent } from 'src/common/events/domain-event.contracts';
 import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
+import type { DomainEventRoute, DomainEventRouteReason } from 'src/infra/events/domain-event-routing.policy';
 
 export const DOMAIN_EVENT_OUTBOX_REPOSITORY = Symbol('DOMAIN_EVENT_OUTBOX_REPOSITORY');
-export type PersistedDomainEvent = VersionedDomainEvent & { eventId: string };
+export type PersistedDomainEvent = VersionedDomainEvent & {
+  eventId: string;
+  route: DomainEventRoute;
+  routingReason: DomainEventRouteReason;
+};
 
 export interface DomainEventOutboxRepository {
   captureHeld(tx: PrismaTransactionClient, event: VersionedDomainEvent): Promise<PersistedDomainEvent>;

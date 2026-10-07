@@ -104,6 +104,7 @@ async function eligibleFixture() {
     payload: event.payload as Prisma.InputJsonValue, occurredAt: new Date(event.occurredAt),
     correlationId: event.correlationId, eligibility: 'eligible', holdReason: null,
     state: 'pending', nextAttemptAt: new Date(0),
+    routingDecision: { create: { route: 'durable', reason: 'TEST_ONLY_DURABLE', policyVersion: 'ex045.v1' } },
   } });
 }
 

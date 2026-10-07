@@ -64,6 +64,10 @@ async function durableEvent(message: VersionedDomainEvent & { eventId: string },
     payload: message.payload as Prisma.InputJsonValue, occurredAt: new Date(message.occurredAt),
     eligibility, holdReason: eligibility === 'held' ? 'legacy_delivery_requires_reconciliation' : null,
     state, enqueuedAt: state === 'enqueued' ? new Date() : null, nextAttemptAt: new Date(0),
+    routingDecision: { create: {
+      route: eligibility === 'eligible' ? 'durable' : 'legacy_hold',
+      reason: eligibility === 'eligible' ? 'TEST_ONLY_DURABLE' : 'DEFAULT_LEGACY_HOLD', policyVersion: 'ex045.v1',
+    } },
   } });
 }
 
@@ -360,6 +364,9 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
         payload: message.payload as Prisma.InputJsonValue, occurredAt: new Date(message.occurredAt),
         eligibility: 'eligible', state: 'enqueued', enqueuedAt: pageTime,
         nextAttemptAt: new Date(0), createdAt: pageTime,
+        routingDecision: { create: {
+          route: 'durable', reason: 'TEST_ONLY_DURABLE', policyVersion: 'ex045.v1',
+        } },
       } });
     }
     const held = event();
@@ -368,6 +375,9 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       payload: held.payload as Prisma.InputJsonValue, occurredAt: new Date(held.occurredAt),
       eligibility: 'held', holdReason: 'legacy_delivery_requires_reconciliation', state: 'pending',
       nextAttemptAt: new Date(0), createdAt: pageTime,
+      routingDecision: { create: {
+        route: 'legacy_hold', reason: 'DEFAULT_LEGACY_HOLD', policyVersion: 'ex045.v1',
+      } },
     } });
     const heldBefore = await prisma.domainEventOutbox.findUniqueOrThrow({ where: { eventId: held.eventId } });
     const reconciler = new DomainEventQueueReconciler(
@@ -728,6 +738,9 @@ describe('EX-04.4 retry, durable parking and Redis recovery', () => {
       eventId: message.eventId, eventName: message.eventName, eventVersion: message.eventVersion,
       payload: message.payload as Prisma.InputJsonValue, occurredAt: new Date(message.occurredAt),
       eligibility: 'eligible', state: 'enqueued', enqueuedAt: createdAt, nextAttemptAt: new Date(0), createdAt,
+      routingDecision: { create: {
+        route: 'durable', reason: 'TEST_ONLY_DURABLE', policyVersion: 'ex045.v1',
+      } },
     } });
     const job = await domainQueue.add(message.eventName, message, { jobId: message.eventId, attempts: 1, removeOnFail: false });
     const failingWorkerConnection = new Redis(redisDb15Url(), createWorkerRedisOptions(redisDb15Url()));

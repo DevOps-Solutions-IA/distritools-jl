@@ -67,6 +67,7 @@ async function persistEligibleIntent(message: VersionedDomainEvent & { eventId: 
     eventId: message.eventId, eventName: message.eventName, eventVersion: message.eventVersion,
     payload: message.payload as never, occurredAt: new Date(message.occurredAt),
     eligibility: 'eligible', state: 'enqueued', enqueuedAt: new Date(), nextAttemptAt: new Date(0),
+    routingDecision: { create: { route: 'durable', reason: 'TEST_ONLY_DURABLE', policyVersion: 'ex045.v1' } },
   } });
 }
 
