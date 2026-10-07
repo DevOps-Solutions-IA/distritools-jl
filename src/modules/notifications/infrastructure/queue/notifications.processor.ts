@@ -4,7 +4,7 @@ import { Inject } from '@nestjs/common';
 import { SendNotificationUseCase } from 'src/modules/notifications/application/use-cases/send-notification.use-case';
 import { NOTIFICATIONS_QUEUE_NAME } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
 
-@Processor(NOTIFICATIONS_QUEUE_NAME)
+@Processor({ name: NOTIFICATIONS_QUEUE_NAME, configKey: 'domainWorker' })
 export class NotificationsProcessor extends WorkerHost {
   constructor(
     @Inject(SendNotificationUseCase)

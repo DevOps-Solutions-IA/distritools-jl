@@ -4,7 +4,7 @@ import { MODULE_METADATA } from '@nestjs/common/constants';
 import type { Queue } from 'bullmq';
 import { DOMAIN_EVENT_PUBLISHER } from 'src/common/events/domain-event.publisher';
 import { InMemoryDomainEventPublisher, DomainEventsModule } from 'src/infra/events/in-memory-domain-event.publisher';
-import { BullMqDomainEventPublisher } from 'src/infra/events/bullmq-domain-event.publisher';
+import { BullMqDomainEventPublisher, DomainEventEnqueueOutcomeUnknownError } from 'src/infra/events/bullmq-domain-event.publisher';
 import { DomainEventHandlerRegistry } from 'src/infra/events/domain-event-handler.registry';
 
 describe('domain event publishers', () => {
@@ -43,10 +43,27 @@ describe('domain event publishers', () => {
         occurredAt: '2026-10-06T12:00:00.000Z', correlationId: 'correlation-1',
       },
       options: {
-        jobId: 'event-1', attempts: 3, backoff: { type: 'exponential', delay: 2000 },
-        removeOnComplete: 100, removeOnFail: 50,
+        jobId: 'event-1', attempts: 5, backoff: { type: 'exponential', delay: 2000, jitter: 0.5 },
+        removeOnComplete: { age: 604800, count: 10000 }, removeOnFail: false,
       },
     });
+  });
+
+  it('returns an unknown enqueue outcome on deadline while retaining the stable event identity', async () => {
+    let addedJobId: string | undefined;
+    const queue = {
+      add: async (_name: string, _data: unknown, options: { jobId: string }) => {
+        addedJobId = options.jobId;
+        return new Promise(() => undefined);
+      },
+    } as unknown as Queue;
+    const publisher = new BullMqDomainEventPublisher(queue, 10);
+    await assert.rejects(publisher.publish({
+      eventId: 'stable-event-id', eventName: 'brand.created', eventVersion: 'v1',
+      occurredAt: '2026-10-06T12:00:00.000Z',
+      payload: { brandId: 'brand-1', slug: 'brand', isActive: true },
+    }), DomainEventEnqueueOutcomeUnknownError);
+    assert.equal(addedJobId, 'stable-event-id');
   });
 
   it('rejects malformed in-memory publications before invoking subscribers', async () => {

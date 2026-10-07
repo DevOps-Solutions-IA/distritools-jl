@@ -19,4 +19,5 @@ export interface OutboxRelayRepository {
   claimEligible(limit: number, leaseMs: number): Promise<OutboxClaim[]>;
   markEnqueued(eventId: string, claimToken: string): Promise<boolean>;
   defer(eventId: string, claimToken: string, errorCode: string, delayMs: number): Promise<boolean>;
+  parkTerminal?(eventId: string, claimToken: string, errorCategory: 'INVALID_ENVELOPE' | 'UNSUPPORTED_VERSION'): Promise<boolean>;
 }

@@ -6,35 +6,59 @@ import { DomainEventPublisher, VersionedDomainEvent } from 'src/common/events/do
 import { validateDomainEvent } from 'src/common/events/domain-event.contracts';
 
 const DOMAIN_EVENTS_QUEUE = 'domain-events';
+const ENQUEUE_DEADLINE_MS = 5_000;
+
+export class DomainEventEnqueueOutcomeUnknownError extends Error {
+  readonly code = 'ENQUEUE_OUTCOME_UNKNOWN';
+
+  constructor() {
+    super('Domain event enqueue outcome is unknown; retry with the original event ID');
+    this.name = 'DomainEventEnqueueOutcomeUnknownError';
+  }
+}
 
 @Injectable()
 export class BullMqDomainEventPublisher implements DomainEventPublisher, OnModuleDestroy {
   private readonly logger = new Logger(BullMqDomainEventPublisher.name);
 
-  constructor(@InjectQueue(DOMAIN_EVENTS_QUEUE) private readonly queue: Queue) {}
+  constructor(
+    @InjectQueue(DOMAIN_EVENTS_QUEUE) private readonly queue: Queue,
+    private readonly enqueueDeadlineMs = ENQUEUE_DEADLINE_MS,
+  ) {}
 
   async publish(event: VersionedDomainEvent): Promise<void> {
     const validatedEvent = validateDomainEvent(event);
     const eventId = validatedEvent.eventId ?? uuidv7();
 
+    let timer: NodeJS.Timeout | undefined;
     try {
-      await this.queue.add(validatedEvent.eventName, {
+      await Promise.race([
+        this.queue.add(validatedEvent.eventName, {
         eventId,
         eventName: validatedEvent.eventName,
         eventVersion: validatedEvent.eventVersion,
         payload: validatedEvent.payload,
         occurredAt: validatedEvent.occurredAt,
         correlationId: validatedEvent.correlationId,
-      }, {
-        jobId: eventId,
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 2000 },
-        removeOnComplete: 100,
-        removeOnFail: 50,
-      });
+        }, {
+          jobId: eventId,
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 2000, jitter: 0.5 },
+          removeOnComplete: { age: 7 * 24 * 60 * 60, count: 10_000 },
+          removeOnFail: false,
+        }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new DomainEventEnqueueOutcomeUnknownError()), this.enqueueDeadlineMs);
+        }),
+      ]);
     } catch (error) {
-      this.logger.error(`Failed to publish domain event ${validatedEvent.eventName}`, error instanceof Error ? error.stack : String(error));
-      throw error;
+      this.logger.warn(JSON.stringify({
+        eventId,
+        category: 'ENQUEUE_OUTCOME_UNKNOWN',
+      }));
+      throw error instanceof DomainEventEnqueueOutcomeUnknownError ? error : new DomainEventEnqueueOutcomeUnknownError();
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 
