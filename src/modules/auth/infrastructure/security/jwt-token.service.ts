@@ -1,6 +1,7 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { v7 as uuidv7 } from 'uuid';
+import { parseTokenTtlMilliseconds } from 'src/common/security/auth-security-config';
 import {
   AccessTokenClaims,
   TokenPair,
@@ -13,27 +14,33 @@ export class JwtTokenService implements TokenServicePort {
   constructor(@Inject(JwtService) private readonly jwtService: JwtService) {}
 
   async issueTwoFactorChallenge(
-    claims: TwoFactorChallengeClaims,
-  ): Promise<string> {
-    return this.jwtService.signAsync(claims, {
+    claims: Omit<TwoFactorChallengeClaims, 'jti'>,
+  ): Promise<{ token: string; challengeId: string; expiresAt: Date }> {
+    const challengeId = uuidv7();
+    const ttlMilliseconds = parseTokenTtlMilliseconds('JWT_2FA_CHALLENGE_TTL');
+    const expiresAt = new Date(Date.now() + ttlMilliseconds);
+    const token = await this.jwtService.signAsync({ ...claims, jti: challengeId }, {
       secret: this.getRequiredEnv('JWT_2FA_CHALLENGE_SECRET'),
-      expiresIn: this.parseDurationToSeconds(
-        process.env.JWT_2FA_CHALLENGE_TTL ?? '10m',
-      ),
+      expiresIn: ttlMilliseconds / 1000,
       audience: 'admin-2fa',
       issuer: 'distritoolsjl',
     });
+    return { token, challengeId, expiresAt };
   }
 
   async verifyTwoFactorChallenge(
     token: string,
   ): Promise<TwoFactorChallengeClaims> {
     try {
-      return await this.jwtService.verifyAsync<TwoFactorChallengeClaims>(token, {
+      const claims = await this.jwtService.verifyAsync<TwoFactorChallengeClaims>(token, {
         secret: this.getRequiredEnv('JWT_2FA_CHALLENGE_SECRET'),
         audience: 'admin-2fa',
         issuer: 'distritoolsjl',
       });
+      if (!claims.sub || !claims.email || !claims.jti) {
+        throw new Error('Invalid 2FA challenge claims');
+      }
+      return claims;
     } catch {
       throw new UnauthorizedException('Invalid 2FA challenge token');
     }
@@ -42,15 +49,13 @@ export class JwtTokenService implements TokenServicePort {
   async issueTokenPair(claims: AccessTokenClaims): Promise<TokenPair> {
     const refreshTokenId = uuidv7();
     const tokenFamily = uuidv7();
-    const refreshExpiresAt = this.computeExpiryDate(
-      process.env.JWT_REFRESH_TTL ?? '7d',
-    );
+    const accessTtlSeconds = parseTokenTtlMilliseconds('JWT_ACCESS_TTL') / 1000;
+    const refreshTtlMilliseconds = parseTokenTtlMilliseconds('JWT_REFRESH_TTL');
+    const refreshExpiresAt = new Date(Date.now() + refreshTtlMilliseconds);
 
     const accessToken = await this.jwtService.signAsync(claims, {
       secret: this.getRequiredEnv('JWT_ACCESS_SECRET'),
-      expiresIn: this.parseDurationToSeconds(
-        process.env.JWT_ACCESS_TTL ?? '15m',
-      ),
+      expiresIn: accessTtlSeconds,
       issuer: 'distritoolsjl',
       audience: 'admin-api',
     });
@@ -63,9 +68,7 @@ export class JwtTokenService implements TokenServicePort {
       },
       {
         secret: this.getRequiredEnv('JWT_REFRESH_SECRET'),
-        expiresIn: this.parseDurationToSeconds(
-          process.env.JWT_REFRESH_TTL ?? '7d',
-        ),
+        expiresIn: refreshTtlMilliseconds / 1000,
         issuer: 'distritoolsjl',
         audience: 'admin-refresh',
       },
@@ -92,33 +95,6 @@ export class JwtTokenService implements TokenServicePort {
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
-  }
-
-  private computeExpiryDate(duration: string): Date {
-    return new Date(Date.now() + this.parseDurationToMilliseconds(duration));
-  }
-
-  private parseDurationToMilliseconds(duration: string): number {
-    const match = duration.match(/^(\d+)([mhd])$/);
-
-    if (!match) {
-      return 7 * 24 * 60 * 60 * 1000;
-    }
-
-    const value = Number(match[1]);
-    const unit = match[2];
-    const multiplier =
-      unit === 'm'
-        ? 60 * 1000
-        : unit === 'h'
-          ? 60 * 60 * 1000
-          : 24 * 60 * 60 * 1000;
-
-    return value * multiplier;
-  }
-
-  private parseDurationToSeconds(duration: string): number {
-    return Math.floor(this.parseDurationToMilliseconds(duration) / 1000);
   }
 
   private getRequiredEnv(name: string): string {

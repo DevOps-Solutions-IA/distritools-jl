@@ -21,6 +21,7 @@ import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
 import { DomainEventCutoverReadinessService } from 'src/infra/events/domain-event-cutover-readiness.service';
 import { DomainEventQueueReconciler } from 'src/infra/events/domain-event-queue-reconciler';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
+import { syntheticSecret } from 'tests/helpers/synthetic-secret';
 
 const EVENT_NAME = 'order.cancelled' as const;
 const CONSUMER = 'notifications.v1';
@@ -315,8 +316,10 @@ describe('EX-04.5 persisted routing and isolated cutover readiness', { concurren
         NODE_PATH: '.', NODE_ENV: 'production', APP_ENV: 'production',
         DATABASE_URL: process.env.DATABASE_URL!, REDIS_URL: unavailableRedis.toString(), PORT: String(appPort),
         CORS_ORIGINS: 'https://admin.example.test', ADMIN_AUTH_DISABLED: 'false',
-        JWT_ACCESS_SECRET: 'ex045-isolated-startup-test-secret-not-a-credential',
-        TWO_FACTOR_ENCRYPTION_KEY: 'a'.repeat(64), EX045_TEST_DURABLE_ROUTING: 'true',
+        JWT_ACCESS_SECRET: syntheticSecret('access'),
+        JWT_REFRESH_SECRET: syntheticSecret('refresh'),
+        JWT_2FA_CHALLENGE_SECRET: syntheticSecret('challenge'),
+        TWO_FACTOR_ENCRYPTION_KEY: syntheticSecret('two-factor-encryption'), EX045_TEST_DURABLE_ROUTING: 'true',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });

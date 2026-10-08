@@ -8,6 +8,13 @@ export interface AccessTokenClaims {
 export interface TwoFactorChallengeClaims {
   sub: string;
   email: string;
+  jti: string;
+}
+
+export interface IssuedTwoFactorChallenge {
+  token: string;
+  challengeId: string;
+  expiresAt: Date;
 }
 
 export interface TokenPair {
@@ -19,7 +26,7 @@ export interface TokenPair {
 }
 
 export interface TokenServicePort {
-  issueTwoFactorChallenge(claims: TwoFactorChallengeClaims): Promise<string>;
+  issueTwoFactorChallenge(claims: Omit<TwoFactorChallengeClaims, 'jti'>): Promise<IssuedTwoFactorChallenge>;
   verifyTwoFactorChallenge(token: string): Promise<TwoFactorChallengeClaims>;
   issueTokenPair(claims: AccessTokenClaims): Promise<TokenPair>;
   verifyRefreshToken(token: string): Promise<AccessTokenClaims & { jti: string; family: string }>;

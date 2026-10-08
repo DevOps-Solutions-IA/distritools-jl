@@ -43,10 +43,17 @@ export class PrismaAuditRepository implements AuditRepository {
     const redacted = { ...(payload as Record<string, unknown>) };
 
     for (const key of Object.keys(redacted)) {
-      const normalizedKey = key.toLowerCase();
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (
         normalizedKey.includes('secret') ||
         normalizedKey.includes('token') ||
+        normalizedKey.includes('password') ||
+        normalizedKey.includes('authorization') ||
+        normalizedKey.includes('cookie') ||
+        normalizedKey.includes('otp') ||
+        normalizedKey.includes('totp') ||
+        normalizedKey.includes('recovery') ||
+        normalizedKey.includes('challenge') ||
         normalizedKey === 'signature' ||
         normalizedKey === 'rawpayload'
       ) {

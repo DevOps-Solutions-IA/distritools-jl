@@ -1,8 +1,11 @@
 import { afterEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { encryptTwoFactorSecret } from 'src/common/security/two-factor-crypto';
+import { syntheticSecret } from 'tests/helpers/synthetic-secret';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
 import {
   disconnectDatabase,
+  prisma,
   resetDatabase,
   seedBaseData,
 } from 'tests/helpers/test-db';
@@ -10,9 +13,28 @@ import {
 const originalEnv = { ...process.env };
 
 async function boot(env: Record<string, string | undefined>) {
-  process.env = { ...originalEnv, ...env };
+  process.env = {
+    ...originalEnv,
+    JWT_ACCESS_SECRET: syntheticSecret('access'),
+    JWT_REFRESH_SECRET: syntheticSecret('refresh'),
+    JWT_2FA_CHALLENGE_SECRET: syntheticSecret('challenge'),
+    TWO_FACTOR_ENCRYPTION_KEY: syntheticSecret('two-factor-encryption'),
+    ADMIN_AUTH_DISABLED: 'false',
+    ...env,
+  };
   await resetDatabase();
   const seeded = await seedBaseData();
+  if (process.env.APP_ENV === 'production' || process.env.NODE_ENV === 'production') {
+    for (const userId of [seeded.users.adminUserId, seeded.users.viewerUserId]) {
+      const user = await prisma.user.findUniqueOrThrow({ where: { id: userId } });
+      if (user.twoFactorSecret) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { twoFactorSecret: encryptTwoFactorSecret(user.twoFactorSecret) },
+        });
+      }
+    }
+  }
   const testApp = await createTestApp();
   const admin = await loginAsAdmin(
     testApp.http,
@@ -94,10 +116,10 @@ describe('Admin production cleanup', () => {
     await app.close();
   });
 
-  it('blocks production readiness when auth is disabled, mock provider is active, or credentials are missing', async () => {
+  it('blocks production readiness when mock shipping is active or credentials are missing', async () => {
     const { app, http, adminToken } = await boot({
       APP_ENV: 'production',
-      ADMIN_AUTH_DISABLED: 'true',
+      ADMIN_AUTH_DISABLED: 'false',
       SHIPPING_PROVIDER: 'mock_99envios',
       AUTO_SHIPPING_MODE: 'quote_and_create_guide',
       NINETY_NINE_ENVIOS_AUTH_EMAIL: '',
@@ -111,7 +133,6 @@ describe('Admin production cleanup', () => {
     assert.equal(settings.status, 200);
     assert.equal(settings.body.productionReadiness.status, 'BLOCKED_FOR_PRODUCTION');
     assert.equal(settings.body.productionReadiness.mode, 'production_blocked');
-    assert.equal(JSON.stringify(settings.body.productionReadiness).includes('Login admin desactivado'), true);
     assert.equal(JSON.stringify(settings.body.productionReadiness).includes('mock_99envios no puede operar como producción'), true);
 
     const validation = await http

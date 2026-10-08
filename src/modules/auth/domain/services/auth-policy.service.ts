@@ -10,11 +10,9 @@ export class AuthPolicyService {
     user: AdminUserEntity,
     plaintextPassword: string,
   ): Promise<void> {
-    user.ensureActive();
-
     const valid = await compare(plaintextPassword, user.passwordHash);
 
-    if (!valid) {
+    if (!valid || !user.isActive) {
       throw new UnauthorizedException('Invalid credentials');
     }
   }

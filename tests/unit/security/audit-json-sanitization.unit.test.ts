@@ -34,6 +34,11 @@ describe('PrismaAuditRepository JSON sanitization', () => {
         sequence: 42n,
         nested: {
           integrationToken: 'must-not-leak',
+          password: 'raw-password',
+          authorization: 'Bearer raw-access-token',
+          cookie: 'refresh=raw-refresh-token',
+          otp: '123456',
+          recoveryCode: 'recovery-secret',
         },
       },
     });
@@ -48,6 +53,11 @@ describe('PrismaAuditRepository JSON sanitization', () => {
 
     assert.deepEqual(afterData.nested, {
       integrationToken: '[REDACTED]',
+      password: '[REDACTED]',
+      authorization: '[REDACTED]',
+      cookie: '[REDACTED]',
+      otp: '[REDACTED]',
+      recoveryCode: '[REDACTED]',
     });
   });
 });

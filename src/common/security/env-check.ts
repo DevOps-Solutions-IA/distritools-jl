@@ -1,4 +1,4 @@
-export function isProductionOrStaging(): boolean {
-  const env = (process.env.APP_ENV || process.env.NODE_ENV || '').toLowerCase();
-  return env === 'production' || env === 'staging';
+export function isProductionOrStaging(env: NodeJS.ProcessEnv = process.env): boolean {
+  return [env.APP_ENV, env.NODE_ENV]
+    .some((env) => ['prod', 'production', 'staging'].includes((env ?? '').trim().toLowerCase()));
 }

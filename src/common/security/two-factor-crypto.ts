@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
+import { hasPlausibleSecretEntropy } from './auth-security-config';
 import { isProductionOrStaging } from './env-check';
 
 const ALGORITHM = 'aes-256-gcm';
@@ -8,9 +9,10 @@ const PREFIX = 'enc:';
 
 function getKey(): Buffer | null {
   const envKey = process.env.TWO_FACTOR_ENCRYPTION_KEY;
+  const productionLike = isProductionOrStaging();
 
   if (!envKey || envKey.length < 32) {
-    if (isProductionOrStaging()) {
+    if (productionLike) {
       throw new Error(
         'FATAL: TWO_FACTOR_ENCRYPTION_KEY is missing or shorter than 32 characters in production/staging. ' +
         '2FA secrets cannot be stored securely without a strong encryption key.',
@@ -19,7 +21,16 @@ function getKey(): Buffer | null {
     return null;
   }
 
-  return Buffer.from(envKey.slice(0, 32), 'utf8');
+  const keyMaterial = envKey.slice(0, 32);
+  const key = Buffer.from(keyMaterial, 'utf8');
+  if (key.length !== 32 || (productionLike && !hasPlausibleSecretEntropy(keyMaterial))) {
+    if (productionLike) {
+      throw new Error('FATAL: TWO_FACTOR_ENCRYPTION_KEY must provide 32 diverse ASCII bytes in production/staging.');
+    }
+    return null;
+  }
+
+  return key;
 }
 
 export function encryptTwoFactorSecret(secret: string): string {
@@ -44,6 +55,9 @@ export function decryptTwoFactorSecret(stored: string | null): string | null {
   }
 
   if (!stored.startsWith(PREFIX)) {
+    if (isProductionOrStaging()) {
+      throw new Error('Unencrypted 2FA secret rejected in production/staging.');
+    }
     return stored;
   }
 
