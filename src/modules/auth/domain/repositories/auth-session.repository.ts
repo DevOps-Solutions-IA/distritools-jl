@@ -25,10 +25,11 @@ export interface AuthSessionRepository {
   findById(id: string): Promise<AuthSessionRecord | null>;
   rotate(
     sessionId: string,
+    expectedCurrentJti: string,
     nextTokenHash: string,
     nextJti: string,
     expiresAt: Date,
-  ): Promise<void>;
+  ): Promise<boolean>;
   revoke(sessionId: string): Promise<void>;
   revokeFamily(tokenFamily: string): Promise<void>;
 }

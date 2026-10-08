@@ -1,5 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
+import { syntheticSecret } from 'tests/helpers/synthetic-secret';
 
 describe('twoFactorCrypto', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -14,7 +15,7 @@ describe('twoFactorCrypto', () => {
 
   beforeEach(() => {
     originalEnv = { ...process.env };
-    process.env.TWO_FACTOR_ENCRYPTION_KEY = 'a-strong-32-char-encryption-key!';
+    process.env.TWO_FACTOR_ENCRYPTION_KEY = syntheticSecret('two-factor-encryption');
     delete require.cache[require.resolve('src/common/security/two-factor-crypto')];
     reloadModule();
   });
@@ -48,6 +49,21 @@ describe('twoFactorCrypto', () => {
   it('returns original value for non-encrypted (legacy plaintext) data', () => {
     const legacy = 'JBSWY3DPEHPK3PXP';
     assert.strictEqual(decryptTwoFactorSecret(legacy), legacy);
+  });
+
+  it('rejects legacy plaintext 2FA secrets in production', () => {
+    process.env.APP_ENV = 'production';
+    assert.throws(() => decryptTwoFactorSecret('JBSWY3DPEHPK3PXP'), /Unencrypted 2FA secret rejected/);
+  });
+
+  it('rejects weak-prefix and non-32-byte UTF-8 encryption material in production', () => {
+    process.env.APP_ENV = 'production';
+    process.env.NODE_ENV = 'production';
+    process.env.TWO_FACTOR_ENCRYPTION_KEY = `${'a'.repeat(32)}${syntheticSecret('suffix')}`;
+    assert.throws(() => encryptTwoFactorSecret('JBSWY3DPEHPK3PXP'), /32 diverse ASCII bytes/);
+
+    process.env.TWO_FACTOR_ENCRYPTION_KEY = `${'é'.repeat(32)}${syntheticSecret('multibyte')}`;
+    assert.throws(() => encryptTwoFactorSecret('JBSWY3DPEHPK3PXP'), /32 diverse ASCII bytes/);
   });
 
   it('returns null for corrupted encrypted data', () => {

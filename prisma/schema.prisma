@@ -270,6 +270,17 @@ model AuthSession {
   @@map("auth_sessions")
 }
 
+model AuthTwoFactorChallenge {
+  id         String    @id @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, expiresAt])
+  @@map("auth_two_factor_challenges")
+}
+
 model AuditLog {
   id            String   @id @db.Uuid
   actorUserId   String?  @map("actor_user_id") @db.Uuid

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
+import { encryptTwoFactorSecret } from 'src/common/security/two-factor-crypto';
+import { syntheticSecret } from 'tests/helpers/synthetic-secret';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
 import {
   disconnectDatabase,
@@ -17,7 +19,11 @@ async function boot() {
   process.env = {
     ...originalEnv,
     APP_ENV: 'production',
-    ADMIN_AUTH_DISABLED: 'true',
+    ADMIN_AUTH_DISABLED: 'false',
+    JWT_ACCESS_SECRET: syntheticSecret('access'),
+    JWT_REFRESH_SECRET: syntheticSecret('refresh'),
+    JWT_2FA_CHALLENGE_SECRET: syntheticSecret('challenge'),
+    TWO_FACTOR_ENCRYPTION_KEY: syntheticSecret('two-factor-encryption'),
     SHIPPING_PROVIDER: 'mock_99envios',
     AUTO_SHIPPING_ENABLED: 'false',
     AUTO_SHIPPING_MODE: 'disabled',
@@ -26,6 +32,17 @@ async function boot() {
   };
   await resetDatabase();
   const seeded = await seedBaseData();
+  await prisma.user.update({
+    where: { id: seeded.users.adminUserId },
+    data: { twoFactorSecret: encryptTwoFactorSecret(seeded.users.twoFactorSecret) },
+  });
+  const viewerUser = await prisma.user.findUniqueOrThrow({ where: { id: seeded.users.viewerUserId } });
+  if (viewerUser.twoFactorSecret) {
+    await prisma.user.update({
+      where: { id: viewerUser.id },
+      data: { twoFactorSecret: encryptTwoFactorSecret(viewerUser.twoFactorSecret) },
+    });
+  }
   const testApp = await createTestApp();
   const admin = await loginAsAdmin(
     testApp.http,
@@ -314,7 +331,7 @@ describe('Enterprise admin core audit guards', () => {
     assert.equal(Array.isArray(dashboard.body.charts.salesByDay), true);
     assert.equal(Array.isArray(dashboard.body.alerts), true);
     assert.equal(Array.isArray(dashboard.body.quickActions), true);
-    assert.equal(dashboard.body.readiness.globalStatus, 'NO_GO');
+    assert.equal(dashboard.body.readiness.globalStatus, 'BLOCKED_CONFIGURATION');
     assert.equal(
       dashboard.body.alerts.some(
         (alert: { module: string; status: string }) =>
@@ -406,7 +423,6 @@ describe('Enterprise admin core audit guards', () => {
     );
     assert.equal(settings.body.productionReadiness.status, 'BLOCKED_FOR_PRODUCTION');
     assert.equal(settings.body.productionReadiness.mode, 'production_blocked');
-    assert.equal(JSON.stringify(settings.body.productionReadiness).includes('Login admin desactivado'), true);
     assert.equal(JSON.stringify(settings.body.productionReadiness).includes('mock_99envios no puede operar como producción'), true);
 
     await app.close();

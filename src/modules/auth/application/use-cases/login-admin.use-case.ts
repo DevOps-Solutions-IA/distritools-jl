@@ -13,6 +13,10 @@ import {
   AUDIT_REPOSITORY,
   AuditRepository,
 } from 'src/modules/auth/domain/repositories/audit.repository';
+import {
+  TWO_FACTOR_CHALLENGE_REPOSITORY,
+  TwoFactorChallengeRepository,
+} from 'src/modules/auth/domain/repositories/two-factor-challenge.repository';
 
 export interface LoginAdminInput {
   email: string;
@@ -34,6 +38,8 @@ export class LoginAdminUseCase {
     private readonly tokenService: TokenServicePort,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
+    @Inject(TWO_FACTOR_CHALLENGE_REPOSITORY)
+    private readonly twoFactorChallengeRepository: TwoFactorChallengeRepository,
   ) {}
 
   async execute(input: LoginAdminInput): Promise<LoginAdminResult> {
@@ -47,11 +53,20 @@ export class LoginAdminUseCase {
 
     const user = AdminUserEntity.fromState(record);
     await this.authPolicyService.verifyPassword(user, input.password);
-    user.ensureTwoFactorConfigured();
+    try {
+      user.ensureTwoFactorConfigured();
+    } catch {
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
-    const challengeToken = await this.tokenService.issueTwoFactorChallenge({
+    const challenge = await this.tokenService.issueTwoFactorChallenge({
       sub: user.id,
       email: user.email,
+    });
+    await this.twoFactorChallengeRepository.create({
+      id: challenge.challengeId,
+      userId: user.id,
+      expiresAt: challenge.expiresAt,
     });
 
     await this.auditRepository.write({
@@ -62,7 +77,7 @@ export class LoginAdminUseCase {
     });
 
     return {
-      challengeToken,
+      challengeToken: challenge.token,
     };
   }
 }

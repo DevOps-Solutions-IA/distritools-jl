@@ -8,6 +8,7 @@ import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import { MetricsService } from 'src/infra/telemetry/metrics/metrics.service';
 import { DOMAIN_EVENTS_QUEUE } from 'src/infra/queue/bullmq.module';
 import { DomainEventsWorker } from 'src/infra/events/domain-events.worker';
+import { getAuthSecurityConfigIssues } from 'src/common/security/auth-security-config';
 
 @ApiExcludeController()
 @Controller()
@@ -52,7 +53,8 @@ export class MonitoringController {
     const databaseReady = database.ok;
     const producerReady = producer.ok && producer.value === 'PONG';
     const workerReady = domainWorker ? worker.ok && worker.value === 'PONG' : undefined;
-    const ready = databaseReady && producerReady && (workerReady ?? true);
+    const authSecurityReady = getAuthSecurityConfigIssues().length === 0;
+    const ready = databaseReady && producerReady && (workerReady ?? true) && authSecurityReady;
     response.status(ready ? 200 : 503);
 
     return {
@@ -62,6 +64,7 @@ export class MonitoringController {
         database: databaseReady ? 'ok' : 'unavailable',
         queueProducer: producerReady ? 'ready' : 'unavailable',
         queueWorker: workerReady === undefined ? 'not_required_for_api_role' : workerReady ? 'ready' : 'unavailable',
+        authSecurity: authSecurityReady ? 'valid' : 'invalid',
       },
       timestamp: new Date().toISOString(),
     };

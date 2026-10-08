@@ -1,4 +1,5 @@
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { isProductionOrStaging } from './env-check';
 
 export const DEV_ADMIN_PERMISSIONS = [
   'users.create',
@@ -115,7 +116,7 @@ export const DEV_ADMIN_PERMISSIONS = [
 let cachedDevUser: CurrentUser | null = null;
 
 export function isDevAdminAuthDisabled(): boolean {
-  if (process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production') {
+  if (isProductionOrStaging()) {
     return false;
   }
 

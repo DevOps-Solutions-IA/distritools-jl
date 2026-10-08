@@ -19,6 +19,10 @@ export async function bootstrap(): Promise<void> {
     corsOriginsEnv.push('http://localhost:3001');
   }
 
+  if (isProductionOrStaging() && corsOriginsEnv.includes('*')) {
+    throw new Error('FATAL: wildcard CORS_ORIGINS is not allowed in production/staging. Configure explicit origins.');
+  }
+
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
   });

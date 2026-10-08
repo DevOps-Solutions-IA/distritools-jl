@@ -40,6 +40,27 @@ describe('isDevAdminAuthDisabled', () => {
     assert.strictEqual(isDevAdminAuthDisabled(), false);
   });
 
+  it('returns false when NODE_ENV=production uses mixed case and APP_ENV=local', () => {
+    process.env.NODE_ENV = 'Production';
+    process.env.APP_ENV = 'local';
+    process.env.ADMIN_AUTH_DISABLED = 'true';
+    assert.strictEqual(isDevAdminAuthDisabled(), false);
+  });
+
+  it('does not allow a malformed or unknown APP_ENV to enable bypass', () => {
+    process.env.NODE_ENV = 'test';
+    process.env.APP_ENV = 'prod';
+    process.env.ADMIN_AUTH_DISABLED = 'true';
+    assert.strictEqual(isDevAdminAuthDisabled(), false);
+  });
+
+  it('does not allow APP_ENV=local to override NODE_ENV=prod', () => {
+    process.env.NODE_ENV = 'prod';
+    process.env.APP_ENV = 'local';
+    process.env.ADMIN_AUTH_DISABLED = 'true';
+    assert.strictEqual(isDevAdminAuthDisabled(), false);
+  });
+
   it('returns true when APP_ENV=local and ADMIN_AUTH_DISABLED=true', () => {
     process.env.NODE_ENV = 'development';
     process.env.APP_ENV = 'local';

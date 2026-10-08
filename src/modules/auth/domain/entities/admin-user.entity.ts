@@ -36,13 +36,17 @@ export class AdminUserEntity {
     return this.state.passwordHash;
   }
 
+  get isActive(): boolean {
+    return this.state.isActive;
+  }
+
   get twoFactorSecret(): string | null {
     return this.state.twoFactorSecret;
   }
 
   ensureActive(): void {
     if (!this.state.isActive) {
-      throw new UnauthorizedException('Admin account is inactive');
+      throw new UnauthorizedException('Invalid credentials');
     }
   }
 

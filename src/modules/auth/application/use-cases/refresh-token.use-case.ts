@@ -59,12 +59,24 @@ export class RefreshTokenUseCase {
       user.toJwtClaims(session.id),
     );
 
-    await this.authSessionRepository.rotate(
+    const rotated = await this.authSessionRepository.rotate(
       session.id,
+      claims.jti,
       await hash(nextPair.refreshToken, 12),
       nextPair.refreshTokenId,
       nextPair.refreshExpiresAt,
     );
+
+    if (!rotated) {
+      await this.authSessionRepository.revokeFamily(session.tokenFamily);
+      await this.auditRepository.write({
+        actorUserId: user.id,
+        action: 'auth.refresh_reuse_detected',
+        entityType: 'auth_session',
+        entityId: session.id,
+      });
+      throw new UnauthorizedException('Refresh token reuse detected');
+    }
     await this.auditRepository.write({
       actorUserId: user.id,
       action: 'auth.refresh_rotated',

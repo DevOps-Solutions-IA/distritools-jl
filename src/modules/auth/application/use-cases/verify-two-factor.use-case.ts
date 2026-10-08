@@ -22,6 +22,10 @@ import {
 } from 'src/modules/auth/application/ports/two-factor.port';
 import { AdminUserEntity } from 'src/modules/auth/domain/entities/admin-user.entity';
 import { hash } from 'bcrypt';
+import {
+  TWO_FACTOR_CHALLENGE_REPOSITORY,
+  TwoFactorChallengeRepository,
+} from 'src/modules/auth/domain/repositories/two-factor-challenge.repository';
 
 export interface VerifyTwoFactorInput {
   challengeToken: string;
@@ -43,6 +47,8 @@ export class VerifyTwoFactorUseCase {
     private readonly authSessionRepository: AuthSessionRepository,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
+    @Inject(TWO_FACTOR_CHALLENGE_REPOSITORY)
+    private readonly twoFactorChallengeRepository: TwoFactorChallengeRepository,
   ) {}
 
   async execute(input: VerifyTwoFactorInput) {
@@ -61,6 +67,14 @@ export class VerifyTwoFactorUseCase {
 
     if (!(await this.twoFactorPort.verify(user.twoFactorSecret!, input.code))) {
       throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    const challengeConsumed = await this.twoFactorChallengeRepository.consume(
+      challengeClaims.jti,
+      user.id,
+    );
+    if (!challengeConsumed) {
+      throw new UnauthorizedException('Invalid 2FA challenge token');
     }
 
     const sessionId = uuidv7();

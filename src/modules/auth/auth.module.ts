@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { isProductionOrStaging } from 'src/common/security/env-check';
+import { assertAuthSecurityConfig } from 'src/common/security/auth-security-config';
 import { PermissionsGuard } from 'src/common/guards/permissions.guard';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import {
@@ -13,6 +14,7 @@ import {
 import {
   AUTH_USER_REPOSITORY,
 } from 'src/modules/auth/domain/repositories/auth-user.repository';
+import { TWO_FACTOR_CHALLENGE_REPOSITORY } from 'src/modules/auth/domain/repositories/two-factor-challenge.repository';
 import { AuthPolicyService } from 'src/modules/auth/domain/services/auth-policy.service';
 import { LoginAdminUseCase } from 'src/modules/auth/application/use-cases/login-admin.use-case';
 import { LogoutUseCase } from 'src/modules/auth/application/use-cases/logout.use-case';
@@ -23,6 +25,7 @@ import { TWO_FACTOR_PORT } from 'src/modules/auth/application/ports/two-factor.p
 import { AuthController } from 'src/modules/auth/infrastructure/http/controllers/auth.controller';
 import { PrismaAuditRepository } from 'src/modules/auth/infrastructure/repositories/prisma-audit.repository';
 import { PrismaAuthSessionRepository } from 'src/modules/auth/infrastructure/repositories/prisma-auth-session.repository';
+import { PrismaTwoFactorChallengeRepository } from 'src/modules/auth/infrastructure/repositories/prisma-two-factor-challenge.repository';
 import { PrismaAuthUserRepository } from 'src/modules/auth/infrastructure/repositories/prisma-auth-user.repository';
 import { JwtTokenService } from 'src/modules/auth/infrastructure/security/jwt-token.service';
 import { JwtStrategy } from 'src/modules/auth/infrastructure/security/jwt.strategy';
@@ -33,6 +36,7 @@ import { TwoFactorEncryptionService } from 'src/common/security/two-factor-encry
   imports: [
     JwtModule.registerAsync({
       useFactory: () => {
+        assertAuthSecurityConfig();
         const secret = process.env.JWT_ACCESS_SECRET;
         if (!secret || secret === 'change-me-access') {
           if (isProductionOrStaging()) {
@@ -58,6 +62,7 @@ import { TwoFactorEncryptionService } from 'src/common/security/two-factor-encry
     LogoutUseCase,
     PrismaAuthUserRepository,
     PrismaAuthSessionRepository,
+    PrismaTwoFactorChallengeRepository,
     PrismaAuditRepository,
     JwtTokenService,
     TwoFactorService,
@@ -69,6 +74,10 @@ import { TwoFactorEncryptionService } from 'src/common/security/two-factor-encry
     {
       provide: AUTH_SESSION_REPOSITORY,
       useExisting: PrismaAuthSessionRepository,
+    },
+    {
+      provide: TWO_FACTOR_CHALLENGE_REPOSITORY,
+      useExisting: PrismaTwoFactorChallengeRepository,
     },
     {
       provide: AUDIT_REPOSITORY,
