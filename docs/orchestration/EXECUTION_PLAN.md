@@ -27,14 +27,15 @@ Goal: replace accidental in-memory-only production path, register handlers expli
 Exit: domain events reach intended consumer once logically, retry safely, and fail closed where required.
 Sub-runs: EX-04.1 typed event contracts/handler coverage PASS/MERGED via PR #24; EX-04.2 durable transactional outbox PASS/MERGED via PR #26; EX-04.3 consumer idempotency/notification recovery PASS/MERGED via PR #28; EX-04.4 Retry/DLQ and Redis Outage Operations PASS/MERGED via PR #30; EX-04.5 Cutover Readiness and Persisted Routing Boundary PASS/MERGED via PR #32 (7/7 exact-head CI, product merge ba0a2f220c13ebf56fb6dcac8da2f579a01b25dc). Production relay/worker remains disabled and new durable intents are fenced as cutover_pending. Production cutover is deferred until the EX-06 inventory producer gap, EX-07 order.paid notification disposition, mixed-version retirement and release authorization are closed.
 
-## EX-05 — Auth, RBAC, sessions, audit, secrets, readiness — ACTIVE
+## EX-05 — Auth, RBAC, sessions, audit, secrets, readiness — PASS / RELEASE GATES DEFERRED
 Goal: verify login/2FA/session rotation/revocation, permissions, audit redaction, throttling, CORS/trusted proxy, production auth guards, and secret handling.
 Exit: security matrix green with explicit production blockers.
-Sub-runs: EX-05.1 Auth/RBAC/Session Security Baseline is PLANNED next. Runbook: docs/orchestration/runs/EX-05.1-auth-rbac-session-plan.md.
+Sub-runs: EX-05.1 Auth/RBAC/Session Security Baseline PASS/MERGED via PR #34 (7/7 exact-head CI, product merge 776cbccbd81986edf97805befcedfc3e30edc836). Production release requires Security/Product approval of TTL maxima, a controlled one-use-2FA rollout and review of distributed throttling/trusted-proxy topology. No production GO.
 
-## EX-06 — Inventory, orders, checkout, payments internal correctness
+## EX-06 — Inventory, orders, checkout, payments internal correctness — ACTIVE
 Goal: harden stock allocation/reserve/commit/release, order transitions, idempotency, webhook replay, cancellation races, payment state semantics, and PSE failure UX contract.
 Exit: invariant/stress/failure-injection gates green; no fake payment success.
+Sub-runs: EX-06.1 Inventory Reservation, Commit and Release Invariants is PLANNED next. Runbook: docs/orchestration/runs/EX-06.1-inventory-reservation-plan.md.
 
 ## EX-07 — Internal operations: admin, analytics, search, notifications, CRM/content
 Goal: stabilize admin APIs, reports/exports, PII masking, search/reindex, notification persistence/retry, CRM/quotes, legal/footer workflows, and split highest-risk admin controller seams.
