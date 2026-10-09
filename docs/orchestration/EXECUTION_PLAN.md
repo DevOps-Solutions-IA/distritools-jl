@@ -35,7 +35,7 @@ Sub-runs: EX-05.1 Auth/RBAC/Session Security Baseline PASS/MERGED via PR #34 (7/
 ## EX-06 — Inventory, orders, checkout, payments internal correctness — ACTIVE
 Goal: harden stock allocation/reserve/commit/release, order transitions, idempotency, webhook replay, cancellation races, payment state semantics, and PSE failure UX contract.
 Exit: invariant/stress/failure-injection gates green; no fake payment success.
-Sub-runs: EX-06.1 Inventory Reservation, Commit and Release Invariants is PLANNED next. Runbook: docs/orchestration/runs/EX-06.1-inventory-reservation-plan.md.
+Sub-runs: EX-06.1 Inventory Reservation, Commit and Release Invariants PASS/MERGED via PR #36 (7/7 exact-head CI, product merge 927b536c47492a1c94d4d9f3937eaf870e32d9df). EX-06.2 Order and Payment Lifecycle Correctness is PLANNED next; runbook docs/orchestration/runs/EX-06.2-order-payment-lifecycle-plan.md. The inventory.low_stock_detected producer remains BLOCKED_DECISION pending Product/Inventory Operations. Production providers/cutover are not authorized.
 
 ## EX-07 — Internal operations: admin, analytics, search, notifications, CRM/content
 Goal: stabilize admin APIs, reports/exports, PII masking, search/reindex, notification persistence/retry, CRM/quotes, legal/footer workflows, and split highest-risk admin controller seams.
