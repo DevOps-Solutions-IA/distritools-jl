@@ -205,3 +205,5 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Limitations: Payment approved after an order cancellation won is left pending with its webhook unprocessed and retryable; Product/Payments/Finance must choose an authorized reconciliation/reversal/refund disposition. `inventory.low_stock_detected` remains BLOCKED_DECISION under Product/Inventory Operations ownership. Real providers remain BLOCKED_PROVIDER.
 - Evidence: `docs/orchestration/runs/EX-06.2-order-payment-lifecycle-final.md`.
 - Status: PHASE_LOCAL_READY_FOR_AUDIT — final local gates pass (critical 21 files/186 tests; E2E 10 files/86 tests; unit/security 86 tests; frontend 62 tests; CI/readiness guards 22 tests). Challenger reports no technical P1/P2. No commit, push, PR, merge, STATE transition, production activation or real-provider call performed.
+
+- Status: PASS / MERGED via PR #38, HEAD 3891e6c64e0ae8f9435d802f6cb495f681d0cc6c, CI 37874226272 7/7 SUCCESS; product merge 9a76cd3c072d59f0df742dd1eaa5725d25d38cc7. EX-06 parent remains BLOCKED_DECISION for late approved webhook after cancellation and low-stock producer; no production provider activation.
