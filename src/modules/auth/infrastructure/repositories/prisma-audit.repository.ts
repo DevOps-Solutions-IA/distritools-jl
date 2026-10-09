@@ -97,10 +97,13 @@ export class PrismaAuditRepository implements AuditRepository {
     };
   }
 
-  async write(entry: AuditLogInput): Promise<void> {
+  async write(
+    entry: AuditLogInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
     const requestContext = this.requestContextService.get();
 
-    await this.prisma.auditLog.create({
+    await (tx ?? this.prisma).auditLog.create({
       data: {
         id: uuidv7(),
         actorUserId: entry.actorUserId,

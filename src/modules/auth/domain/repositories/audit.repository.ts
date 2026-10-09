@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 export interface AuditLogInput {
   actorUserId?: string;
   action: string;
@@ -34,7 +36,7 @@ export interface AuditLogQuery {
 }
 
 export interface AuditRepository {
-  write(entry: AuditLogInput): Promise<void>;
+  write(entry: AuditLogInput, tx?: Prisma.TransactionClient): Promise<void>;
   list(query?: AuditLogQuery): Promise<AuditLogRecord[]>;
   findById(id: string): Promise<AuditLogRecord | null>;
 }

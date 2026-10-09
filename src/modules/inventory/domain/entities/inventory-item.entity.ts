@@ -52,7 +52,7 @@ export class InventoryItemEntity {
   }
 
   ensureCanReserve(quantity: number): void {
-    this.ensurePositiveQuantity(quantity);
+    this.ensureValidQuantity(quantity);
 
     if (this.availableQty < quantity) {
       throw new ConflictException('Insufficient available stock');
@@ -60,7 +60,7 @@ export class InventoryItemEntity {
   }
 
   ensureCanRelease(quantity: number): void {
-    this.ensurePositiveQuantity(quantity);
+    this.ensureValidQuantity(quantity);
 
     if (this.reservedQty < quantity) {
       throw new ConflictException('Reserved stock is insufficient');
@@ -68,7 +68,7 @@ export class InventoryItemEntity {
   }
 
   ensureCanCommit(quantity: number): void {
-    this.ensurePositiveQuantity(quantity);
+    this.ensureValidQuantity(quantity);
 
     if (this.reservedQty < quantity) {
       throw new ConflictException('Reserved stock is insufficient for commit');
@@ -93,6 +93,12 @@ export class InventoryItemEntity {
     }
   }
 
+  ensureValidQuantity(quantity: number): void {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new BadRequestException('Quantity must be a positive integer');
+    }
+  }
+
   toResponse() {
     return {
       id: this.id,
@@ -110,9 +116,4 @@ export class InventoryItemEntity {
     };
   }
 
-  private ensurePositiveQuantity(quantity: number): void {
-    if (!Number.isInteger(quantity) || quantity <= 0) {
-      throw new BadRequestException('Quantity must be a positive integer');
-    }
-  }
 }
