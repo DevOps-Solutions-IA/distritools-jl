@@ -195,3 +195,13 @@ This file records any operator, admin, customer, storefront, API-consumer, or su
 - Limitations: No schema migration or production/provider/event-bus activation. `inventory.low_stock_detected` remains BLOCKED_DECISION because current `minStock`/`reorderPoint` fields do not define event crossing, deduplication, re-arm or ownership semantics. Existing historical held event state is untouched.
 
 - Status: PASS / MERGED via PR #36. Exact validated HEAD 6851f2ddbeaeed800f3b4942365cee50e4d76b72; CI 37864693590 7/7 SUCCESS; product merge 927b536c47492a1c94d4d9f3937eaf870e32d9df. No provider activation, production or historical held mutation. Low-stock producer remains BLOCKED_DECISION.
+
+### EX-06.2 — Order and payment lifecycle correctness
+- Date: 2026-10-08
+- Surface: Authenticated order creation, guest checkout, payment intent/webhook handling, cancellation and stock integration.
+- Change: Added optional `Idempotency-Key` handling for order creation/checkout with persisted hashed request identity; made order/cancel/payment audits transaction-bound; serialized payment intents and webhook terminal decisions; strict webhook body/schema/event identity validation; disabled mock payment intents outside approved local/test contexts.
+- Expected user impact: Identical keyed create/checkout retries return the same order and do not reserve stock twice; reusing a key with different request data returns conflict. Guest PSE checkout now fails before order/stock mutation because no provider is configured. Missing raw webhook bytes and unknown payment outcomes fail closed. Audit persistence failure rolls back corresponding order/payment/stock state.
+- Compatibility: Existing callers may omit the idempotency header. Additive PostgreSQL idempotency table migration is required before application rollout; retain its rows on rollback. No amount/tax/promotion/accounting semantics, payment provider, production relay or TTL policy changed.
+- Limitations: Payment approved after an order cancellation won is left pending with its webhook unprocessed and retryable; Product/Payments/Finance must choose an authorized reconciliation/reversal/refund disposition. `inventory.low_stock_detected` remains BLOCKED_DECISION under Product/Inventory Operations ownership. Real providers remain BLOCKED_PROVIDER.
+- Evidence: `docs/orchestration/runs/EX-06.2-order-payment-lifecycle-final.md`.
+- Status: PHASE_LOCAL_READY_FOR_AUDIT — final local gates pass (critical 21 files/186 tests; E2E 10 files/86 tests; unit/security 86 tests; frontend 62 tests; CI/readiness guards 22 tests). Challenger reports no technical P1/P2. No commit, push, PR, merge, STATE transition, production activation or real-provider call performed.

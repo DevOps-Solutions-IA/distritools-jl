@@ -8,10 +8,11 @@ import type {
 
 const ordersClient = createApiClient('/api/v1');
 
-export async function createGuestOrder(payload: CreateGuestCheckoutPayload) {
+export async function createGuestOrder(payload: CreateGuestCheckoutPayload, idempotencyKey?: string) {
   const response = await ordersClient.post<GuestCheckoutOrderResponse>(
     '/checkout/guest-order',
     payload,
+    idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined,
   );
   return response.data;
 }

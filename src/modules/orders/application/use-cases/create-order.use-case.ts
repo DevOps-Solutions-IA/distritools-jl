@@ -1,5 +1,6 @@
 import { Decimal } from '@prisma/client/runtime/library';
-import { Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import {
   DOMAIN_EVENT_PUBLISHER,
@@ -34,6 +35,7 @@ import { OrderStatus } from '@prisma/client';
 import { OrderItemEntity } from 'src/modules/order-items/domain/entities/order-item.entity';
 import { EvaluatePromotionsUseCase } from 'src/modules/promotions/application/use-cases/evaluate-promotions.use-case';
 import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
+import { createOrderRequestIdentity, OrderRequestIdentity } from 'src/modules/orders/application/services/order-request-idempotency';
 
 export interface CreateOrderLineInput {
   variantId: string;
@@ -55,6 +57,12 @@ export interface CreateOrderInput {
   };
   items: CreateOrderLineInput[];
   emitGuestCheckoutEvent?: boolean;
+  guestCheckoutAudit?: {
+    paymentMethod: string;
+    deliveryMethod?: string;
+  };
+  idempotencyKey?: string;
+  idempotencyIdentity?: OrderRequestIdentity;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -89,6 +97,11 @@ export class CreateOrderUseCase {
   ) {}
 
   async execute(input: CreateOrderInput) {
+    const idempotency = input.idempotencyIdentity ?? createOrderRequestIdentity(
+      'orders:create',
+      input.idempotencyKey,
+      { customer: input.customer, shipping: input.shipping, items: input.items },
+    );
     const orderId = uuidv7();
     const orderNumber = this.orderNumberService.generate();
     const trackingCode = this.orderTrackingCodeService.create(orderNumber);
@@ -162,6 +175,27 @@ export class CreateOrderUseCase {
     const grandTotal = subtotal.sub(discountTotal).add(taxTotal).add(shippingTotal);
 
     const order = await this.createOrderUnitOfWork.run(async (tx) => {
+      if (idempotency) {
+        await tx.$queryRaw(Prisma.sql`SELECT pg_advisory_xact_lock(hashtextextended(${`${idempotency.scope}:${idempotency.keyHash}`}, 0)) IS NULL AS acquired`);
+        const existing = await tx.orderRequestIdempotency.findUnique({
+          where: { scope_keyHash: { scope: idempotency.scope, keyHash: idempotency.keyHash } },
+        });
+        if (existing) {
+          if (existing.fingerprint !== idempotency.fingerprint) {
+            throw new ConflictException('Idempotency-Key was already used with a different request');
+          }
+          const existingOrder = await this.orderRepository.findById(existing.orderId, tx);
+          if (!existingOrder) throw new ConflictException('Idempotent order record is inconsistent');
+          return {
+            order: existingOrder,
+            items: await this.orderItemRepository.findByOrderId(existing.orderId, tx),
+            event: null,
+            guestCheckoutEvent: null,
+            duplicate: true,
+          };
+        }
+      }
+
       await this.reserveStockUseCase.execute({
         referenceType: 'order',
         referenceId: orderId,
@@ -215,31 +249,63 @@ export class CreateOrderUseCase {
           status: createdOrder.status, total: createdOrder.grandTotal },
       }) : undefined;
 
+      await this.auditRepository.write({
+        action: 'order.created',
+        entityType: 'order',
+        entityId: createdOrder.id,
+        afterData: {
+          order: createdOrder,
+          items: createdItems,
+        },
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
+
+      if (input.guestCheckoutAudit) {
+        await this.auditRepository.write({
+          action: 'checkout.guest_order_created',
+          entityType: 'order',
+          entityId: createdOrder.id,
+          afterData: {
+            orderId: createdOrder.id,
+            orderNumber: createdOrder.orderNumber,
+            status: createdOrder.status,
+            paymentMethod: input.guestCheckoutAudit.paymentMethod,
+            deliveryMethod: input.guestCheckoutAudit.deliveryMethod ?? null,
+          },
+          ipAddress: input.ipAddress,
+          userAgent: input.userAgent,
+        }, tx);
+      }
+
+      if (idempotency) {
+        await tx.orderRequestIdempotency.create({
+          data: {
+            id: uuidv7(),
+            scope: idempotency.scope,
+            keyHash: idempotency.keyHash,
+            fingerprint: idempotency.fingerprint,
+            orderId: createdOrder.id,
+          },
+        });
+      }
+
       return {
         order: createdOrder,
         items: createdItems,
         event,
         guestCheckoutEvent,
+        duplicate: false,
       };
     });
 
     const orderEntity = OrderEntity.fromState(order.order);
     orderEntity.ensureTotalsConsistency();
 
-    await this.auditRepository.write({
-      action: 'order.created',
-      entityType: 'order',
-      entityId: order.order.id,
-      afterData: {
-        order: order.order,
-        items: order.items,
-      },
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
-
-    await this.domainEventPublisher.publish(order.event, order.event.route);
-    if (order.guestCheckoutEvent) {
+    if (!order.duplicate && order.event) {
+      await this.domainEventPublisher.publish(order.event, order.event.route);
+    }
+    if (!order.duplicate && order.guestCheckoutEvent) {
       await this.domainEventPublisher.publish(order.guestCheckoutEvent, order.guestCheckoutEvent.route);
     }
 
@@ -247,7 +313,10 @@ export class CreateOrderUseCase {
       order: orderEntity.toAdminResponse(
         order.items.map((item) => OrderItemEntity.fromState(item).toResponse()),
       ),
-      trackingCode,
+      trackingCode: order.duplicate
+        ? this.orderTrackingCodeService.create(order.order.orderNumber)
+        : trackingCode,
+      idempotentReplay: order.duplicate,
     };
   }
 }

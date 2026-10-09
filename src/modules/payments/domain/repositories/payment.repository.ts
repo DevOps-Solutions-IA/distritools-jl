@@ -26,10 +26,15 @@ export interface UpdatePaymentRecord {
 
 export interface PaymentRepository {
   create(tx: PrismaTransactionClient, data: CreatePaymentRecord): Promise<PaymentState>;
+  lockForUpdate(tx: PrismaTransactionClient, id: string): Promise<void>;
   findById(id: string, tx?: PrismaTransactionClient): Promise<PaymentState | null>;
   findByGatewayReference(
     gateway: string,
     gatewayReference: string,
+    tx?: PrismaTransactionClient,
+  ): Promise<PaymentState | null>;
+  findPendingByOrder(
+    orderId: string,
     tx?: PrismaTransactionClient,
   ): Promise<PaymentState | null>;
   update(

@@ -1,4 +1,5 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { isDeepStrictEqual } from 'node:util';
 import { v7 as uuidv7 } from 'uuid';
 import {
   DOMAIN_EVENT_PUBLISHER,
@@ -113,14 +114,22 @@ export class ProcessPaymentWebhookUseCase {
         });
 
       if (!receiptRegistration.inserted) {
+        if (!isDeepStrictEqual(receiptRegistration.receipt.payload, parsed.rawPayload)) {
+          throw new ConflictException('Webhook event identity was reused with a different payload');
+        }
         return { idempotent: true as const, payment: null, order: null, events: [] as PersistedDomainEvent[] };
       }
 
-      const paymentRecord = await this.paymentRepository.findByGatewayReference(
+      const locatedPayment = await this.paymentRepository.findByGatewayReference(
         input.gateway,
         parsed.gatewayReference,
         tx,
       );
+      this.paymentPolicyService.ensurePaymentExists(
+        locatedPayment ? PaymentEntity.fromState(locatedPayment) : null,
+      );
+      await this.paymentRepository.lockForUpdate(tx, locatedPayment!.id);
+      const paymentRecord = await this.paymentRepository.findById(locatedPayment!.id, tx);
       const payment = paymentRecord ? PaymentEntity.fromState(paymentRecord) : null;
       this.paymentPolicyService.ensurePaymentExists(payment);
       payment.ensureFinalizable();
@@ -197,6 +206,25 @@ export class ProcessPaymentWebhookUseCase {
 
       await this.webhookReceiptRepository.markProcessed(tx, receiptRegistration.receipt.id);
 
+      await this.auditRepository.write({
+        action: 'payment.webhook_processed',
+        entityType: 'payment',
+        entityId: updatedPayment.id,
+        afterData: {
+          gateway: input.gateway,
+          externalEventId: parsed.externalEventId,
+          status: updatedPayment.status,
+          paymentId: updatedPayment.id,
+          orderId: updatedOrder.id,
+          payment: {
+            id: updatedPayment.id,
+            status: updatedPayment.status,
+            gatewayReference: updatedPayment.gatewayReference,
+            rawPayload: parsed.rawPayload,
+          },
+        },
+      }, tx);
+
       return {
         idempotent: false as const,
         payment: updatedPayment,
@@ -208,13 +236,6 @@ export class ProcessPaymentWebhookUseCase {
     if (result.idempotent) {
       return { ok: true, idempotent: true };
     }
-
-    await this.auditRepository.write({
-      action: 'payment.webhook_processed',
-      entityType: 'payment',
-      entityId: result.payment!.id,
-      afterData: result,
-    });
 
     for (const event of events) await this.domainEventPublisher.publish(event, event.route);
 

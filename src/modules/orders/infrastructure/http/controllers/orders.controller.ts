@@ -40,10 +40,12 @@ export class OrdersController {
   create(
     @Body() body: CreateOrderRequestDto,
     @Ip() ipAddress: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
     @Headers('user-agent') userAgent?: string,
   ) {
     return this.createOrderUseCase.execute({
       ...body,
+      idempotencyKey,
       ipAddress,
       userAgent,
     });

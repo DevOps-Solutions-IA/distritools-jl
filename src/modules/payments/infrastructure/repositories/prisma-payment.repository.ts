@@ -52,6 +52,12 @@ export class PrismaPaymentRepository implements PaymentRepository {
     return this.mapPayment(created);
   }
 
+  async lockForUpdate(tx: PrismaTransactionClient, id: string): Promise<void> {
+    await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT id FROM payments WHERE id = ${id}::uuid FOR UPDATE
+    `);
+  }
+
   async findById(id: string, tx?: PrismaTransactionClient) {
     const client = tx ?? this.prisma;
     const record = await client.payment.findUnique({
@@ -74,6 +80,16 @@ export class PrismaPaymentRepository implements PaymentRepository {
           gatewayReference,
         },
       },
+    });
+
+    return record ? this.mapPayment(record) : null;
+  }
+
+  async findPendingByOrder(orderId: string, tx?: PrismaTransactionClient) {
+    const client = tx ?? this.prisma;
+    const record = await client.payment.findFirst({
+      where: { orderId, status: 'pending' },
+      orderBy: { createdAt: 'asc' },
     });
 
     return record ? this.mapPayment(record) : null;

@@ -327,11 +327,26 @@ model Order {
   shipments       Shipment[]
   stockMovements  StockMovement[]
   returnedLines   InventoryReturnLine[]
+  requestIdempotencies OrderRequestIdempotency[]
 
   @@index([customerId])
   @@index([orderNumber])
   @@index([status])
   @@map("orders")
+}
+
+model OrderRequestIdempotency {
+  id          String   @id @db.Uuid
+  scope       String
+  keyHash     String   @map("key_hash") @db.Char(64)
+  fingerprint String   @db.Char(64)
+  orderId     String   @unique @map("order_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@unique([scope, keyHash])
+  @@index([createdAt])
+  @@map("order_request_idempotencies")
 }
 
 model OrderItem {

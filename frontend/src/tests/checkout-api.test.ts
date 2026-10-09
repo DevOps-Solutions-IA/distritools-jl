@@ -97,4 +97,23 @@ describe('checkout api', () => {
       status: 409,
     } satisfies Partial<ApiError>);
   });
+
+  it('sends the stable idempotency key with guest checkout requests', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ orderId: 'ord-1' }), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await createGuestOrder({
+      customer: { fullName: 'Buyer', email: 'buyer@example.com', phone: '300' },
+      shippingAddress: { city: 'Cali', addressLine1: 'Street 1' },
+      items: [{ productId: 'prod-1', variantId: 'variant-1', quantity: 1 }],
+    }, 'ex062-frontend-key-0001');
+
+    const options = fetchMock.mock.calls[0][1] as RequestInit;
+    expect(new Headers(options.headers).get('Idempotency-Key')).toBe('ex062-frontend-key-0001');
+  });
 });

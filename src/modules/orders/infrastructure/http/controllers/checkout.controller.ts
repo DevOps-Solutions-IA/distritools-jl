@@ -19,10 +19,12 @@ export class CheckoutController {
   createGuestOrder(
     @Body() body: CreateGuestCheckoutOrderRequestDto,
     @Ip() ipAddress: string,
+    @Headers('idempotency-key') idempotencyKey?: string,
     @Headers('user-agent') userAgent?: string,
   ) {
     return this.createGuestCheckoutOrderUseCase.execute({
       ...body,
+      idempotencyKey,
       ipAddress,
       userAgent,
     });
