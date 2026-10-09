@@ -32,14 +32,15 @@ Goal: verify login/2FA/session rotation/revocation, permissions, audit redaction
 Exit: security matrix green with explicit production blockers.
 Sub-runs: EX-05.1 Auth/RBAC/Session Security Baseline PASS/MERGED via PR #34 (7/7 exact-head CI, product merge 776cbccbd81986edf97805befcedfc3e30edc836). Production release requires Security/Product approval of TTL maxima, a controlled one-use-2FA rollout and review of distributed throttling/trusted-proxy topology. No production GO.
 
-## EX-06 — Inventory, orders, checkout, payments internal correctness — ACTIVE
+## EX-06 — Inventory, orders, checkout, payments internal correctness — INTERNAL GATES PASS / BLOCKED_DECISION
 Goal: harden stock allocation/reserve/commit/release, order transitions, idempotency, webhook replay, cancellation races, payment state semantics, and PSE failure UX contract.
 Exit: invariant/stress/failure-injection gates green; no fake payment success.
-Sub-runs: EX-06.1 Inventory Reservation, Commit and Release Invariants PASS/MERGED via PR #36 (7/7 exact-head CI, product merge 927b536c47492a1c94d4d9f3937eaf870e32d9df). EX-06.2 Order and Payment Lifecycle Correctness is PLANNED next; runbook docs/orchestration/runs/EX-06.2-order-payment-lifecycle-plan.md. The inventory.low_stock_detected producer remains BLOCKED_DECISION pending Product/Inventory Operations. Production providers/cutover are not authorized.
+Sub-runs: EX-06.1 Inventory Reservation, Commit and Release Invariants PASS/MERGED via PR #36; EX-06.2 Order and Payment Lifecycle Correctness PASS/MERGED via PR #38 (7/7 exact-head CI, product merge 9a76cd3c072d59f0df742dd1eaa5725d25d38cc7). EX-06 parent is not marked completed: inventory.low_stock_detected producer remains BLOCKED_DECISION (Product/Inventory Operations) and cancellation-before-approved-webhook payment reconciliation remains BLOCKED_DECISION (Product/Payments/Finance). No production provider/cutover authorization; independent EX-07 operations can proceed.
 
-## EX-07 — Internal operations: admin, analytics, search, notifications, CRM/content
+## EX-07 — Internal operations: admin, analytics, search, notifications, CRM/content — ACTIVE
 Goal: stabilize admin APIs, reports/exports, PII masking, search/reindex, notification persistence/retry, CRM/quotes, legal/footer workflows, and split highest-risk admin controller seams.
 Exit: operational workflows are test-backed and fail closed.
+Sub-runs: EX-07.1 Admin Operations Access, PII and Export Safety is PLANNED next. Runbook docs/orchestration/runs/EX-07.1-admin-access-pii-exports-plan.md.
 
 ## EX-08 — Admin UX and operator usability
 Goal: browser-audit admin routes, eliminate cloned-page feel, improve hierarchy/readiness/alerts/forms/tables/actions, click-test all controls, validate PDF/CSV output.
