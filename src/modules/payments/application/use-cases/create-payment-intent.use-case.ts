@@ -32,6 +32,9 @@ import {
 import { PaymentPolicyService } from 'src/modules/payments/domain/services/payment-policy.service';
 import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
 import type { PrismaTransactionClient } from 'src/modules/inventory/domain/repositories/inventory.repository';
+import { isProductionOrStaging } from 'src/common/security/env-check';
+import { Prisma } from '@prisma/client';
+import { PaymentState } from 'src/modules/payments/domain/entities/payment.entity';
 
 export interface CreatePaymentIntentInput {
   actor?: CurrentUser;
@@ -74,6 +77,14 @@ export class CreatePaymentIntentUseCase {
     if (input.gateway !== 'mock') {
       throw new BadRequestException('Unsupported payment gateway');
     }
+    const appEnvironment = (process.env.APP_ENV ?? '').trim().toLowerCase();
+    const nodeEnvironment = (process.env.NODE_ENV ?? '').trim().toLowerCase();
+    const mockAllowed =
+      (appEnvironment === 'local' && !isProductionOrStaging()) ||
+      (appEnvironment === 'test' && nodeEnvironment === 'test');
+    if (!mockAllowed) {
+      throw new ConflictException('Mock payment gateway is unavailable in this environment');
+    }
 
     const orderRecord = await this.orderRepository.findByOrderNumber(input.orderNumber);
     const order = orderRecord ? OrderEntity.fromState(orderRecord) : null;
@@ -85,6 +96,14 @@ export class CreatePaymentIntentUseCase {
       );
     }
 
+    const existingIntent = await this.paymentRepository.findPendingByOrder(order.id);
+    if (existingIntent) {
+      if (existingIntent.gateway !== input.gateway) {
+        throw new ConflictException('A pending payment intent already exists for this order');
+      }
+      return { payment: this.toIntentResponse(existingIntent) };
+    }
+
     const paymentId = uuidv7();
     const intent = await this.paymentGateway.createIntent({
       paymentId,
@@ -94,7 +113,22 @@ export class CreatePaymentIntentUseCase {
       currency: 'COP',
     });
 
-    const { payment, event } = await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw(Prisma.sql`SELECT id FROM orders WHERE id = ${order.id}::uuid FOR UPDATE`);
+
+      const currentOrder = await this.orderRepository.findById(order.id, tx as unknown as PrismaTransactionClient);
+      if (!currentOrder || currentOrder.status !== 'pending_payment') {
+        throw new ConflictException('Payment can only be initiated for pending_payment orders');
+      }
+
+      const concurrentIntent = await this.paymentRepository.findPendingByOrder(order.id, tx as unknown as PrismaTransactionClient);
+      if (concurrentIntent) {
+        if (concurrentIntent.gateway !== input.gateway) {
+          throw new ConflictException('A pending payment intent already exists for this order');
+        }
+        return { payment: concurrentIntent, event: null };
+      }
+
       const payment = await this.paymentRepository.create(tx, {
         id: paymentId,
         orderId: order.id,
@@ -112,26 +146,29 @@ export class CreatePaymentIntentUseCase {
           gatewayReference: payment.gatewayReference, status: payment.status,
         },
       });
+      await this.auditRepository.write({
+        actorUserId: input.actor?.sub,
+        action: 'payment.intent_created',
+        entityType: 'payment',
+        entityId: payment.id,
+        afterData: payment,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
       return { payment, event };
     });
 
-    await this.auditRepository.write({
-      actorUserId: input.actor?.sub,
-      action: 'payment.intent_created',
-      entityType: 'payment',
-      entityId: payment.id,
-      afterData: payment,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
+    if (result.event) {
+      await this.domainEventPublisher.publish(result.event, result.event.route);
+    }
 
-    await this.domainEventPublisher.publish(event, event.route);
+    return { payment: this.toIntentResponse(result.payment) };
+  }
 
+  private toIntentResponse(payment: PaymentState) {
     return {
-      payment: {
-        ...payment,
-        checkoutUrl: intent.checkoutUrl,
-      },
+      ...payment,
+      checkoutUrl: `${process.env.APP_BASE_URL ?? 'http://localhost:3000'}/checkout/${payment.orderId}?payment=${payment.gatewayReference}`,
     };
   }
 }

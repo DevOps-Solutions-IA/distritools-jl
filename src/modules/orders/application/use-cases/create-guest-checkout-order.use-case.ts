@@ -5,10 +5,6 @@ import {
   Injectable,
 } from '@nestjs/common';
 import {
-  AUDIT_REPOSITORY,
-  AuditRepository,
-} from 'src/modules/auth/domain/repositories/audit.repository';
-import {
   INVENTORY_REPOSITORY,
   InventoryAllocationCandidate,
   InventoryRepository,
@@ -21,6 +17,8 @@ import { CreateOrderUseCase } from 'src/modules/orders/application/use-cases/cre
 import { OrderPolicyService } from 'src/modules/orders/domain/services/order-policy.service';
 import { isPaymentMethodType } from 'src/modules/payments/domain/payment-methods';
 import { AutoShippingService } from 'src/modules/shipping/application/services/auto-shipping.service';
+import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { createOrderRequestIdentity } from 'src/modules/orders/application/services/order-request-idempotency';
 
 export interface CreateGuestCheckoutOrderInput {
   customer: {
@@ -47,6 +45,7 @@ export interface CreateGuestCheckoutOrderInput {
   notes?: string;
   ipAddress?: string;
   userAgent?: string;
+  idempotencyKey?: string;
 }
 
 interface ConsolidatedGuestItem {
@@ -66,19 +65,45 @@ export class CreateGuestCheckoutOrderUseCase {
     private readonly inventoryRepository: InventoryRepository,
     @Inject(OrderPolicyService)
     private readonly orderPolicyService: OrderPolicyService,
-    @Inject(AUDIT_REPOSITORY)
-    private readonly auditRepository: AuditRepository,
     @Inject(AutoShippingService)
     private readonly autoShippingService: AutoShippingService,
+    @Inject(PrismaService)
+    private readonly prisma: PrismaService,
   ) {}
 
   async execute(input: CreateGuestCheckoutOrderInput) {
     const paymentMethod = input.paymentMethod ?? 'commercial_confirmation';
     const allowInternalGatewayTestMethod =
-      process.env.NODE_ENV === 'test' && paymentMethod === 'mock';
+      process.env.NODE_ENV === 'test' && process.env.APP_ENV === 'test' && paymentMethod === 'mock';
 
     if (!isPaymentMethodType(paymentMethod) && !allowInternalGatewayTestMethod) {
       throw new BadRequestException('Unsupported payment method');
+    }
+
+    if (paymentMethod === 'pse') {
+      throw new ConflictException('PSE provider is not configured');
+    }
+
+    const idempotencyIdentity = createOrderRequestIdentity(
+      'checkout:guest',
+      input.idempotencyKey,
+      {
+        customer: input.customer,
+        shippingAddress: input.shippingAddress,
+        items: input.items,
+        deliveryMethod: input.deliveryMethod,
+        paymentMethod,
+        notes: input.notes,
+      },
+    );
+
+    if (idempotencyIdentity) {
+      const replay = await this.findIdempotentReplay(
+        idempotencyIdentity,
+        paymentMethod,
+        allowInternalGatewayTestMethod,
+      );
+      if (replay) return replay;
     }
 
     const consolidatedItems = this.consolidateItems(input.items);
@@ -110,23 +135,32 @@ export class CreateGuestCheckoutOrderUseCase {
       allocationMap.set(candidate.variantId, current);
     }
 
-    const resolvedLines = consolidatedItems.map((item) => {
+    const resolvedLines = [];
+    for (const item of consolidatedItems) {
       const candidate = (allocationMap.get(item.variantId) ?? []).find(
         (entry) => entry.availableQty >= item.quantity,
       );
 
       if (!candidate) {
+        if (idempotencyIdentity) {
+          const replay = await this.findIdempotentReplay(
+            idempotencyIdentity,
+            paymentMethod,
+            allowInternalGatewayTestMethod,
+          );
+          if (replay) return replay;
+        }
         throw new ConflictException(
           `Insufficient stock for variant ${item.variantId}`,
         );
       }
 
-      return {
+      resolvedLines.push({
         variantId: item.variantId,
         warehouseId: candidate.warehouseId,
         quantity: item.quantity,
-      };
-    });
+      });
+    }
 
     const created = await this.createOrderUseCase.execute({
       customer: {
@@ -154,24 +188,23 @@ export class CreateGuestCheckoutOrderUseCase {
       },
       items: resolvedLines,
       emitGuestCheckoutEvent: true,
+      guestCheckoutAudit: {
+        paymentMethod,
+        deliveryMethod: input.deliveryMethod,
+      },
+      idempotencyIdentity,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
     });
 
-    await this.auditRepository.write({
-      action: 'checkout.guest_order_created',
-      entityType: 'order',
-      entityId: created.order.id,
-      afterData: {
-        orderId: created.order.id,
-        orderNumber: created.order.orderNumber,
-        status: created.order.status,
-        paymentMethod,
-        deliveryMethod: input.deliveryMethod ?? null,
-      },
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
+    if (created.idempotentReplay) {
+      const order = await this.prisma.order.findUnique({
+        where: { id: created.order.id },
+        include: { shipments: { orderBy: { createdAt: 'asc' } } },
+      });
+      if (!order) throw new ConflictException('Idempotent order record is inconsistent');
+      return this.buildReplayResponse(order, paymentMethod, allowInternalGatewayTestMethod);
+    }
 
     const autoShipping = await this.autoShippingService.runAfterCheckout({
       orderId: created.order.id,
@@ -194,11 +227,10 @@ export class CreateGuestCheckoutOrderUseCase {
         channel: 'email',
       },
       payment: {
-        canInitiate: paymentMethod === 'pse' || allowInternalGatewayTestMethod,
-        initiateUrl:
-          paymentMethod === 'pse' || allowInternalGatewayTestMethod
-            ? `/api/v1/payments/${created.order.orderNumber}/initiate`
-            : null,
+        canInitiate: allowInternalGatewayTestMethod,
+        initiateUrl: allowInternalGatewayTestMethod
+          ? `/api/v1/payments/${created.order.orderNumber}/initiate`
+          : null,
       },
       shipping: {
         autoShippingStatus: autoShipping.status,
@@ -206,6 +238,60 @@ export class CreateGuestCheckoutOrderUseCase {
         guideNumber: autoShipping.guideNumber,
       },
     };
+  }
+
+  private buildReplayResponse(
+    order: {
+      id: string;
+      orderNumber: string;
+      status: string;
+      grandTotal: { toFixed: (digits: number) => string };
+      shipments: Array<{ status: string; trackingNumber: string | null; providerReference: string | null }>;
+    },
+    paymentMethod: string,
+    allowInternalGatewayTestMethod: boolean,
+  ) {
+    const shipment = order.shipments.find((entry) => entry.trackingNumber) ?? order.shipments[0];
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      trackingCode: `DTJL-TRK-${order.orderNumber.replace(/^DTJL-/, '')}`,
+      status: order.status,
+      total: order.grandTotal.toFixed(2),
+      currency: 'COP',
+      notification: { status: 'queued', channel: 'email' },
+      payment: {
+        canInitiate: allowInternalGatewayTestMethod,
+        initiateUrl: allowInternalGatewayTestMethod
+          ? `/api/v1/payments/${order.orderNumber}/initiate`
+          : null,
+      },
+      shipping: {
+        autoShippingStatus: shipment?.status ?? 'not_replayed',
+        carrier: shipment?.providerReference ?? null,
+        guideNumber: shipment?.trackingNumber ?? null,
+      },
+    };
+  }
+
+  private async findIdempotentReplay(
+    identity: NonNullable<ReturnType<typeof createOrderRequestIdentity>>,
+    paymentMethod: string,
+    allowInternalGatewayTestMethod: boolean,
+  ) {
+    const existing = await this.prisma.orderRequestIdempotency.findUnique({
+      where: { scope_keyHash: { scope: identity.scope, keyHash: identity.keyHash } },
+    });
+    if (!existing) return null;
+    if (existing.fingerprint !== identity.fingerprint) {
+      throw new ConflictException('Idempotency-Key was already used with a different request');
+    }
+    const order = await this.prisma.order.findUnique({
+      where: { id: existing.orderId },
+      include: { shipments: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!order) throw new ConflictException('Idempotent order record is inconsistent');
+    return this.buildReplayResponse(order, paymentMethod, allowInternalGatewayTestMethod);
   }
 
   private consolidateItems(

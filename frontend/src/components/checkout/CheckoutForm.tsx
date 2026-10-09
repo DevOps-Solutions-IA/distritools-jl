@@ -57,6 +57,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
   const { items, summary } = useCart();
   const [serverError, setServerError] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
+  const idempotencyRef = useRef<{ fingerprint: string; key: string } | null>(null);
   const paymentMethods = getCheckoutPaymentMethods(summary);
   const defaultPaymentMethod = getDefaultPaymentMethod(summary);
 
@@ -120,8 +121,28 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
     }
 
     try {
-      const result = await submitGuestCheckout(values, items);
+      const fingerprint = JSON.stringify({
+        values,
+        items: items.map((item) => ({
+          productId: item.product.id,
+          variantId: item.variant.id,
+          quantity: item.quantity,
+        })),
+      });
+      if (idempotencyRef.current?.fingerprint !== fingerprint) {
+        idempotencyRef.current = {
+          fingerprint,
+          key: globalThis.crypto.randomUUID(),
+        };
+      }
+
+      const result = await submitGuestCheckout(
+        values,
+        items,
+        idempotencyRef.current.key,
+      );
       if (result.kind === 'success' && result.order) {
+        idempotencyRef.current = null;
         trackCommerceEvent('order_submitted', {
           method: values.paymentGateway,
           hasQuoteItems: summary.hasQuoteItems,
@@ -145,6 +166,7 @@ export function CheckoutForm({ onSuccess }: CheckoutFormProps) {
       }
 
       if (result.kind === 'quote') {
+        idempotencyRef.current = null;
         trackCommerceEvent('quote_requested', {
           method: values.paymentGateway,
           itemCount: summary.itemCount,

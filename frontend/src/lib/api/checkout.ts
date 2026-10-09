@@ -10,6 +10,7 @@ import type { CartItem } from '@/features/cart/types';
 export async function submitGuestCheckout(
   values: CheckoutSchemaValues,
   items: CartItem[],
+  idempotencyKey?: string,
 ): Promise<CheckoutSubmissionResult> {
   if (items.some((item) => item.variant.mode === 'quote')) {
     return {
@@ -20,7 +21,7 @@ export async function submitGuestCheckout(
   }
 
   const payload = mapCheckoutFormToOrderPayload(values, items);
-  const orderResponse = await createGuestOrder(payload);
+  const orderResponse = await createGuestOrder(payload, idempotencyKey);
 
   if (values.paymentGateway !== 'pse') {
     return {

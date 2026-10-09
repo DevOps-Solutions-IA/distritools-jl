@@ -88,18 +88,17 @@ export class CancelOrderUseCase {
         payload: { orderId: updatedOrder.id, orderNumber: updatedOrder.orderNumber, status: updatedOrder.status,
           customerEmail: updatedOrder.customerEmail, customerPhone: updatedOrder.customerPhone },
       });
+      await this.auditRepository.write({
+        actorUserId: input.actor?.sub,
+        action: 'order.cancelled',
+        entityType: 'order',
+        entityId: updatedOrder.id,
+        beforeData: orderRecord,
+        afterData: updatedOrder,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
       return { updatedOrder, event };
-    });
-
-    await this.auditRepository.write({
-      actorUserId: input.actor?.sub,
-      action: 'order.cancelled',
-      entityType: 'order',
-      entityId: updatedOrder.id,
-      beforeData: orderRecord,
-      afterData: updatedOrder,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
     });
 
     await this.domainEventPublisher.publish(event, event.route);

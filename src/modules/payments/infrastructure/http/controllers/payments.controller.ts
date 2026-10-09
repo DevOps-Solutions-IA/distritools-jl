@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -68,17 +69,15 @@ export class PaymentsController {
     @Param('gateway') gateway: string,
     @Headers('x-signature') signature: string | undefined,
     @Req() req: RawBodyRequest<Request>,
-    @Body() body: unknown,
   ) {
-    const payload =
-      req.rawBody instanceof Buffer
-        ? req.rawBody.toString('utf8')
-        : JSON.stringify(body ?? {});
+    if (!(req.rawBody instanceof Buffer)) {
+      throw new BadRequestException('Raw webhook payload is required');
+    }
 
     return this.processPaymentWebhookUseCase.execute({
       gateway,
       signature,
-      payload,
+      payload: req.rawBody.toString('utf8'),
     });
   }
 }

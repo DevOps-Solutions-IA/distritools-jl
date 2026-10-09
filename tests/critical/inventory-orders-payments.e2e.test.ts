@@ -2,6 +2,9 @@ import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
+import { AUDIT_REPOSITORY, AuditRepository } from 'src/modules/auth/domain/repositories/audit.repository';
+import { PAYMENT_REPOSITORY, PaymentRepository } from 'src/modules/payments/domain/repositories/payment.repository';
+import { PAYMENT_GATEWAY_PORT, PaymentGatewayPort } from 'src/modules/payments/application/ports/payment-gateway.port';
 import {
   disconnectDatabase,
   prisma,
@@ -160,6 +163,169 @@ describe('Inventory, orders, payments, and webhooks', async () => {
     assert.equal(inventory.reservedQty >= 2, true);
   });
 
+  await it('returns the same order for an identical idempotency key and conflicts on a different payload', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'idempotent@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const key = 'order-key-1';
+    const payload = {
+      customer: { fullName: 'Idempotent Buyer', email: 'idempotent@example.com', phone: '3001212133' },
+      shipping: { address: 'Idempotent Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    };
+    const before = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+
+    const first = await http.post('/api/v1/orders').set('Idempotency-Key', key).send(payload);
+    const retry = await http.post('/api/v1/orders').set('Idempotency-Key', key).send(payload);
+    const conflict = await http.post('/api/v1/orders').set('Idempotency-Key', key).send({
+      ...payload,
+      items: [{ ...payload.items[0], quantity: 2 }],
+    });
+
+    assert.equal(first.status, 201);
+    assert.equal(retry.status, 201);
+    assert.equal(retry.body.order.id, first.body.order.id);
+    assert.equal(retry.body.trackingCode, first.body.trackingCode);
+    assert.equal(retry.body.trackingCode, `DTJL-TRK-${first.body.order.orderNumber.replace(/^DTJL-/, '')}`);
+    assert.equal(conflict.status, 409);
+    assert.equal(await prisma.order.count({ where: { orderNumber: first.body.order.orderNumber } }), 1);
+    const after = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    assert.equal(after.reservedQty, before.reservedQty + 1);
+  });
+
+  await it('serializes concurrent order requests sharing an idempotency key', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'concurrent-idempotent@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const payload = {
+      customer: { fullName: 'Concurrent Idempotent', email: 'concurrent-idempotent@example.com', phone: '3001212134' },
+      shipping: { address: 'Concurrent Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 2 }],
+    };
+    const before = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    let arrived = 0;
+    let release!: () => void;
+    const start = new Promise<void>((resolve) => { release = resolve; });
+    const send = async () => {
+      arrived += 1;
+      if (arrived === 2) release();
+      await start;
+      return http.post('/api/v1/orders').set('Idempotency-Key', 'ex062-concurrent-key-0001').send(payload);
+    };
+
+    const [first, second] = await Promise.all([send(), send()]);
+    assert.equal(first.status, 201);
+    assert.equal(second.status, 201);
+    assert.equal(first.body.order.id, second.body.order.id);
+    const after = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    assert.equal(after.reservedQty, before.reservedQty + 2);
+  });
+
+  await it('rolls back order, reservation and outbox when order audit fails', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'audit-failure@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const beforeOrderCount = await prisma.order.count();
+    const beforeOutboxCount = await prisma.domainEventOutbox.count();
+    const beforeInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: {
+        variantId_warehouseId: {
+          variantId: seeded.inventory.variantId,
+          warehouseId: seeded.inventory.warehouseId,
+        },
+      },
+    });
+    const audit = app.get<AuditRepository>(AUDIT_REPOSITORY);
+    const originalWrite = audit.write.bind(audit);
+    t.mock.method(audit, 'write', async (entry, tx) => {
+      if (entry.action === 'order.created') {
+        throw new Error('EX062_AUDIT_FAILURE');
+      }
+      return originalWrite(entry, tx);
+    });
+
+    const response = await http.post('/api/v1/orders').send({
+      customer: {
+        fullName: 'Audit Failure Buyer',
+        email: 'audit-failure@example.com',
+        phone: '3001212130',
+      },
+      shipping: { address: 'Audit Street', city: 'Cali' },
+      items: [{
+        variantId: seeded.inventory.variantId,
+        warehouseId: seeded.inventory.warehouseId,
+        quantity: 1,
+      }],
+    });
+
+    assert.equal(response.status, 500);
+    assert.equal(await prisma.order.count(), beforeOrderCount);
+    assert.equal(await prisma.domainEventOutbox.count(), beforeOutboxCount);
+    const afterInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: {
+        variantId_warehouseId: {
+          variantId: seeded.inventory.variantId,
+          warehouseId: seeded.inventory.warehouseId,
+        },
+      },
+    });
+    assert.equal(afterInventory.onHandQty, beforeInventory.onHandQty);
+    assert.equal(afterInventory.reservedQty, beforeInventory.reservedQty);
+  });
+
+  await it('rolls back cancellation state, stock release and event when cancellation audit fails', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'cancel-audit@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Cancel Audit Buyer', email: 'cancel-audit@example.com', phone: '3001212136' },
+      shipping: { address: 'Cancel Audit Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    const beforeInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    const beforeOutboxCount = await prisma.domainEventOutbox.count();
+    const audit = app.get<AuditRepository>(AUDIT_REPOSITORY);
+    const originalWrite = audit.write.bind(audit);
+    const failingAudit = t.mock.method(audit, 'write', async (entry, tx) => {
+      if (entry.action === 'order.cancelled') throw new Error('EX062_CANCEL_AUDIT_FAILURE');
+      return originalWrite(entry, tx);
+    });
+
+    const response = await http.post(`/api/v1/orders/${order.body.order.orderNumber}/cancel`).send({ reason: 'test fault' });
+    assert.equal(response.status, 500);
+    assert.equal(await prisma.order.findUniqueOrThrow({ where: { id: order.body.order.id } }).then((row) => row.status), 'pending_payment');
+    assert.equal(await prisma.domainEventOutbox.count(), beforeOutboxCount);
+    const afterInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    assert.equal(afterInventory.onHandQty, beforeInventory.onHandQty);
+    assert.equal(afterInventory.reservedQty, beforeInventory.reservedQty);
+    failingAudit.mock.restore();
+    await http.post(`/api/v1/orders/${order.body.order.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+  });
+
   await it('guest checkout creates pending_payment order without warehouseId from frontend', async () => {
     const inventoryBefore = await prisma.inventoryItem.findUniqueOrThrow({
       where: {
@@ -234,6 +400,80 @@ describe('Inventory, orders, payments, and webhooks', async () => {
     assert.equal(tracking.body.trackingNumber, null);
     assert.equal(tracking.body.carrier, null);
     assert.equal(tracking.body.shippingStatus, 'pendiente_guia');
+  });
+
+  await it('guest checkout rejects unavailable PSE before creating an order or reserving stock', async () => {
+    const beforeOrderCount = await prisma.order.count();
+    const beforeInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: {
+        variantId_warehouseId: {
+          variantId: seeded.inventory.variantId,
+          warehouseId: seeded.inventory.warehouseId,
+        },
+      },
+    });
+
+    const response = await http.post('/api/v1/checkout/guest-order').send({
+      customer: {
+        fullName: 'PSE Unavailable',
+        email: 'pse-unavailable@example.com',
+        phone: '3001212129',
+      },
+      shippingAddress: {
+        city: 'Cali',
+        addressLine1: 'Guest Street 15',
+      },
+      items: [
+        {
+          productId: seeded.inventory.productId,
+          variantId: seeded.inventory.variantId,
+          quantity: 1,
+        },
+      ],
+      paymentMethod: 'pse',
+    });
+
+    assert.equal(response.status, 409);
+    assert.match(response.body.message, /PSE provider is not configured/);
+    assert.equal(await prisma.order.count(), beforeOrderCount);
+
+    const afterInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: {
+        variantId_warehouseId: {
+          variantId: seeded.inventory.variantId,
+          warehouseId: seeded.inventory.warehouseId,
+        },
+      },
+    });
+    assert.equal(afterInventory.onHandQty, beforeInventory.onHandQty);
+    assert.equal(afterInventory.reservedQty, beforeInventory.reservedQty);
+  });
+
+  await it('guest checkout replays the same order for an identical idempotency key', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'guest-idempotent@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const payload = {
+      customer: { fullName: 'Guest Idempotent', email: 'guest-idempotent@example.com', phone: '3001212135' },
+      shippingAddress: { city: 'Cali', addressLine1: 'Guest Idempotent Street' },
+      items: [{ productId: seeded.inventory.productId, variantId: seeded.inventory.variantId, quantity: 1 }],
+      paymentMethod: 'mock',
+    };
+    const before = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    const first = await http.post('/api/v1/checkout/guest-order').set('Idempotency-Key', 'ex062-guest-key-0001').send(payload);
+    const retry = await http.post('/api/v1/checkout/guest-order').set('Idempotency-Key', 'ex062-guest-key-0001').send(payload);
+    assert.equal(first.status, 201);
+    assert.equal(retry.status, 201);
+    assert.equal(retry.body.orderId, first.body.orderId);
+    const after = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    assert.equal(after.reservedQty, before.reservedQty + 1);
   });
 
   await it('guest checkout hides missing variant technical identifiers', async () => {
@@ -436,6 +676,19 @@ describe('Inventory, orders, payments, and webhooks', async () => {
     assert.equal(second.status, 201);
     assert.equal(second.body.idempotent, true);
 
+    const conflictingPayload = JSON.stringify({
+      eventId: 'evt-approved-1',
+      gatewayReference: intent.body.payment.gatewayReference,
+      transactionId: 'txn-conflicting-replay',
+      status: 'rejected',
+    });
+    const conflictingReplay = await http
+      .post('/api/v1/payments/webhook/mock')
+      .set('x-signature', signWebhook('mock', conflictingPayload))
+      .set('Content-Type', 'application/json')
+      .send(conflictingPayload);
+    assert.equal(conflictingReplay.status, 409);
+
     const payment = await prisma.payment.findUniqueOrThrow({
       where: { id: intent.body.payment.id },
     });
@@ -455,6 +708,253 @@ describe('Inventory, orders, payments, and webhooks', async () => {
     assert.equal(dbOrder.status, 'paid');
     assert.equal(item.onHandQty, 1);
     assert.equal(item.reservedQty, 0);
+  });
+
+  await it('reuses the existing pending payment intent for an identical retry', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'intent-retry@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Intent Retry Buyer', email: 'intent-retry@example.com', phone: '3001212132' },
+      shipping: { address: 'Intent Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.secondVariantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    assert.equal(order.status, 201);
+
+    const first = await http
+      .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+      .send({ gateway: 'mock' });
+    const retry = await http
+      .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+      .send({ gateway: 'mock' });
+
+    assert.equal(first.status, 201);
+    assert.equal(retry.status, 201);
+    assert.equal(retry.body.payment.id, first.body.payment.id);
+    assert.equal(retry.body.payment.gatewayReference, first.body.payment.gatewayReference);
+    assert.equal(await prisma.payment.count({ where: { orderId: order.body.order.id, gateway: 'mock' } }), 1);
+    assert.equal(await prisma.domainEventOutbox.count({
+      where: { eventName: 'payment.intent_created', payload: { path: ['paymentId'], equals: first.body.payment.id } },
+    }), 1);
+  });
+
+  await it('serializes concurrent payment intent creation for the same order', async (t) => {
+    let orderNumber: string | undefined;
+    t.after(async () => {
+      if (orderNumber) {
+        await http.post(`/api/v1/orders/${orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Concurrent Intent Buyer', email: 'concurrent-intent@example.com', phone: '3001212140' },
+      shipping: { address: 'Concurrent Intent Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    orderNumber = order.body.order.orderNumber;
+    const gateway = app.get<PaymentGatewayPort>(PAYMENT_GATEWAY_PORT);
+    const originalCreate = gateway.createIntent.bind(gateway);
+    let arrivals = 0;
+    let release!: () => void;
+    const bothAtGateway = new Promise<void>((resolve) => { release = resolve; });
+    t.mock.method(gateway, 'createIntent', async (...args: Parameters<typeof originalCreate>) => {
+      arrivals += 1;
+      if (arrivals === 2) release();
+      let deadline: NodeJS.Timeout | undefined;
+      try {
+        await Promise.race([
+          bothAtGateway,
+          new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error('payment intent barrier deadline')), 5000); }),
+        ]);
+      } finally {
+        if (deadline) clearTimeout(deadline);
+      }
+      return originalCreate(...args);
+    });
+
+    const responses = await Promise.all([1, 2].map(() => http
+      .post(`/api/v1/payments/${orderNumber}/initiate`)
+      .send({ gateway: 'mock' })));
+    assert.equal(responses.every((response) => response.status === 201), true);
+    assert.equal(responses[0].body.payment.id, responses[1].body.payment.id);
+    assert.equal(responses[0].body.payment.gatewayReference, responses[1].body.payment.gatewayReference);
+    assert.equal(await prisma.payment.count({ where: { orderId: order.body.order.id } }), 1);
+    assert.equal(await prisma.domainEventOutbox.count({
+      where: { eventName: 'payment.intent_created', payload: { path: ['paymentId'], equals: responses[0].body.payment.id } },
+    }), 1);
+  });
+
+  await it('rolls back payment intent and outbox when intent audit fails', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'intent-audit-failure@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Intent Audit Failure', email: 'intent-audit-failure@example.com', phone: '3001212139' },
+      shipping: { address: 'Intent Audit Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.secondVariantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    const beforePaymentCount = await prisma.payment.count({ where: { orderId: order.body.order.id } });
+    const beforeOutboxCount = await prisma.domainEventOutbox.count();
+    const audit = app.get<AuditRepository>(AUDIT_REPOSITORY);
+    const originalWrite = audit.write.bind(audit);
+    t.mock.method(audit, 'write', async (entry, tx) => {
+      if (entry.action === 'payment.intent_created') throw new Error('EX062_INTENT_AUDIT_FAILURE');
+      return originalWrite(entry, tx);
+    });
+
+    const response = await http
+      .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+      .send({ gateway: 'mock' });
+    assert.equal(response.status, 500);
+    assert.equal(await prisma.payment.count({ where: { orderId: order.body.order.id } }), beforePaymentCount);
+    assert.equal(await prisma.domainEventOutbox.count(), beforeOutboxCount);
+  });
+
+  await it('serializes distinct approved and rejected webhook events to one terminal outcome', async (t) => {
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Webhook Race Buyer', email: 'webhook-race@example.com', phone: '3001212138' },
+      shipping: { address: 'Webhook Race Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    const intent = await http
+      .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+      .send({ gateway: 'mock' });
+    const payloads = ['approved', 'rejected'].map((status) => JSON.stringify({
+      eventId: `evt-webhook-race-${status}`,
+      gatewayReference: intent.body.payment.gatewayReference,
+      transactionId: `txn-webhook-race-${status}`,
+      status,
+    }));
+    const repository = app.get<PaymentRepository>(PAYMENT_REPOSITORY);
+    const originalFind = repository.findByGatewayReference.bind(repository);
+    let arrived = 0;
+    let release!: () => void;
+    const bothRead = new Promise<void>((resolve) => { release = resolve; });
+    t.mock.method(repository, 'findByGatewayReference', async (...args: Parameters<typeof originalFind>) => {
+      const payment = await originalFind(...args);
+      arrived += 1;
+      if (arrived === 2) release();
+      let deadline: NodeJS.Timeout | undefined;
+      try {
+        await Promise.race([
+          bothRead,
+          new Promise<never>((_, reject) => { deadline = setTimeout(() => reject(new Error('webhook barrier deadline')), 5000); }),
+        ]);
+      } finally {
+        if (deadline) clearTimeout(deadline);
+      }
+      return payment;
+    });
+
+    const responses = await Promise.all(payloads.map((payload) => http
+      .post('/api/v1/payments/webhook/mock')
+      .set('x-signature', signWebhook('mock', payload))
+      .set('Content-Type', 'application/json')
+      .send(payload)));
+
+    assert.equal(responses.filter((response) => response.status === 201).length, 1);
+    assert.equal(responses.filter((response) => response.status >= 400).length, 1);
+    const payment = await prisma.payment.findUniqueOrThrow({ where: { id: intent.body.payment.id } });
+    const dbOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.body.order.id } });
+    const movements = await prisma.stockMovement.findMany({
+      where: { referenceType: 'order', referenceId: order.body.order.id },
+    });
+    assert.ok(['approved', 'rejected'].includes(payment.status));
+    assert.equal(dbOrder.status, payment.status === 'approved' ? 'paid' : 'cancelled');
+    assert.equal(movements.filter((movement) => ['commit', 'release'].includes(movement.movementType)).length, 1);
+    assert.equal(await prisma.webhookReceipt.count({ where: { gateway: 'mock', externalEventId: { in: ['evt-webhook-race-approved', 'evt-webhook-race-rejected'] } } }), 1);
+  });
+
+  await it('blocks mock payment intent creation in production and staging', async (t) => {
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Mock Blocked Buyer', email: 'mock-blocked@example.com', phone: '3001212137' },
+      shipping: { address: 'Mock Blocked Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.secondVariantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    const previousAppEnv = process.env.APP_ENV;
+    const previousNodeEnv = process.env.NODE_ENV;
+    t.after(async () => {
+      if (previousAppEnv === undefined) delete process.env.APP_ENV;
+      else process.env.APP_ENV = previousAppEnv;
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+      await http.post(`/api/v1/orders/${order.body.order.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+    });
+    const beforePaymentCount = await prisma.payment.count({ where: { orderId: order.body.order.id } });
+    for (const [environment, nodeEnvironment] of [
+      ['production', 'test'],
+      ['staging', 'test'],
+      ['unrecognized', 'test'],
+      ['local', 'production'],
+    ]) {
+      process.env.APP_ENV = environment;
+      process.env.NODE_ENV = nodeEnvironment;
+      const response = await http
+        .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+        .send({ gateway: 'mock' });
+      assert.equal(response.status, 409);
+      assert.match(response.body.message, /Mock payment gateway is unavailable/);
+    }
+    assert.equal(await prisma.payment.count({ where: { orderId: order.body.order.id } }), beforePaymentCount);
+  });
+
+  await it('rolls back webhook receipt, payment, order and stock when audit fails', async (t) => {
+    t.after(async () => {
+      const leftovers = await prisma.order.findMany({ where: { customerEmail: 'webhook-audit@example.com' } });
+      for (const leftover of leftovers) {
+        await http.post(`/api/v1/orders/${leftover.orderNumber}/cancel`).send({ reason: 'test cleanup' });
+      }
+    });
+    const order = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Webhook Audit Buyer', email: 'webhook-audit@example.com', phone: '3001212131' },
+      shipping: { address: 'Webhook Street', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    const intent = await http
+      .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+      .send({ gateway: 'mock' });
+    const payload = JSON.stringify({
+      eventId: 'evt-audit-failure',
+      gatewayReference: intent.body.payment.gatewayReference,
+      transactionId: 'txn-audit-failure',
+      status: 'approved',
+    });
+    const beforeInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    const beforeOutboxCount = await prisma.domainEventOutbox.count();
+    const audit = app.get<AuditRepository>(AUDIT_REPOSITORY);
+    const originalWrite = audit.write.bind(audit);
+    t.mock.method(audit, 'write', async (entry, tx) => {
+      if (entry.action === 'payment.webhook_processed') {
+        throw new Error('EX062_WEBHOOK_AUDIT_FAILURE');
+      }
+      return originalWrite(entry, tx);
+    });
+
+    const response = await http
+      .post('/api/v1/payments/webhook/mock')
+      .set('x-signature', signWebhook('mock', payload))
+      .set('Content-Type', 'application/json')
+      .send(payload);
+
+    assert.equal(response.status, 500);
+    assert.equal(await prisma.webhookReceipt.count({ where: { externalEventId: 'evt-audit-failure' } }), 0);
+    assert.equal(await prisma.domainEventOutbox.count(), beforeOutboxCount);
+    const payment = await prisma.payment.findUniqueOrThrow({ where: { id: intent.body.payment.id } });
+    const dbOrder = await prisma.order.findUniqueOrThrow({ where: { id: order.body.order.id } });
+    const afterInventory = await prisma.inventoryItem.findUniqueOrThrow({
+      where: { variantId_warehouseId: { variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId } },
+    });
+    assert.equal(payment.status, 'pending');
+    assert.equal(dbOrder.status, 'pending_payment');
+    assert.equal(afterInventory.onHandQty, beforeInventory.onHandQty);
+    assert.equal(afterInventory.reservedQty, beforeInventory.reservedQty);
   });
 
   await it('invalid webhook signature is rejected', async () => {
