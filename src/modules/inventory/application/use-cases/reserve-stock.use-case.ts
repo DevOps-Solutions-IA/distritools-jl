@@ -25,6 +25,7 @@ import {
   StockMovementRepository,
 } from 'src/modules/stock-movements/domain/repositories/stock-movement.repository';
 import { StockMovementEntity } from 'src/modules/stock-movements/domain/entities/stock-movement.entity';
+import { normalizeStockLines } from 'src/modules/inventory/application/use-cases/normalize-stock-lines';
 
 export interface ReserveStockLineInput {
   variantId: string;
@@ -65,11 +66,7 @@ export class ReserveStockUseCase {
       assertHasPermissions(input.actor.permissions, ['inventory.reserve']);
     }
 
-    const sortedLines = [...input.lines].sort((left, right) =>
-      `${left.variantId}:${left.warehouseId}`.localeCompare(
-        `${right.variantId}:${right.warehouseId}`,
-      ),
-    );
+    const sortedLines = normalizeStockLines(input.lines);
 
     const variantIds = [...new Set(sortedLines.map((line) => line.variantId))];
     const warehouseIds = [
@@ -122,7 +119,7 @@ export class ReserveStockUseCase {
           line.variantId,
           line.warehouseId,
         );
-        inventoryEntity.ensureCanReserve(line.quantity);
+        inventoryEntity.ensureValidQuantity(line.quantity);
 
         const existingMovement =
           await this.stockMovementRepository.findByUniqueReference(tx, {
@@ -141,6 +138,8 @@ export class ReserveStockUseCase {
           movements.push(existingMovement);
           continue;
         }
+
+        inventoryEntity.ensureCanReserve(line.quantity);
 
         const updatedItem = await this.inventoryRepository.updateQuantities(
           tx,
@@ -184,20 +183,22 @@ export class ReserveStockUseCase {
       };
     };
 
-    const result = input.tx
-      ? await executor(input.tx)
-      : await this.prisma.$transaction(async (tx) => executor(tx));
+    const executeWithAudit = async (tx: PrismaTransactionClient) => {
+      const result = await executor(tx);
+      await this.auditRepository.write({
+        actorUserId: input.actor?.sub,
+        action: 'inventory.reserved',
+        entityType: 'inventory_reservation',
+        entityId: input.referenceId,
+        afterData: result,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
+      return result;
+    };
 
-    await this.auditRepository.write({
-      actorUserId: input.actor?.sub,
-      action: 'inventory.reserved',
-      entityType: 'inventory_reservation',
-      entityId: input.referenceId,
-      afterData: result,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
-
-    return result;
+    return input.tx
+      ? executeWithAudit(input.tx)
+      : this.prisma.$transaction(executeWithAudit);
   }
 }

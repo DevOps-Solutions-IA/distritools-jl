@@ -10,6 +10,32 @@ import {
   seedBaseData,
 } from 'tests/helpers/test-db';
 import { PrismaOrderItemRepository } from 'src/modules/order-items/infrastructure/repositories/prisma-order-item.repository';
+import {
+  INVENTORY_REPOSITORY,
+  InventoryLockTarget,
+  InventoryRepository,
+  PrismaTransactionClient,
+} from 'src/modules/inventory/domain/repositories/inventory.repository';
+
+function gate() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((complete) => { resolve = complete; });
+  return { promise, resolve };
+}
+
+async function waitForGate(promise: Promise<void>, label: string): Promise<void> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} barrier deadline exceeded`)), 15000);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 function signWebhook(gateway: string, payload: string): string {
   return createHmac('sha256', process.env.PAYMENT_GATEWAY_SECRET!)
@@ -254,48 +280,100 @@ describe('Concurrency and stress hardening', async () => {
     assert.equal(movements.length, 1);
   });
 
-  await it('Scenario C: order cancel vs webhook race ends in valid terminal state', async () => {
-    const order = await http.post('/api/v1/orders').send({
-      customer: {
-        fullName: 'Race Buyer',
-        email: 'race@example.com',
-        phone: '3005555555',
-      },
-      shipping: { address: 'Race', city: 'Cali' },
-      items: [
-        {
+  await it('Scenario C: cancel/payment lock races preserve inventory for either winner', async () => {
+    const repository = app!.get<InventoryRepository>(INVENTORY_REPOSITORY);
+    const originalLockMany = repository.lockMany.bind(repository);
+
+    for (const firstOperation of ['cancel', 'webhook'] as const) {
+      const order = await http.post('/api/v1/orders').send({
+        customer: {
+          fullName: `Race Buyer ${firstOperation}`,
+          email: `race-${firstOperation}@example.com`,
+          phone: '3005555555',
+        },
+        shipping: { address: 'Race', city: 'Cali' },
+        items: [{
           variantId: seeded.inventory.variantId,
           warehouseId: seeded.inventory.warehouseId,
           quantity: 1,
-        },
-      ],
-    });
-    const intent = await http
-      .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
-      .send({ gateway: 'mock' });
+        }],
+      });
+      assert.equal(order.status, 201);
+      const intent = await http
+        .post(`/api/v1/payments/${order.body.order.orderNumber}/initiate`)
+        .send({ gateway: 'mock' });
+      assert.equal(intent.status, 201);
 
-    const payload = JSON.stringify({
-      eventId: 'evt-race-1',
-      gatewayReference: intent.body.payment.gatewayReference,
-      transactionId: 'txn-race-1',
-      status: 'approved',
-    });
+      const firstLocked = gate();
+      const firstMayContinue = gate();
+      const secondStarted = gate();
+      let lockCalls = 0;
+      repository.lockMany = async (tx: PrismaTransactionClient, targets: InventoryLockTarget[]) => {
+        lockCalls += 1;
+        if (lockCalls === 2) secondStarted.resolve();
+        const rows = await originalLockMany(tx, targets);
+        if (lockCalls === 1) {
+          firstLocked.resolve();
+          await firstMayContinue.promise;
+        }
+        return rows;
+      };
 
-    const [cancel, webhook] = await Promise.allSettled([
-      http.post(`/api/v1/orders/${order.body.order.orderNumber}/cancel`).send({}),
-      http
+      const payload = JSON.stringify({
+        eventId: `evt-race-${firstOperation}`,
+        gatewayReference: intent.body.payment.gatewayReference,
+        transactionId: `txn-race-${firstOperation}`,
+        status: 'approved',
+      });
+      const cancelRequest = () => http
+        .post(`/api/v1/orders/${order.body.order.orderNumber}/cancel`)
+        .send({});
+      const webhookRequest = () => http
         .post('/api/v1/payments/webhook/mock')
         .set('x-signature', signWebhook('mock', payload))
         .set('Content-Type', 'application/json')
-        .send(payload),
-    ]);
+        .send(payload);
 
-    const dbOrder = await prisma.order.findUniqueOrThrow({
-      where: { id: order.body.order.id },
-    });
+      try {
+        const firstRequest = Promise.resolve(
+          firstOperation === 'cancel' ? cancelRequest() : webhookRequest(),
+        );
+        await waitForGate(firstLocked.promise, `${firstOperation} inventory lock`);
+        const secondRequest = Promise.resolve(
+          firstOperation === 'cancel' ? webhookRequest() : cancelRequest(),
+        );
+        await waitForGate(secondStarted.promise, 'competing operation lock');
+        firstMayContinue.resolve();
+        const [firstResponse, secondResponse] = await Promise.all([firstRequest, secondRequest]);
+        const dbOrder = await prisma.order.findUniqueOrThrow({
+          where: { id: order.body.order.id },
+        });
+        const inventory = await prisma.inventoryItem.findUniqueOrThrow({
+          where: { variantId_warehouseId: {
+            variantId: seeded.inventory.variantId,
+            warehouseId: seeded.inventory.warehouseId,
+          } },
+        });
+        const movements = await prisma.stockMovement.findMany({
+          where: { referenceType: 'order', referenceId: order.body.order.id },
+        });
+        const commitMovements = movements.filter((movement) => movement.movementType === 'commit');
+        const releaseMovements = movements.filter((movement) => movement.movementType === 'release');
 
-    assert.ok(['cancelled', 'paid'].includes(dbOrder.status));
-    assert.ok(cancel.status === 'fulfilled' || webhook.status === 'fulfilled');
+        assert.ok(firstResponse.status < 400);
+        assert.ok(secondResponse.status >= 400);
+        assert.ok(['cancelled', 'paid'].includes(dbOrder.status));
+        assert.equal(inventory.reservedQty, 0);
+        assert.equal(inventory.onHandQty >= 0, true);
+        assert.equal(commitMovements.length + releaseMovements.length, 1);
+        assert.equal(dbOrder.status === 'paid', commitMovements.length === 1);
+        assert.equal(dbOrder.status === 'cancelled', releaseMovements.length === 1);
+        assert.equal(movements.filter((movement) => movement.movementType === 'reservation').length, 1);
+      } finally {
+        firstMayContinue.resolve();
+        repository.lockMany = originalLockMany;
+      }
+    }
   });
 
   await it('Scenario D: failure injection rolls back reserved stock and order writes', async () => {
