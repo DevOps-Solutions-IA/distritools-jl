@@ -2,12 +2,12 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "d0862858b432d6b71de035b8e9a32c33ec088f9a",
-  "state_base_sha": "d0862858b432d6b71de035b8e9a32c33ec088f9a",
+  "validated_product_sha": "5233d5c6a48e3b1717c3be8dab428a9f438d0531",
+  "state_base_sha": "5233d5c6a48e3b1717c3be8dab428a9f438d0531",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-09",
   "phase": "internal-hardening",
-  "active_execution": "EX-07.3",
+  "active_execution": "EX-07.4",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -32,7 +32,8 @@
     "EX-06.1",
     "EX-06.2",
     "EX-07.1",
-    "EX-07.2"
+    "EX-07.2",
+    "EX-07.3"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -44,9 +45,9 @@
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
-    "frontend_tests": "62/62 PASS (EX-07.2 PR #42 CI 37964400434)",
-    "backend_unit_tests": "151/151 PASS (EX-07.2 PR #42 CI 37964400434)",
-    "critical_e2e": "PASS (EX-07.2 PR #42 CI: 21 files / 196 tests plus 4 environment isolation guards)",
+    "frontend_tests": "62/62 PASS (EX-07.3 PR #44 CI 37979966476)",
+    "backend_unit_tests": "183/183 PASS (EX-07.3 PR #44 CI 37979966476)",
+    "critical_e2e": "PASS (EX-07.3 PR #44 CI: 22 files / 204 tests plus 4 isolation environment guards)",
     "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
@@ -54,25 +55,25 @@
     "frontend_high": 5,
     "frontend_moderate": 0,
     "frontend_low": 0,
-    "frontend_audit_fresh": "PASS: EX-07.2 PR #42 CI 37964400434; inherited tooling advisories remain; no dependency change",
+    "frontend_audit_fresh": "PASS regression baseline: EX-07.3 PR #44 CI 37979966476; 0 critical/5 high frontend tooling full, runtime 0, existing findings OPEN",
     "backend_critical": 0,
     "backend_high": 4,
     "backend_moderate": 2,
     "backend_low": 1,
-    "backend_audit_fresh": "PASS: EX-07.2 PR #42 CI 37964400434; inherited Prisma/Swagger advisories remain; no dependency change"
+    "backend_audit_fresh": "PASS regression baseline: EX-07.3 PR #44 CI 37979966476; 0 critical/4 high/2 moderate/1 low backend full, existing findings OPEN"
   },
   "current_workstreams": [
     {
-      "execution": "EX-07.3",
+      "execution": "EX-07.4",
       "parent": "EX-07",
-      "branch": "search/ex07-3-reindex-consistency-2026-10",
+      "branch": "admin/ex07-4-crm-legal-footer-2026-10",
       "status": "PLANNED",
-      "objective": "Prove and harden catalog search/autocomplete projections, event-driven reindex idempotency, stale visibility, concurrency, bounded batches and authorized manual reindex.",
-      "user_impact": "SEARCH_CATALOG",
-      "hard_stop": "No ranking or product visibility policy invention, real providers, live production changes, payment/stock/notification business gap invention, historical held replay, event-bus cutover, auth/RBAC relaxation or destructive migrations.",
-      "prior": "EX-07.2 notification delivery recovery PASS/MERGED via PR #42, product merge d0862858b432d6b71de035b8e9a32c33ec088f9a. Three business gaps remain blocked: order.paid notification template, low-stock producer and late approved-payment reconciliation.",
-      "runbook": "docs/orchestration/runs/EX-07.3-search-reindex-plan.md",
-      "next_action": "INICIA FASE EX-07.3"
+      "objective": "Harden existing CRM/quotes and legal/footer draft/publish workflows: RBAC, PII, audit, transactional races, bounded reads and public serialization.",
+      "user_impact": "ADMIN_OPERATOR",
+      "hard_stop": "No real provider calls, production modifications, unapproved legal/business/financial rules, PII export, auth relaxation, historical held replay or event-bus cutover.",
+      "prior": "EX-07.3 technical search/reindex fix passed isolated PostgreSQL/Redis (204 critical, 90 E2E, 183 unit), then PR #44 exact-head 7/7 CI MERGED at 5233d5c6a48e3b1717c3be8dab428a9f438d0531. Warehouse-inactive stock interpretation remains BLOCKED_DECISION and does not authorize fulfillment claims.",
+      "runbook": "docs/orchestration/runs/EX-07.4-crm-legal-footer-plan.md",
+      "next_action": "INICIA FASE EX-07.4"
     }
   ],
   "provider_status": {
@@ -91,7 +92,8 @@
     "EX-05.1 security runtime hardening is merged; organizational approval of maximum token lifetimes and the 2FA challenge/legacy seed rollout plan remain mandatory before production GO. Multi-replica auth throttling and trusted-proxy topology are still deployment-boundary debt.",
     "EX-06 inventory.low_stock_detected producer remains BLOCKED_DECISION: Product/Inventory Operations must define authoritative threshold crossing (minStock vs reorderPoint), transition/dedup/re-arm semantics, event payload, producer owner and notification timing. No producer or cutover is authorized.",
     "EX-06 payment reconciliation remains BLOCKED_DECISION: when cancellation wins before an approved external webhook, the order reservation is released and the payment/receipt remains pending and retryable. Product/Payments/Finance must authorize held/reconciliation versus reversal/refund/compensation and safe operator workflow; no fake approval or arbitrary terminal state.",
-    "EX-07 notification order.paid remains BLOCKED_DECISION: source registers only a legacy no-op subscriber and excludes order.paid from durable notifications. Product/Notifications/Payments must approve template, recipient/channel, trigger and payload/owner; no fake consumer or business message is authorized."
+    "EX-07 notification order.paid remains BLOCKED_DECISION: source registers only a legacy no-op subscriber and excludes order.paid from durable notifications. Product/Notifications/Payments must approve template, recipient/channel, trigger and payload/owner; no fake consumer or business message is authorized.",
+    "EX-07.3 catalog search availability across inactive warehouses remains BLOCKED_DECISION: Product/Inventory Operations must specify whether displayed stock reflects all warehouses (catalog aggregate) or only fulfillment-eligible active warehouses. No inferred allocation, eligibility, pricing or routing policy is authorized."
   ],
   "known_debt": [
     "PrismaService used directly in application layer",
@@ -102,15 +104,15 @@
     "EX-07.2 notification manual post-exhaustion retry and uncertain-outcome operator reconciliation remain unimplemented pending an explicit operations policy; do not blindly resend failed/uncertain notifications."
   ],
   "last_transition": {
-    "execution": "EX-07.2",
+    "execution": "EX-07.3",
     "status": "MERGED",
-    "pr": 42,
-    "merge_sha": "d0862858b432d6b71de035b8e9a32c33ec088f9a",
-    "validation_head_sha": "5f19a1b20ca5c9c09b4e2c4b7df3ac2a6ff9caec",
-    "workflow_run": 37964400434,
-    "result": "Retained failed/completed BullMQ job reconciliation, three-claim durable retry limit, legacy stale-claim recovery and production/staging mock-provider fences merged after 7/7 exact-head CI and remote zero-behind audit. order.paid template, inventory.low_stock_detected producer and approved-webhook-after-cancellation remain BLOCKED_DECISION; real providers and production cutover remain unauthorized."
+    "pr": 44,
+    "merge_sha": "5233d5c6a48e3b1717c3be8dab428a9f438d0531",
+    "validation_head_sha": "046b935ccebfdc12f8130d69836f50393335995b",
+    "workflow_run": 37979966476,
+    "result": "Orchestrator independently reproduced and repaired 1001-ID reindex HTTP 201 instead of 400, reran isolated PostgreSQL16/Redis7, unit 183, critical 204, E2E 90; PR #44 7/7 exact-head CI merged. Catalog-vs-fulfillment stock in inactive warehouses is still BLOCKED_DECISION. No production GO, providers or event cutover."
   },
-  "next_action": "INICIA FASE EX-07.3",
+  "next_action": "INICIA FASE EX-07.4",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
