@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 import { NotificationDeliveryError } from 'src/modules/notifications/application/ports/notification-delivery-error';
+import { assertMockNotificationProviderAllowed } from 'src/modules/notifications/infrastructure/providers/mock-provider-safety';
 import {
   EmailProviderPort,
   EmailProviderSendInput,
@@ -11,10 +12,8 @@ import {
 @Injectable()
 export class MockEmailProvider implements EmailProviderPort {
   async send(input: EmailProviderSendInput): Promise<{ providerMessageId: string }> {
+    assertMockNotificationProviderAllowed();
     const provider = process.env.EMAIL_PROVIDER ?? 'local-file';
-    if (process.env.NODE_ENV === 'production' && provider === 'none') {
-      throw new Error('Email provider not configured for production');
-    }
 
     if (input.to.includes('fail-email')) {
       throw new NotificationDeliveryError('MOCK_EMAIL_NOT_SENT');

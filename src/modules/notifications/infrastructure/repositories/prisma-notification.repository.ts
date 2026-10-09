@@ -4,6 +4,7 @@ import { NotificationChannel, NotificationStatus } from '@prisma/client';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import { parsePageSize } from 'src/common/utils/pagination.util';
 import { v7 as uuidv7 } from 'uuid';
+import { NOTIFICATION_MAX_DELIVERY_ATTEMPTS } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
 import {
   NotificationRecord,
   NotificationRepository,
@@ -69,7 +70,9 @@ export class PrismaNotificationRepository implements NotificationRepository {
     const token = uuidv7();
     const rows = await this.prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       WITH candidates AS (
-        SELECT id FROM notifications WHERE dispatch_eligible = true AND status = 'queued'
+        SELECT id FROM notifications WHERE dispatch_eligible = true
+          AND (status = 'queued' OR (status = 'failed' AND attempts < ${NOTIFICATION_MAX_DELIVERY_ATTEMPTS}))
+          AND attempts < ${NOTIFICATION_MAX_DELIVERY_ATTEMPTS}
           AND (${eventId ?? null}::text IS NULL OR event_id = ${eventId ?? null})
           AND (dispatch_lease_until IS NULL OR dispatch_lease_until <= clock_timestamp())
         ORDER BY created_at, id LIMIT ${limit} FOR UPDATE SKIP LOCKED
@@ -85,7 +88,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
   async releaseDispatchClaim(id: string, claimToken: string) {
     await this.prisma.$executeRaw(Prisma.sql`
       UPDATE notifications SET dispatch_claim_token = NULL, dispatch_lease_until = NULL, updated_at = clock_timestamp()
-      WHERE id = ${id}::uuid AND status = 'queued' AND dispatch_claim_token = ${claimToken}::uuid
+      WHERE id = ${id}::uuid AND status IN ('queued', 'failed') AND dispatch_claim_token = ${claimToken}::uuid
     `);
   }
 
@@ -97,6 +100,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
         dispatch_lease_until = clock_timestamp() + ${leaseMs} * interval '1 millisecond',
         attempts = attempts + 1, updated_at = clock_timestamp()
       WHERE id = ${id}::uuid AND (status = 'queued' OR status = 'failed')
+        AND attempts < ${NOTIFICATION_MAX_DELIVERY_ATTEMPTS}
       RETURNING id
     `);
     return rows.length ? { claimToken: token } : null;
@@ -182,7 +186,8 @@ export class PrismaNotificationRepository implements NotificationRepository {
         `);
         const notification = await tx.notification.findUniqueOrThrow({ where: { id: row.id } });
         await tx.notificationAuditIntent.create({ data: {
-          id: uuidv7(), notificationId: row.id, transitionKey: row.dispatch_claim_token,
+          id: uuidv7(), notificationId: row.id,
+          transitionKey: row.dispatch_claim_token ?? `expired:${row.id}`,
           action: 'notification.uncertain', eventId: notification.eventId,
           afterData: { status: 'uncertain', code: 'SEND_OUTCOME_UNCERTAIN' },
         } });
