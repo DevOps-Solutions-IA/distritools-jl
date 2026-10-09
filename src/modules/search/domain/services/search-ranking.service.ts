@@ -14,7 +14,8 @@ export class SearchRankingService {
         rightScore - leftScore ||
         right.availability - left.availability ||
         right.priority - left.priority ||
-        left.title.localeCompare(right.title)
+        left.title.localeCompare(right.title) ||
+        left.id.localeCompare(right.id)
       );
     });
   }

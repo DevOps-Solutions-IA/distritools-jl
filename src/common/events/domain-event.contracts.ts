@@ -283,7 +283,7 @@ export const DOMAIN_EVENT_CONTRACTS = Object.freeze({
     inMemoryConsumers: ['search'], workerRoute: false, disposition: 'in_memory_consumed', fields: { variantId: 'string', productId: 'nullableString', sku: 'nullableString', isActive: 'boolean' },
   },
   'content.published': {
-    owner: 'content.create-content-block|set-content-published', producerStatus: 'present', publishable: true,
+    owner: 'content.create-content-block|set-content-published|update-content-block', producerStatus: 'present', publishable: true,
     inMemoryConsumers: ['search'], workerRoute: false, disposition: 'in_memory_consumed', fields: strings('contentId', 'placementKey', 'title'),
   },
   'content.unpublished': {

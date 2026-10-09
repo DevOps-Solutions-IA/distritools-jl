@@ -1,12 +1,40 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { parsePageSize } from 'src/common/utils/pagination.util';
 import {
   ContentIndexSource,
   SearchRepository,
   VariantIndexSource,
 } from 'src/modules/search/domain/repositories/search.repository';
+
+const PUBLIC_SEARCH_FIELDS = {
+  id: true, documentType: true, title: true, subtitle: true, sku: true,
+  brandName: true, brandSlug: true, categoryName: true, categorySlug: true,
+  placementKey: true, availability: true, priority: true,
+} satisfies Prisma.SearchDocumentSelect;
+
+function validateSearchText(value: unknown, field: string): string {
+  if (typeof value !== 'string' || value.length > 256 || /[\u0000-\u001f\u007f]/.test(value)) {
+    throw new BadRequestException(`${field} debe ser texto de hasta 256 caracteres sin controles.`);
+  }
+  return value.trim();
+}
+
+// Match public variants and content, including time transitions without an event.
+function currentEligibility(at = new Date()): Prisma.SearchDocumentWhereInput {
+  return { OR: [
+    { documentType: 'variant', variant: { is: {
+      isActive: true, OR: [{ productId: null }, { product: { is: { isActive: true } } }],
+    } } },
+    { documentType: 'content', contentBlock: { is: {
+      isPublished: true,
+      OR: [{ startsAt: null }, { startsAt: { lte: at } }],
+      AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: at } }] }],
+    } } },
+  ] };
+}
 
 @Injectable()
 export class PrismaSearchRepository implements SearchRepository {
@@ -24,16 +52,20 @@ export class PrismaSearchRepository implements SearchRepository {
     query: string,
     options: { limit?: number; brandSlug?: string; categorySlug?: string } = {},
   ) {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = validateSearchText(query, 'q').toLowerCase();
+    const limit = parsePageSize(options.limit);
+    const brandSlug = options.brandSlug === undefined ? undefined : validateSearchText(options.brandSlug, 'brandSlug');
+    const categorySlug = options.categorySlug === undefined ? undefined : validateSearchText(options.categorySlug, 'categorySlug');
     if (!normalizedQuery) {
       return [];
     }
 
-    return this.prisma.searchDocument.findMany({
+    const results = await this.prisma.searchDocument.findMany({
       where: {
         isActive: true,
-        ...(options.brandSlug ? { brandSlug: options.brandSlug } : {}),
-        ...(options.categorySlug ? { categorySlug: options.categorySlug } : {}),
+        AND: [currentEligibility()],
+        ...(brandSlug ? { brandSlug } : {}),
+        ...(categorySlug ? { categorySlug } : {}),
         OR: [
           { title: { contains: normalizedQuery, mode: 'insensitive' } },
           { subtitle: { contains: normalizedQuery, mode: 'insensitive' } },
@@ -43,13 +75,31 @@ export class PrismaSearchRepository implements SearchRepository {
           { searchText: { contains: normalizedQuery, mode: 'insensitive' } },
         ],
       },
-      orderBy: [{ priority: 'desc' }, { availability: 'desc' }, { title: 'asc' }],
-      take: options.limit ?? 20,
+      select: { ...PUBLIC_SEARCH_FIELDS, variantId: true },
+      orderBy: [{ priority: 'desc' }, { availability: 'desc' }, { title: 'asc' }, { id: 'asc' }],
+      take: limit,
+    });
+
+    // Inventory writes have no search event in the current contract. Hydrate only
+    // the bounded result set rather than returning an obsolete stock snapshot.
+    const variantIds = results.flatMap((row) => row.documentType === 'variant' && row.variantId ? [row.variantId] : []);
+    const stock = variantIds.length ? await this.prisma.inventoryItem.groupBy({
+      by: ['variantId'], where: { variantId: { in: variantIds } },
+      _sum: { onHandQty: true, reservedQty: true, committedQty: true },
+    }) : [];
+    const availability = new Map(stock.map((row) => [row.variantId,
+      (row._sum.onHandQty ?? 0) - (row._sum.reservedQty ?? 0) - (row._sum.committedQty ?? 0),
+    ]));
+    return results.map(({ variantId, ...record }) => {
+      if (record.documentType !== 'variant') return record;
+      const currentStock = availability.get(variantId!) ?? 0;
+      return { ...record, availability: currentStock, priority: currentStock > 0 ? 10 : 0 };
     });
   }
 
   async autocomplete(query: string, limit = 10) {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = validateSearchText(query, 'q').toLowerCase();
+    limit = parsePageSize(limit, 10);
     if (!normalizedQuery) {
       return [];
     }
@@ -57,13 +107,15 @@ export class PrismaSearchRepository implements SearchRepository {
     const results = await this.prisma.searchDocument.findMany({
       where: {
         isActive: true,
+        AND: [currentEligibility()],
         OR: [
           { sku: { startsWith: normalizedQuery, mode: 'insensitive' } },
           { title: { startsWith: normalizedQuery, mode: 'insensitive' } },
           { brandName: { startsWith: normalizedQuery, mode: 'insensitive' } },
         ],
       },
-      orderBy: [{ priority: 'desc' }, { availability: 'desc' }, { title: 'asc' }],
+      select: PUBLIC_SEARCH_FIELDS,
+      orderBy: [{ priority: 'desc' }, { availability: 'desc' }, { title: 'asc' }, { id: 'asc' }],
       take: limit,
     });
 

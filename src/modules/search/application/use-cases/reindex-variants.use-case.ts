@@ -83,9 +83,17 @@ export class ReindexVariantsUseCase {
             category: true,
           },
         },
-        inventoryItems: true,
       },
     });
+
+    const stock = await tx.inventoryItem.groupBy({
+      by: ['variantId'],
+      where: { variantId: { in: sourceIds.map((row) => row.id) } },
+      _sum: { onHandQty: true, reservedQty: true, committedQty: true },
+    });
+    const availability = new Map(stock.map((row) => [row.variantId,
+      (row._sum.onHandQty ?? 0) - (row._sum.reservedQty ?? 0) - (row._sum.committedQty ?? 0),
+    ]));
 
     await this.searchRepository.upsertVariantDocuments(
       variants.map((variant) => {
@@ -94,6 +102,7 @@ export class ReindexVariantsUseCase {
               name: string;
               description: string | null;
               metadata: Prisma.JsonValue | null;
+              isActive: boolean;
               brand: { name: string; slug: string } | null;
               category: { name: string; slug: string } | null;
             }
@@ -111,12 +120,8 @@ export class ReindexVariantsUseCase {
           categorySlug: product?.category?.slug ?? null,
           description: product?.description ?? null,
           metadataText,
-          isActive: variant.isActive,
-          availability: variant.inventoryItems.reduce(
-            (accumulator, inventoryItem) =>
-              accumulator + (inventoryItem.onHandQty - inventoryItem.reservedQty),
-            0,
-          ),
+          isActive: variant.isActive && (!product || product.isActive),
+          availability: availability.get(variant.id) ?? 0,
         };
       }),
       tx,
