@@ -65,7 +65,7 @@ export class PermissionsGuard implements CanActivate {
       };
 
       this.logger.warn(
-        `Permission denied for user ${user.email} (${user.sub}) on ${request.method} ${request.path}. Required: [${required.join(', ')}]`,
+        `Permission denied on ${request.method} ${request.path}. Required: [${required.join(', ')}]`,
       );
 
       this.prisma.auditLog.create({

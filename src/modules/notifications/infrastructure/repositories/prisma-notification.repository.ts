@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { NotificationChannel, NotificationStatus } from '@prisma/client';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { parsePageSize } from 'src/common/utils/pagination.util';
 import { v7 as uuidv7 } from 'uuid';
 import {
   NotificationRecord,
@@ -50,11 +51,12 @@ export class PrismaNotificationRepository implements NotificationRepository {
   }
 
   async list(limit = 50) {
+    const boundedLimit = parsePageSize(limit, 50);
     const records = await this.prisma.notification.findMany({
       orderBy: {
         createdAt: 'desc',
       },
-      take: limit,
+      take: boundedLimit,
     });
 
     return records.map((record) => this.map(record));

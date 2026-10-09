@@ -99,6 +99,65 @@ describe('Admin operations endpoints', async () => {
     assert.equal(response.body.meta.total >= 1, true);
     assert.equal(response.body.data[0].customerEmail.includes('***'), true);
     assert.equal(response.body.data[0].itemsCount >= 1, true);
+    const invalidLimit = await http.get('/api/v1/admin/orders?limit=1e6')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(invalidLimit.status, 400);
+  });
+
+  await it('gates order address and notes behind sensitive-read permission and audits access', async () => {
+    const orderRead = await prisma.permission.findUniqueOrThrow({ where: { slug: 'orders.read' } });
+    await prisma.rolePermission.create({
+      data: { id: uuidv7(), roleId: seeded.roles.limitedRoleId, permissionId: orderRead.id },
+    });
+    let viewer = await loginAsAdmin(http, seeded.users.viewerEmail, seeded.users.viewerPassword, seeded.users.twoFactorSecret);
+    let response = await http.get(`/api/v1/admin/orders/${orderId}`)
+      .set('Authorization', `Bearer ${viewer.accessToken}`);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.shipping.address, 'Dirección protegida');
+    assert.equal(response.body.shipping.notes, '[PROTECTED]');
+    assert.equal(response.body.customer.name.includes('Admin Ops'), false);
+
+    const sensitiveRead = await prisma.permission.findUniqueOrThrow({ where: { slug: 'customers.read_sensitive' } });
+    await prisma.rolePermission.create({
+      data: { id: uuidv7(), roleId: seeded.roles.limitedRoleId, permissionId: sensitiveRead.id },
+    });
+    viewer = await loginAsAdmin(http, seeded.users.viewerEmail, seeded.users.viewerPassword, seeded.users.twoFactorSecret);
+    response = await http.get(`/api/v1/admin/orders/${orderId}`)
+      .set('Authorization', `Bearer ${viewer.accessToken}`);
+    assert.equal(response.body.shipping.address, 'Calle 1');
+    assert.equal(response.body.customer.name, 'Admin Ops Buyer');
+    assert.equal(response.body.totals.grandTotal, 'NO_PERMISSION');
+    assert.equal(await prisma.auditLog.count({ where: { action: 'order.view_sensitive', entityId: orderId } }) >= 1, true);
+  });
+
+  await it('scopes payment webhook events to the payment reference', async () => {
+    const otherPayment = await prisma.payment.create({
+      data: {
+        id: uuidv7(), orderId, gateway: 'cash_on_delivery', gatewayReference: 'different-payment-reference',
+        amount: '1000.00', currency: 'COP', status: 'pending',
+      },
+    });
+    const matchingEventId = uuidv7();
+    const unrelatedEventId = uuidv7();
+    await prisma.webhookReceipt.createMany({
+      data: [
+        {
+          id: matchingEventId, gateway: 'cash_on_delivery', externalEventId: `event-${matchingEventId}`,
+          payload: { gatewayReference: (await prisma.payment.findUniqueOrThrow({ where: { id: paymentId } })).gatewayReference, privatePayload: 'must-not-return' },
+        },
+        {
+          id: unrelatedEventId, gateway: 'cash_on_delivery', externalEventId: `event-${unrelatedEventId}`,
+          payload: { gatewayReference: otherPayment.gatewayReference, privatePayload: 'must-not-return' },
+        },
+      ],
+    });
+    const response = await http.get(`/api/v1/admin/payments/${paymentId}/events`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(response.status, 200);
+    assert.equal(response.body.data.some((event: { id: string }) => event.id === matchingEventId), true);
+    assert.equal(response.body.data.some((event: { id: string }) => event.id === unrelatedEventId), false);
+    assert.equal(JSON.stringify(response.body).includes('must-not-return'), false);
+    assert.equal(JSON.stringify(response.body).includes('different-payment-reference'), false);
   });
 
   await it('blocks invalid order transitions and audits valid internal notes', async () => {
@@ -205,6 +264,9 @@ describe('Admin operations endpoints', async () => {
     assert.equal(quoted.body.trackingNumber, null);
     assert.equal(quoted.body.routeNumber, null);
     assert.equal(quoted.body.operationalState.status, 'provider_not_configured');
+    assert.equal('addressSnapshot' in quoted.body, false);
+    assert.equal('packageSnapshot' in quoted.body, false);
+    assert.equal('labelUrl' in quoted.body, false);
 
     const create = await http
       .post(`/api/v1/admin/shipments/${orderId}/create`)
@@ -221,11 +283,19 @@ describe('Admin operations endpoints', async () => {
   });
 
   await it('lists customers masked, users, roles, and audit data', async () => {
+    const customersBefore = await prisma.customer.count();
     const customers = await http
       .get('/api/v1/admin/customers')
       .set('Authorization', `Bearer ${adminToken}`);
     assert.equal(customers.status, 200);
     assert.equal(customers.body.data[0].email.includes('***'), true);
+    assert.equal(await prisma.customer.count(), customersBefore);
+
+    const customerOrders = await http
+      .get(`/api/v1/admin/customers/${customers.body.data[0].id}/orders?limit=1`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(customerOrders.status, 200);
+    assert.equal(customerOrders.body.meta.limit, 1);
 
     const sensitive = await http
       .post(`/api/v1/admin/customers/${customers.body.data[0].id}/view-sensitive`)

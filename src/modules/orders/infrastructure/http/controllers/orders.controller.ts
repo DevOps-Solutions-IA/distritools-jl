@@ -88,11 +88,15 @@ export class OrdersController {
   getAdmin(
     @Param('orderId') orderId: string,
     @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
   ) {
     return this.getOrderUseCase.execute({
       actor,
       orderId,
       adminView: true,
+      ipAddress,
+      userAgent,
     });
   }
 

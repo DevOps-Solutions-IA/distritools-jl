@@ -1,10 +1,17 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, PayloadTooLargeException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, Prisma, ShipmentStatus } from '@prisma/client';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 
 type DashboardRangeKey = 'today' | '7d' | '30d' | 'month';
+const MAX_DASHBOARD_SOURCE_ROWS = 5000;
+const MAX_DASHBOARD_MATERIALIZED_ROWS = 50000;
+const MAX_DASHBOARD_ORDER_ITEMS = 20;
+const MAX_DASHBOARD_PAYMENTS = 10;
+const MAX_DASHBOARD_SHIPMENTS = 10;
+const MAX_DASHBOARD_VARIANTS = 10;
+const MAX_DASHBOARD_INVENTORY_ITEMS = 10;
 type ModuleStatus =
   | 'READY'
   | 'GO_WITH_RISKS'
@@ -74,11 +81,14 @@ export class GetAdminDashboardUseCase {
 
   async execute(actor: CurrentUser, rangeKey?: string) {
     assertHasPermissions(actor.permissions, ['dashboard.read']);
+    const financialAllowed = actor.permissions.includes('reports.financial.read');
 
     const range = this.resolveRange(rangeKey);
     const from = new Date(range.from);
     const to = new Date(range.to);
     const nowIso = new Date().toISOString();
+    return this.prisma.$transaction(async (tx) => {
+    await this.assertMaterializationBudget(tx, from, to);
 
     const [
       periodOrders,
@@ -96,61 +106,108 @@ export class GetAdminDashboardUseCase {
       auditEventsCount,
       shipmentsInPeriod,
     ] = await Promise.all([
-      this.prisma.order.findMany({
+      tx.order.findMany({
         where: { createdAt: { gte: from, lte: to } },
-        include: { orderItems: true, payments: true, shipments: true },
-        orderBy: { createdAt: 'asc' },
+        include: {
+          orderItems: { orderBy: [{ id: 'asc' }], take: MAX_DASHBOARD_ORDER_ITEMS + 1 },
+          payments: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_DASHBOARD_PAYMENTS + 1 },
+          shipments: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_DASHBOARD_SHIPMENTS + 1 },
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: MAX_DASHBOARD_SOURCE_ROWS + 1,
       }),
-      this.prisma.order.count({
+      tx.order.count({
         where: { createdAt: { gte: this.startOfToday(), lte: new Date() } },
       }),
-      this.prisma.order.findMany({
-        include: { orderItems: true, payments: true, shipments: true },
-        orderBy: { createdAt: 'desc' },
+      tx.order.findMany({
+        where: { status: { notIn: [OrderStatus.cancelled, OrderStatus.refunded, OrderStatus.delivered] } },
+        include: {
+          orderItems: { orderBy: [{ id: 'asc' }], take: MAX_DASHBOARD_ORDER_ITEMS + 1 },
+          payments: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_DASHBOARD_PAYMENTS + 1 },
+          shipments: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_DASHBOARD_SHIPMENTS + 1 },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: MAX_DASHBOARD_SOURCE_ROWS + 1,
       }),
-      this.prisma.product.findMany({
+      tx.product.findMany({
         include: {
           variants: {
             include: {
-              inventoryItems: true,
+              inventoryItems: { orderBy: [{ id: 'asc' }], take: MAX_DASHBOARD_INVENTORY_ITEMS + 1 },
             },
+            orderBy: [{ id: 'asc' }],
+            take: MAX_DASHBOARD_VARIANTS + 1,
           },
         },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: MAX_DASHBOARD_SOURCE_ROWS + 1,
       }),
-      this.prisma.customer.count(),
-      this.prisma.customer.count({ where: { lastOrderAt: { not: null } } }),
-      this.prisma.customer.count({ where: { createdAt: { gte: from, lte: to } } }),
-      this.prisma.notification.groupBy({
+      tx.customer.count(),
+      tx.customer.count({ where: { lastOrderAt: { not: null } } }),
+      tx.customer.count({ where: { createdAt: { gte: from, lte: to } } }),
+      tx.notification.groupBy({
         by: ['status'],
         _count: { status: true },
       }),
-      this.prisma.order.findMany({
-        include: { payments: true, shipments: true },
-        orderBy: { createdAt: 'desc' },
+      tx.order.findMany({
+        include: {
+          payments: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_DASHBOARD_PAYMENTS + 1 },
+          shipments: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: MAX_DASHBOARD_SHIPMENTS + 1 },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
       }),
-      this.prisma.payment.findMany({
-        include: { order: true },
-        orderBy: { createdAt: 'desc' },
+      tx.payment.findMany({
+        select: {
+          id: true,
+          orderId: true,
+          status: true,
+          gateway: true,
+          amount: true,
+          currency: true,
+          createdAt: true,
+          order: { select: { orderNumber: true } },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
       }),
-      this.prisma.auditLog.findMany({
-        include: { actor: true },
-        orderBy: { createdAt: 'desc' },
+      tx.auditLog.findMany({
+        select: { id: true, action: true, entityType: true, createdAt: true, actor: { select: { email: true } } },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
       }),
-      this.prisma.notification.findMany({
+      tx.notification.findMany({
         where: { status: 'failed' },
-        orderBy: { createdAt: 'desc' },
+        select: { eventName: true, eventId: true, lastError: true, createdAt: true },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
       }),
-      this.prisma.auditLog.count({
+      tx.auditLog.count({
         where: { createdAt: { gte: from, lte: to } },
       }),
-      this.prisma.shipment.findMany({
+      tx.shipment.findMany({
         where: { createdAt: { gte: from, lte: to } },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: MAX_DASHBOARD_SOURCE_ROWS + 1,
       }),
     ]);
+
+    if ([periodOrders, allOrders, products, shipmentsInPeriod].some((rows) => rows.length > MAX_DASHBOARD_SOURCE_ROWS)) {
+      throw new PayloadTooLargeException('El rango o el volumen operativo supera el límite del dashboard. Reduzca el rango o revise los módulos por separado.');
+    }
+    const hasOversizedRelations = [...periodOrders, ...allOrders].some((order) =>
+      order.orderItems.length > MAX_DASHBOARD_ORDER_ITEMS ||
+      order.payments.length > MAX_DASHBOARD_PAYMENTS ||
+      order.shipments.length > MAX_DASHBOARD_SHIPMENTS,
+    ) || recentOrders.some((order) =>
+      order.payments.length > MAX_DASHBOARD_PAYMENTS ||
+      order.shipments.length > MAX_DASHBOARD_SHIPMENTS,
+    ) || products.some((product) => product.variants.length > MAX_DASHBOARD_VARIANTS ||
+      product.variants.some((variant) => variant.inventoryItems.length > MAX_DASHBOARD_INVENTORY_ITEMS),
+    );
+    if (hasOversizedRelations) {
+      throw new PayloadTooLargeException('Una relación supera el límite operativo del dashboard. Revise el módulo correspondiente.');
+    }
 
     const readinessModules = this.buildReadinessModules();
     const readinessCounts = this.countReadiness(readinessModules);
@@ -217,9 +274,9 @@ export class GetAdminDashboardUseCase {
       readiness,
       kpis: {
         sales: {
-          totalSalesAmount: this.money(totalSalesAmount),
+          totalSalesAmount: financialAllowed ? this.money(totalSalesAmount) : 'NO_PERMISSION',
           orderCount,
-          averageOrderValue: this.money(averageOrderValue),
+          averageOrderValue: financialAllowed ? this.money(averageOrderValue) : 'NO_PERMISSION',
           ordersToday: todayOrdersCount,
           pendingOrders: periodOrders.filter((order) =>
             ([OrderStatus.draft, OrderStatus.pending_payment] as OrderStatus[]).includes(order.status),
@@ -280,7 +337,10 @@ export class GetAdminDashboardUseCase {
         },
       },
       charts: {
-        salesByDay: this.salesByDay(periodOrders, from, to),
+        salesByDay: this.salesByDay(periodOrders, from, to).map((row) => ({
+          ...row,
+          amount: financialAllowed ? row.amount : 'NO_PERMISSION',
+        })),
         ordersByStatus: this.countByStatus(periodOrders.map((order) => order.status)),
         paymentsByStatus: this.countByStatus(periodPayments.map((payment) => payment.status)),
         inventoryByStatus: [
@@ -305,7 +365,7 @@ export class GetAdminDashboardUseCase {
           status: order.status,
           paymentStatus: order.payments[0]?.status ?? 'pending',
           shippingStatus: order.shipments[0]?.status ?? 'pending_provider',
-          total: this.money(Number(order.grandTotal)),
+          total: financialAllowed ? this.money(Number(order.grandTotal)) : 'NO_PERMISSION',
           createdAt: order.createdAt.toISOString(),
           href: `/admin/pedidos?search=${encodeURIComponent(order.orderNumber)}`,
         })),
@@ -313,7 +373,7 @@ export class GetAdminDashboardUseCase {
           orderNumber: payment.order.orderNumber,
           status: payment.status,
           method: payment.gateway,
-          amount: this.money(Number(payment.amount)),
+          amount: financialAllowed ? this.money(Number(payment.amount)) : 'NO_PERMISSION',
           createdAt: payment.createdAt.toISOString(),
           href: `/admin/pagos?search=${encodeURIComponent(payment.order.orderNumber)}`,
         })),
@@ -333,6 +393,31 @@ export class GetAdminDashboardUseCase {
         })),
       },
     };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  private async assertMaterializationBudget(tx: Prisma.TransactionClient, from: Date, to: Date): Promise<void> {
+    const activeOrder = { status: { notIn: [OrderStatus.cancelled, OrderStatus.refunded, OrderStatus.delivered] } };
+    const [periodOrders, periodItems, periodPayments, periodShipments, activeOrders, activeItems, activePayments,
+      activeShipments, products, variants, inventoryItems] = await Promise.all([
+      tx.order.count({ where: { createdAt: { gte: from, lte: to } } }),
+      tx.orderItem.count({ where: { order: { createdAt: { gte: from, lte: to } } } }),
+      tx.payment.count({ where: { order: { createdAt: { gte: from, lte: to } } } }),
+      tx.shipment.count({ where: { createdAt: { gte: from, lte: to } } }),
+      tx.order.count({ where: activeOrder }),
+      tx.orderItem.count({ where: { order: activeOrder } }),
+      tx.payment.count({ where: { order: activeOrder } }),
+      tx.shipment.count({ where: { order: activeOrder } }),
+      tx.product.count(),
+      tx.variant.count(),
+      tx.inventoryItem.count(),
+    ]);
+    const materializedRows = periodOrders + periodItems + periodPayments + periodShipments + activeOrders +
+      activeItems + activePayments + activeShipments + products + variants + inventoryItems +
+      5 * (MAX_DASHBOARD_PAYMENTS + MAX_DASHBOARD_SHIPMENTS + 1);
+    if (materializedRows > MAX_DASHBOARD_MATERIALIZED_ROWS) {
+      throw new PayloadTooLargeException('El volumen total supera el presupuesto del dashboard. Use reportes con un rango menor.');
+    }
   }
 
   private resolveRange(rangeKey?: string): DashboardRange {
@@ -354,8 +439,10 @@ export class GetAdminDashboardUseCase {
       label = 'Mes actual';
       from.setDate(1);
       from.setHours(0, 0, 0, 0);
-    } else {
+    } else if (rangeKey === undefined || rangeKey === '30d') {
       from.setDate(from.getDate() - 30);
+    } else {
+      throw new BadRequestException('Rango de dashboard no permitido.');
     }
 
     return {
@@ -662,9 +749,6 @@ export class GetAdminDashboardUseCase {
   }
 
   private safeMessage(message: string) {
-    return message
-      .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
-      .replace(/\b\d{7,}\b/g, '[numero]')
-      .slice(0, 120);
+    return /^[A-Z][A-Z0-9_-]{0,79}$/.test(message) ? message : '[DETAILS_REDACTED]';
   }
 }

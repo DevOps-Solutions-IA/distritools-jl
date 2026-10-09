@@ -86,7 +86,7 @@ describe('Platform closure modules', async () => {
     const ids: string[] = [randomUUID(), randomUUID()];
     await prisma.notification.createMany({ data: ids.map((id, index) => ({
       id, eventId: randomUUID(), eventName: 'synthetic.serialization', channel: 'internal' as const,
-      recipient: 'internal-team', content: 'status fixture', provider: 'internal',
+      recipient: 'internal-team', subject: 'sensitive subject fixture', content: 'status fixture', provider: 'internal',
       status: index === 0 ? 'sending' as const : 'uncertain' as const,
       dispatchEligible: false, dispatchClaimToken: randomUUID(),
       dispatchLeaseUntil: new Date(Date.now() + 300_000),
@@ -102,11 +102,15 @@ describe('Platform closure modules', async () => {
     assert.deepEqual(rows.map((row: { status: string }) => row.status).sort(), ['sending', 'uncertain']);
     for (const row of rows) {
       assert.deepEqual(Object.keys(row).sort(), [
-        'id', 'eventId', 'eventName', 'channel', 'recipient', 'subject', 'content', 'provider', 'status',
-        'providerMessageId', 'attempts', 'lastError', 'payload', 'sentAt', 'failedAt', 'createdAt', 'updatedAt',
+        'id', 'eventName', 'channel', 'recipient', 'subject', 'provider', 'status',
+        'attempts', 'lastError', 'sentAt', 'failedAt', 'createdAt', 'updatedAt',
       ].sort());
-      assert.equal(row.payload.token, '[redacted]');
-      assert.notEqual(row.payload.customerEmail, 'synthetic@example.test');
+      assert.equal(row.recipient, '[redacted]');
+      assert.equal(row.subject, '[PROTECTED]');
+      assert.equal('content' in row, false);
+      assert.equal('payload' in row, false);
+      assert.equal('providerMessageId' in row, false);
+      assert.equal('eventId' in row, false);
       assert.ok(!Number.isNaN(Date.parse(row.updatedAt)));
     }
     assert.deepEqual(await prisma.notification.findMany({ where: { id: { in: ids } }, orderBy: { id: 'asc' } }), before);

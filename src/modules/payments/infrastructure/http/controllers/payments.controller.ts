@@ -51,7 +51,7 @@ export class PaymentsController {
   }
 
   @ApiBearerAuth()
-  @Permissions('payments.read')
+  @Permissions('payments.read', 'reports.financial.read')
   @Get('admin/payments/:paymentId')
   getStatus(
     @Param('paymentId') paymentId: string,

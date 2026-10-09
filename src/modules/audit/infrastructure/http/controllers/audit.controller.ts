@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { parsePageSize } from 'src/common/utils/pagination.util';
 import { GetAuditLogUseCase } from 'src/modules/audit/application/use-cases/get-audit-log.use-case';
 import { ListAuditLogsUseCase } from 'src/modules/audit/application/use-cases/list-audit-logs.use-case';
 
@@ -31,7 +32,7 @@ export class AuditController {
       action,
       entityType,
       entityId,
-      limit: limit ? Number(limit) : undefined,
+      limit: parsePageSize(limit, 50),
     });
   }
 

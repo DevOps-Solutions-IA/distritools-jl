@@ -63,7 +63,7 @@ export class AdminReportsController {
     return this.getAdminReportsUseCase.execute(actor, query);
   }
 
-  @Permissions('reports.financial.read')
+  @Permissions('reports.read', 'reports.financial.read')
   @Get('sales')
   async sales(
     @CurrentUserDecorator() actor: CurrentUser,
@@ -83,7 +83,7 @@ export class AdminReportsController {
     return (report as { reports: { orders: unknown } }).reports.orders;
   }
 
-  @Permissions('reports.read')
+  @Permissions('reports.read', 'reports.financial.read')
   @Get('payments')
   async payments(
     @CurrentUserDecorator() actor: CurrentUser,
