@@ -1,5 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
+import { ForbiddenException } from '@nestjs/common';
+import { PermissionsGuard } from 'src/common/guards/permissions.guard';
 
 describe('PermissionsGuard — 403 AuditLog', () => {
   let auditLogCreateCalls: Array<{
@@ -25,6 +27,28 @@ describe('PermissionsGuard — 403 AuditLog', () => {
 
   beforeEach(() => {
     auditLogCreateCalls = [];
+  });
+
+  it('does not write the authenticated email to application logs on denial', async () => {
+    const warnings: string[] = [];
+    const guard = new PermissionsGuard(
+      { getAllAndOverride: () => ['reports.export'] } as never,
+      mockPrisma as never,
+    );
+    (guard as unknown as { logger: { warn: (message: string) => void } }).logger = {
+      warn: (message) => warnings.push(message),
+    };
+    const context = createMockContext({
+      user: {
+        sub: 'test-user-id', email: 'private-person@example.com', role: 'viewer',
+        permissions: ['reports.read'], sessionId: 'session-id',
+      },
+    }) as never;
+
+    assert.throws(() => guard.canActivate(context), ForbiddenException);
+    assert.equal(warnings.length, 1);
+    assert.equal(warnings[0].includes('private-person@example.com'), false);
+    assert.equal(warnings[0].includes('test-user-id'), false);
   });
 
   function createMockContext(overrides: {

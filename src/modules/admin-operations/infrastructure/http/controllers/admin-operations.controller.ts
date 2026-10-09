@@ -27,6 +27,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { parseBoundedPositiveInteger, parsePageSize } from 'src/common/utils/pagination.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AUDIT_REPOSITORY,
@@ -261,8 +262,14 @@ export class AdminOperationsController {
   ) {}
 
   private pagination(query: PaginationQuery) {
-    const page = Math.max(Number(query.page ?? 1) || 1, 1);
-    const limit = Math.min(Math.max(Number(query.limit ?? 20) || 20, 1), 100);
+    const page = parseBoundedPositiveInteger(query.page, 'page', 1, 10000);
+    const limit = parsePageSize(query.limit);
+    if (query.search && query.search.length > 200) {
+      throw new BadRequestException('search excede el límite permitido.');
+    }
+    if (query.direction && !['asc', 'desc'].includes(query.direction)) {
+      throw new BadRequestException('direction debe ser asc o desc.');
+    }
     return { page, limit, skip: (page - 1) * limit };
   }
 
@@ -280,6 +287,11 @@ export class AdminOperationsController {
   private maskPhone(phone: string | null | undefined) {
     if (!phone) return null;
     return phone.length <= 4 ? '****' : `${phone.slice(0, 3)}***${phone.slice(-2)}`;
+  }
+
+  private maskName(name: string) {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    return parts.map((part) => `${part.slice(0, 1)}***`).join(' ') || '[PROTECTED]';
   }
 
   private sanitizeSettings(payload: Record<string, unknown>) {
@@ -624,7 +636,7 @@ export class AdminOperationsController {
   }) {
     return {
       id: customer.id,
-      fullName: customer.fullName,
+      fullName: this.maskName(customer.fullName),
       email: this.maskEmail(customer.email),
       phone: this.maskPhone(customer.phone),
       city: customer.city,
@@ -798,7 +810,7 @@ export class AdminOperationsController {
       productionState: guide.productionState,
       autoShippingStatus: typeof packageSnapshot.autoShippingStatus === 'string'
         ? packageSnapshot.autoShippingStatus
-        : shipment.rawProviderStatus,
+        : null,
       selectedCarrierReason: this.selectedCarrierReason(shipment.packageSnapshot),
       labelStatus: this.asRecord(packageSnapshot.guide).labelStatus ?? null,
       status: shipment.status,
@@ -806,20 +818,13 @@ export class AdminOperationsController {
       currency: shipment.currency,
       trackingNumber: shipment.trackingNumber,
       routeNumber: shipment.routeNumber,
-      labelUrl: shipment.labelUrl,
-      providerShipmentId: shipment.providerShipmentId,
-      providerReference: shipment.providerReference,
+      hasLabel: Boolean(shipment.labelUrl),
       estimatedDeliveryDate: shipment.estimatedDeliveryDate,
-      rawProviderStatus: shipment.rawProviderStatus,
-      addressSnapshot: shipment.addressSnapshot,
-      packageSnapshot: shipment.packageSnapshot,
+      hasProviderStatus: Boolean(shipment.rawProviderStatus),
       lastSyncAt: shipment.lastSyncAt,
       events: shipment.events.map((event) => ({
         id: event.id,
         status: event.status,
-        providerStatus: event.providerStatus,
-        description: event.description,
-        location: event.location,
         occurredAt: event.occurredAt,
         createdAt: event.createdAt,
       })),
@@ -886,7 +891,7 @@ export class AdminOperationsController {
     status?: OrderStatus;
     paymentStatus?: PaymentStatus;
     customer?: string;
-  }) {
+  }, @CurrentUserDecorator() actor: CurrentUser) {
     const { page, limit, skip } = this.pagination(query);
     const search = query.search?.trim();
     const where = {
@@ -926,82 +931,18 @@ export class AdminOperationsController {
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
-        customerName: order.customerName,
+        customerName: this.maskName(order.customerName),
         customerEmail: this.maskEmail(order.customerEmail),
         customerPhone: this.maskPhone(order.customerPhone),
         shippingCity: order.shippingCity,
         itemsCount: order.orderItems.length,
         paymentStatus: order.payments[0]?.status ?? null,
         paymentMethod: order.payments[0]?.gateway ?? null,
-        grandTotal: order.grandTotal.toFixed(2),
+        grandTotal: actor.permissions.includes('reports.financial.read') ? order.grandTotal.toFixed(2) : 'NO_PERMISSION',
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
       })),
       meta: { page, limit, total },
-    };
-  }
-
-  @Permissions('orders.read')
-  @Get('orders/:orderId')
-  async getAdminOrder(@Param('orderId') orderId: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        orderItems: { include: { variant: true } },
-        payments: true,
-        quotes: true,
-        shipments: true,
-      },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Pedido no encontrado.');
-    }
-
-    return {
-      id: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
-      customerName: order.customerName,
-      customerEmail: this.maskEmail(order.customerEmail),
-      customerPhone: this.maskPhone(order.customerPhone),
-      shippingAddress: order.shippingAddress,
-      shippingCity: order.shippingCity,
-      shippingNotes: order.shippingNotes,
-      subtotal: order.subtotal.toFixed(2),
-      discountTotal: order.discountTotal.toFixed(2),
-      taxTotal: order.taxTotal.toFixed(2),
-      shippingTotal: order.shippingTotal.toFixed(2),
-      grandTotal: order.grandTotal.toFixed(2),
-      items: order.orderItems.map((item) => ({
-        id: item.id,
-        sku: item.skuSnapshot,
-        name: item.variantNameSnapshot,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice.toFixed(2),
-        lineGrandTotal: item.lineGrandTotal.toFixed(2),
-      })),
-      payments: order.payments.map((payment) => ({
-        id: payment.id,
-        gateway: payment.gateway,
-        status: payment.status,
-        amount: payment.amount.toFixed(2),
-        currency: payment.currency,
-        providerReference: payment.gatewayReference,
-      })),
-      quotes: order.quotes.map((quote) => ({
-        id: quote.id,
-        quoteNumber: quote.quoteNumber,
-        status: quote.status,
-      })),
-      shipments: order.shipments.map((shipment) => ({
-        id: shipment.id,
-        provider: shipment.provider,
-        status: shipment.status,
-        trackingNumber: shipment.trackingNumber,
-      })),
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
     };
   }
 
@@ -1543,7 +1484,7 @@ export class AdminOperationsController {
   async listPayments(@Query() query: PaginationQuery & {
     status?: PaymentStatus;
     gateway?: string;
-  }) {
+  }, @CurrentUserDecorator() actor: CurrentUser) {
     const { page, limit, skip } = this.pagination(query);
     const [total, payments] = await Promise.all([
       this.prisma.payment.count({
@@ -1551,7 +1492,18 @@ export class AdminOperationsController {
       }),
       this.prisma.payment.findMany({
         where: { status: query.status, gateway: query.gateway },
-        include: { order: true },
+        select: {
+          id: true,
+          orderId: true,
+          gateway: true,
+          status: true,
+          amount: true,
+          currency: true,
+          gatewayReference: true,
+          createdAt: true,
+          updatedAt: true,
+          order: { select: { orderNumber: true } },
+        },
         orderBy: { createdAt: this.direction(query.direction) },
         skip,
         take: limit,
@@ -1565,9 +1517,9 @@ export class AdminOperationsController {
         orderNumber: payment.order.orderNumber,
         gateway: payment.gateway,
         status: payment.status,
-        amount: payment.amount.toFixed(2),
+        amount: actor.permissions.includes('reports.financial.read') ? payment.amount.toFixed(2) : 'NO_PERMISSION',
         currency: payment.currency,
-        providerReference: payment.gatewayReference,
+        providerReference: actor.permissions.includes('reports.financial.read') ? payment.gatewayReference : '[PROTECTED]',
         createdAt: payment.createdAt,
         updatedAt: payment.updatedAt,
       })),
@@ -1647,7 +1599,13 @@ export class AdminOperationsController {
     }
 
     const events = await this.prisma.webhookReceipt.findMany({
-      where: { gateway: payment.gateway },
+      where: {
+        gateway: payment.gateway,
+        payload: {
+          path: ['gatewayReference'],
+          equals: payment.gatewayReference,
+        },
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -1876,7 +1834,9 @@ export class AdminOperationsController {
     }
     const events = await this.prisma.shipmentEvent.findMany({
       where: { shipmentId },
-      orderBy: { occurredAt: 'desc' },
+      select: { id: true, status: true, occurredAt: true },
+      orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }],
+      take: 100,
     });
     return { data: events };
   }
@@ -1916,16 +1876,9 @@ export class AdminOperationsController {
 
   @Permissions('customers.read')
   @Get('customers')
-  async listCustomers(@Query() query: PaginationQuery) {
+  async listCustomers(@Query() query: PaginationQuery, @CurrentUserDecorator() actor: CurrentUser) {
     const { page, limit, skip } = this.pagination(query);
     const search = query.search?.trim();
-    const recentOrders = await this.prisma.order.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
-    for (const order of recentOrders) {
-      await this.ensureCustomerFromOrder(order);
-    }
 
     const where = {
       OR: search
@@ -1958,7 +1911,9 @@ export class AdminOperationsController {
       data: customers.map((customer) => ({
         ...this.publicCustomer(customer),
         ordersCount: statsByEmail.get(customer.email)?._count._all ?? 0,
-        totalSpent: statsByEmail.get(customer.email)?._sum.grandTotal?.toFixed(2) ?? '0.00',
+        totalSpent: actor.permissions.includes('reports.financial.read')
+          ? statsByEmail.get(customer.email)?._sum.grandTotal?.toFixed(2) ?? '0.00'
+          : 'NO_PERMISSION',
       })),
       meta: { page, limit, total },
     };
@@ -1966,10 +1921,10 @@ export class AdminOperationsController {
 
   @Permissions('customers.read')
   @Get('customers/:customerId')
-  async getCustomer(@Param('customerId') customerId: string) {
+  async getCustomer(@Param('customerId') customerId: string, @CurrentUserDecorator() actor: CurrentUser) {
     const customer = await this.prisma.customer.findUnique({
       where: { id: customerId },
-      include: { consents: { orderBy: { createdAt: 'desc' } } },
+      include: { consents: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: 100 } },
     });
 
     if (!customer) {
@@ -1978,18 +1933,21 @@ export class AdminOperationsController {
 
     const orders = await this.prisma.order.findMany({
       where: { customerEmail: customer.email },
-      include: { payments: true, orderItems: { include: { variant: true } } },
+      select: { id: true, orderNumber: true, status: true, grandTotal: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
 
     return {
       ...this.publicCustomer(customer),
+      fullName: actor.permissions.includes('customers.read_sensitive')
+        ? customer.fullName
+        : this.maskName(customer.fullName),
       orders: orders.map((order) => ({
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
-        grandTotal: order.grandTotal.toFixed(2),
+        grandTotal: actor.permissions.includes('reports.financial.read') ? order.grandTotal.toFixed(2) : 'NO_PERMISSION',
         createdAt: order.createdAt,
       })),
       consents: customer.consents.map((consent) => ({
@@ -2036,39 +1994,69 @@ export class AdminOperationsController {
 
   @Permissions('customers.read')
   @Get('customers/:customerId/orders')
-  async getCustomerOrders(@Param('customerId') customerId: string) {
+  async getCustomerOrders(
+    @Param('customerId') customerId: string,
+    @Query() query: PaginationQuery,
+    @CurrentUserDecorator() actor: CurrentUser,
+  ) {
+    const { page, limit, skip } = this.pagination(query);
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) {
       throw new NotFoundException('Cliente no encontrado.');
     }
-    const orders = await this.prisma.order.findMany({
-      where: { customerEmail: customer.email },
-      orderBy: { createdAt: 'desc' },
-    });
+    const where = { customerEmail: customer.email };
+    const [total, orders] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+    ]);
     return {
       data: orders.map((order) => ({
         id: order.id,
         orderNumber: order.orderNumber,
         status: order.status,
-        grandTotal: order.grandTotal.toFixed(2),
+        grandTotal: actor.permissions.includes('reports.financial.read') ? order.grandTotal.toFixed(2) : 'NO_PERMISSION',
         createdAt: order.createdAt,
       })),
+      meta: { page, limit, total },
     };
   }
 
   @Permissions('customers.read')
   @Get('customers/:customerId/quotes')
-  async getCustomerQuotes(@Param('customerId') customerId: string) {
+  async getCustomerQuotes(
+    @Param('customerId') customerId: string,
+    @Query() query: PaginationQuery,
+    @CurrentUserDecorator() actor: CurrentUser,
+  ) {
+    const { page, limit, skip } = this.pagination(query);
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer) {
       throw new NotFoundException('Cliente no encontrado.');
     }
-    const quotes = await this.prisma.quote.findMany({
-      where: { customerId },
-      include: { customer: true, order: true, items: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    return { customer: this.publicCustomer(customer), data: quotes.map((quote) => this.serializeQuote(quote)) };
+    const where = { customerId };
+    const [total, quotes] = await Promise.all([
+      this.prisma.quote.count({ where }),
+      this.prisma.quote.findMany({
+        where,
+        include: { customer: true, order: true, items: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+    return {
+      customer: this.publicCustomer(customer),
+      data: quotes.map((quote) => {
+        const serialized = this.serializeQuote(quote);
+        if (actor.permissions.includes('reports.financial.read')) return serialized;
+        return {
+          ...serialized,
+          subtotal: 'NO_PERMISSION',
+          items: serialized.items.map((item) => ({ ...item, unitPrice: 'NO_PERMISSION', totalPrice: 'NO_PERMISSION' })),
+        };
+      }),
+      meta: { page, limit, total },
+    };
   }
 
   @Permissions('customers.read_sensitive')
@@ -2107,18 +2095,10 @@ export class AdminOperationsController {
   @Permissions('prices.history.read')
   @Get('prices/history')
   async getPriceHistory(@Query('variantId') variantId?: string) {
-    const auditLogs = await this.prisma.auditLog.findMany({
-      where: {
-        entityType: 'variant',
-        ...(variantId ? { entityId: variantId } : {}),
-        action: { in: ['variant.price_updated', 'variant.updated'] },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    });
+    const auditLogs = await this.auditRepository.list({ entityType: 'variant', entityId: variantId, limit: 100 });
 
     return {
-      data: auditLogs.map((log) => ({
+      data: auditLogs.filter((log) => ['variant.price_updated', 'variant.updated'].includes(log.action)).map((log) => ({
         id: log.id,
         variantId: log.entityId,
         beforeData: log.beforeData,

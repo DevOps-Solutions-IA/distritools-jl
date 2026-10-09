@@ -39,6 +39,13 @@ describe('PrismaAuditRepository JSON sanitization', () => {
           cookie: 'refresh=raw-refresh-token',
           otp: '123456',
           recoveryCode: 'recovery-secret',
+          apiKey: 'provider-api-key',
+          providerPayload: { authorization: 'Bearer provider-token' },
+          rawBody: '{"customerEmail":"private@example.com"}',
+          customerEmail: 'private@example.com',
+          phone: '+573005557733',
+          shippingAddress: 'Calle 10 # 20-30',
+          documentNumber: '900123456',
         },
       },
     });
@@ -58,6 +65,40 @@ describe('PrismaAuditRepository JSON sanitization', () => {
       cookie: '[REDACTED]',
       otp: '[REDACTED]',
       recoveryCode: '[REDACTED]',
+      apiKey: '[REDACTED]',
+      providerPayload: '[REDACTED]',
+      rawBody: '[REDACTED]',
+      customerEmail: '[REDACTED]',
+      phone: '[REDACTED]',
+      shippingAddress: '[REDACTED]',
+      documentNumber: '[REDACTED]',
+    });
+  });
+
+  it('redacts PII in historical audit data when it is read', async () => {
+    const record = {
+      id: 'audit-test',
+      actorUserId: null,
+      action: 'legacy.test',
+      entityType: 'customer',
+      entityId: 'customer-test',
+      requestId: null,
+      correlationId: null,
+      beforeData: null,
+      afterData: { nested: { email: 'legacy@example.com', address: 'Calle 9 # 1-2' } },
+      ipAddress: null,
+      userAgent: null,
+      createdAt: new Date('2026-10-01T00:00:00.000Z'),
+    };
+    const repository = new PrismaAuditRepository(
+      { auditLog: { async findUnique() { return record; } } } as unknown as PrismaService,
+      new RequestContextService(),
+    );
+
+    const response = await repository.findById('audit-test');
+
+    assert.deepEqual(response?.afterData, {
+      nested: { email: '[REDACTED]', address: '[REDACTED]' },
     });
   });
 });

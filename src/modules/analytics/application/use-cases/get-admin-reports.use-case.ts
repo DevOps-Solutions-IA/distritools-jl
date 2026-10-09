@@ -1,8 +1,17 @@
-import { ForbiddenException, Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Inject, Injectable, PayloadTooLargeException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, Prisma, ShipmentStatus } from '@prisma/client';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
 import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
+import { csvCell } from 'src/modules/analytics/application/services/csv-cell-sanitizer';
+
+const MAX_REPORT_SOURCE_ROWS = 5000;
+const MAX_REPORT_MATERIALIZED_ROWS = 50000;
+const MAX_REPORT_ORDER_ITEMS = 20;
+const MAX_REPORT_PAYMENTS = 10;
+const MAX_REPORT_SHIPMENTS = 10;
+const MAX_REPORT_VARIANTS = 10;
+const MAX_REPORT_INVENTORY_ITEMS = 10;
 
 type RangeKey = 'today' | '7d' | '30d' | 'month';
 type ModuleStatus =
@@ -39,32 +48,71 @@ interface ExportQuery extends ReportQuery {
 }
 
 type OrderForReports = Prisma.OrderGetPayload<{
-  include: {
+  select: {
+    id: true;
+    orderNumber: true;
+    status: true;
+    grandTotal: true;
+    createdAt: true;
     orderItems: {
-      include: {
+      select: {
+        variantId: true;
+        variantNameSnapshot: true;
+        skuSnapshot: true;
+        quantity: true;
+        lineGrandTotal: true;
         variant: {
-          include: {
-            product: { include: { brand: true; category: true } };
-            inventoryItems: true;
+          select: {
+            product: { select: { name: true } };
           };
         };
       };
     };
-    payments: true;
-    shipments: true;
+    payments: { select: { status: true; gateway: true; amount: true; createdAt: true } };
+    shipments: { select: { status: true; trackingNumber: true; providerShipmentId: true } };
   };
 }>;
 
 type ProductForReports = Prisma.ProductGetPayload<{
-  include: {
-    brand: true;
-    category: true;
+  select: {
+    name: true;
+    isActive: true;
+    brand: { select: { name: true } };
+    category: { select: { name: true } };
     variants: {
-      include: {
-        inventoryItems: true;
-        orderItems: true;
+      select: {
+        id: true;
+        sku: true;
+        isActive: true;
+        price: true;
+        inventoryItems: {
+          select: { onHandQty: true; reservedQty: true; committedQty: true; costPrice: true };
+        };
       };
     };
+  };
+}>;
+
+type ShipmentForReports = Prisma.ShipmentGetPayload<{
+  select: {
+    id: true;
+    createdAt: true;
+    status: true;
+    provider: true;
+    trackingNumber: true;
+    providerShipmentId: true;
+    order: { select: { orderNumber: true } };
+  };
+}>;
+
+type FailedNotificationForReports = Prisma.NotificationGetPayload<{
+  select: {
+    eventName: true;
+    status: true;
+    provider: true;
+    attempts: true;
+    lastError: true;
+    createdAt: true;
   };
 }>;
 
@@ -78,9 +126,12 @@ export class GetAdminReportsUseCase {
   async execute(actor: CurrentUser, query: ReportQuery = {}) {
     assertHasPermissions(actor.permissions, ['reports.read']);
 
+    this.validateQuery(query);
     const range = this.resolveRange(query.range);
     const from = new Date(range.from);
     const to = new Date(range.to);
+    return this.prisma.$transaction(async (tx) => {
+    await this.assertMaterializationBudget(tx, from, to);
     const [
       orders,
       products,
@@ -89,60 +140,115 @@ export class GetAdminReportsUseCase {
       audit,
       shipments,
     ] = await Promise.all([
-      this.prisma.order.findMany({
+      tx.order.findMany({
         where: { createdAt: { gte: from, lte: to } },
-        include: {
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          grandTotal: true,
+          createdAt: true,
           orderItems: {
-            include: {
+            select: {
+              variantId: true,
+              variantNameSnapshot: true,
+              skuSnapshot: true,
+              quantity: true,
+              lineGrandTotal: true,
               variant: {
-                include: {
-                  product: { include: { brand: true, category: true } },
-                  inventoryItems: true,
+                select: {
+                  product: { select: { name: true } },
                 },
               },
             },
+            orderBy: [{ id: 'asc' }],
+            take: MAX_REPORT_ORDER_ITEMS + 1,
           },
-          payments: true,
-          shipments: true,
+          payments: {
+            select: { status: true, gateway: true, amount: true, createdAt: true },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            take: MAX_REPORT_PAYMENTS + 1,
+          },
+          shipments: {
+            select: { status: true, trackingNumber: true, providerShipmentId: true },
+            orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+            take: MAX_REPORT_SHIPMENTS + 1,
+          },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: MAX_REPORT_SOURCE_ROWS + 1,
       }),
-      this.prisma.product.findMany({
-        include: {
-          brand: true,
-          category: true,
+      tx.product.findMany({
+        select: {
+          name: true,
+          isActive: true,
+          brand: { select: { name: true } },
+          category: { select: { name: true } },
           variants: {
-            include: {
-              inventoryItems: true,
-              orderItems: true,
+            select: {
+              id: true,
+              sku: true,
+              isActive: true,
+              price: true,
+              inventoryItems: {
+                select: { onHandQty: true, reservedQty: true, committedQty: true, costPrice: true },
+                orderBy: [{ id: 'asc' }],
+                take: MAX_REPORT_INVENTORY_ITEMS + 1,
+              },
             },
+            orderBy: [{ id: 'asc' }],
+            take: MAX_REPORT_VARIANTS + 1,
           },
         },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: MAX_REPORT_SOURCE_ROWS + 1,
       }),
-      this.prisma.notification.groupBy({
+      tx.notification.groupBy({
         by: ['status'],
         _count: { status: true },
       }),
-      this.prisma.notification.findMany({
+      tx.notification.findMany({
         where: { status: 'failed', createdAt: { gte: from, lte: to } },
         orderBy: { createdAt: 'desc' },
         take: 80,
+        select: { eventName: true, status: true, provider: true, attempts: true, lastError: true, createdAt: true },
       }),
-      this.prisma.auditLog.findMany({
+      tx.auditLog.findMany({
         where: {
           createdAt: { gte: from, lte: to },
           ...(query.module ? { entityType: query.module } : {}),
         },
-        include: { actor: true },
-        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, actor: { select: { email: true } }, action: true, entityType: true,
+          entityId: true, createdAt: true,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 80,
       }),
-      this.prisma.shipment.findMany({
+      tx.shipment.findMany({
         where: { createdAt: { gte: from, lte: to } },
-        include: { order: true },
-        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, createdAt: true, status: true, provider: true, trackingNumber: true,
+          providerShipmentId: true, order: { select: { orderNumber: true } },
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: MAX_REPORT_SOURCE_ROWS + 1,
       }),
     ]);
+
+    if ([orders, products, shipments].some((rows) => rows.length > MAX_REPORT_SOURCE_ROWS)) {
+      throw new PayloadTooLargeException('El rango supera el límite operativo del reporte. Reduzca el rango o aplique filtros.');
+    }
+    const hasOversizedRelations = orders.some((order) =>
+      order.orderItems.length > MAX_REPORT_ORDER_ITEMS ||
+      order.payments.length > MAX_REPORT_PAYMENTS ||
+      order.shipments.length > MAX_REPORT_SHIPMENTS
+    ) || products.some((product) => product.variants.some((variant) =>
+      variant.inventoryItems.length > MAX_REPORT_INVENTORY_ITEMS,
+    ));
+    if (hasOversizedRelations || products.some((product) => product.variants.length > MAX_REPORT_VARIANTS)) {
+      throw new PayloadTooLargeException('Una relación supera el límite operativo del reporte. Reduzca el rango o revise el catálogo.');
+    }
 
     const filteredOrders = orders.filter((order) => {
       if (query.status && order.status !== query.status) return false;
@@ -155,9 +261,9 @@ export class GetAdminReportsUseCase {
     );
     const readiness = this.buildReadiness();
     const inventory = this.buildInventoryReport(products);
-    const sales = this.buildSalesReport(filteredOrders, actor.permissions);
-    const ordersReport = this.buildOrdersReport(filteredOrders);
-    const paymentsReport = this.buildPaymentsReport(payments);
+    const sales = this.buildSalesReport(filteredOrders, actor.permissions, products);
+    const ordersReport = this.buildOrdersReport(filteredOrders, actor.permissions);
+    const paymentsReport = this.buildPaymentsReport(payments, actor.permissions);
     const shipping = this.buildShippingReport(filteredOrders, shipments);
     const notifications = this.buildNotificationsReport(notificationsByStatus, notificationsFailed);
     const auditReport = this.buildAuditReport(audit);
@@ -213,21 +319,44 @@ export class GetAdminReportsUseCase {
         enabled: actor.permissions.includes('reports.export'),
       },
     };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
+  }
+
+  private async assertMaterializationBudget(tx: Prisma.TransactionClient, from: Date, to: Date): Promise<void> {
+    const dateFilter = { createdAt: { gte: from, lte: to } };
+    const [orders, orderItems, payments, orderShipments, products, variants, inventoryItems, shipments] = await Promise.all([
+      tx.order.count({ where: dateFilter }),
+      tx.orderItem.count({ where: { order: dateFilter } }),
+      tx.payment.count({ where: { order: dateFilter } }),
+      tx.shipment.count({ where: { order: dateFilter } }),
+      tx.product.count(),
+      tx.variant.count(),
+      tx.inventoryItem.count(),
+      tx.shipment.count({ where: dateFilter }),
+    ]);
+    const materializedRows = orders + orderItems + payments + orderShipments + products + variants + inventoryItems + shipments;
+    if (materializedRows > MAX_REPORT_MATERIALIZED_ROWS) {
+      throw new PayloadTooLargeException('El volumen total supera el presupuesto del reporte. Reduzca el rango o aplique filtros.');
+    }
   }
 
   async buildExport(actor: CurrentUser, query: ExportQuery = {}) {
     assertHasPermissions(actor.permissions, ['reports.export']);
-    if (query.includePii && !actor.permissions.includes('customers.read_sensitive')) {
-      throw new ForbiddenException('Exportar PII requiere customers.read_sensitive.');
+    this.validateQuery(query);
+    if (query.includePii) {
+      throw new ForbiddenException('La exportación de PII permanece deshabilitada por política.');
     }
     const type = this.reportType(query.type);
-    if (type === 'sales' && !actor.permissions.includes('reports.financial.read')) {
+    if (['sales', 'payments', 'orders'].includes(type) && !actor.permissions.includes('reports.financial.read')) {
       throw new ForbiddenException('El reporte financiero requiere reports.financial.read.');
+    }
+    if (type === 'audit' && !actor.permissions.includes('audit.export')) {
+      throw new ForbiddenException('Exportar auditoría requiere audit.export.');
     }
 
     const report = await this.execute(actor, query);
     const rows = this.exportRows(type, report).slice(0, 1000);
-    const format = query.format === 'pdf' ? 'pdf' : 'csv';
+    const format = query.format ?? 'csv';
     return {
       type,
       rows,
@@ -254,17 +383,21 @@ export class GetAdminReportsUseCase {
     };
   }
 
-  private buildSalesReport(orders: OrderForReports[], permissions: string[]) {
+  private buildSalesReport(orders: OrderForReports[], permissions: string[], products: ProductForReports[]) {
     const financialAllowed = permissions.includes('reports.financial.read');
     const totalSales = orders.reduce((sum, order) => sum + Number(order.grandTotal), 0);
     const items = orders.flatMap((order) => order.orderItems);
+    const costByVariant = new Map(products.flatMap((product) => product.variants.map((variant) => [
+      variant.id,
+      variant.inventoryItems.find((inventoryItem) => inventoryItem.costPrice !== null)?.costPrice ?? null,
+    ] as const)));
     const missingCostLines = items.filter((item) =>
-      item.variant.inventoryItems.every((inventoryItem) => inventoryItem.costPrice === null),
+      costByVariant.get(item.variantId) == null,
     );
     const canCalculateMargin = financialAllowed && items.length > 0 && missingCostLines.length === 0;
     const totalCost = canCalculateMargin
       ? items.reduce((sum, item) => {
-        const cost = Number(item.variant.inventoryItems[0]?.costPrice ?? 0);
+        const cost = Number(costByVariant.get(item.variantId) ?? 0);
         return sum + cost * item.quantity;
       }, 0)
       : null;
@@ -292,7 +425,10 @@ export class GetAdminReportsUseCase {
         marginStatus: missingCostLines.length > 0 ? 'MARGIN_UNAVAILABLE_MISSING_COSTS' : canCalculateMargin ? 'READY' : 'NO_DATA',
         missingCostLines: missingCostLines.length,
       },
-      chart: this.salesByDay(orders),
+      chart: this.salesByDay(orders).map((row) => ({
+        ...row,
+        amount: financialAllowed ? row.amount : 'NO_PERMISSION',
+      })),
       rows: Array.from(productSales.values())
         .sort((left, right) => right.revenue - left.revenue)
         .slice(0, 20)
@@ -306,7 +442,8 @@ export class GetAdminReportsUseCase {
     };
   }
 
-  private buildOrdersReport(orders: OrderForReports[]) {
+  private buildOrdersReport(orders: OrderForReports[], permissions: string[]) {
+    const financialAllowed = permissions.includes('reports.financial.read');
     return {
       kpis: {
         totalOrders: orders.length,
@@ -326,7 +463,7 @@ export class GetAdminReportsUseCase {
         status: order.status,
         paymentStatus: order.payments[0]?.status ?? 'pending',
         shippingStatus: order.shipments[0]?.status ?? 'pending_provider',
-        total: this.money(Number(order.grandTotal)),
+        total: financialAllowed ? this.money(Number(order.grandTotal)) : 'NO_PERMISSION',
         createdAt: order.createdAt.toISOString(),
         href: `/admin/pedidos?search=${encodeURIComponent(order.orderNumber)}`,
       })),
@@ -334,7 +471,14 @@ export class GetAdminReportsUseCase {
     };
   }
 
-  private buildPaymentsReport(payments: Array<Prisma.PaymentGetPayload<{}> & { orderNumber: string }>) {
+  private buildPaymentsReport(payments: Array<{
+    status: PaymentStatus;
+    gateway: string;
+    amount: Prisma.Decimal;
+    createdAt: Date;
+    orderNumber: string;
+  }>, permissions: string[]) {
+    const financialAllowed = permissions.includes('reports.financial.read');
     return {
       kpis: {
         pendingPayments: payments.filter((payment) => payment.status === PaymentStatus.pending).length,
@@ -352,7 +496,7 @@ export class GetAdminReportsUseCase {
         orderNumber: payment.orderNumber,
         status: payment.status,
         method: payment.gateway,
-        amount: this.money(Number(payment.amount)),
+        amount: financialAllowed ? this.money(Number(payment.amount)) : 'NO_PERMISSION',
         createdAt: payment.createdAt.toISOString(),
       })),
       empty: payments.length === 0,
@@ -411,7 +555,7 @@ export class GetAdminReportsUseCase {
     };
   }
 
-  private buildShippingReport(orders: OrderForReports[], shipments: Prisma.ShipmentGetPayload<{ include: { order: true } }>[]) {
+  private buildShippingReport(orders: OrderForReports[], shipments: ShipmentForReports[]) {
     const ordersWithoutGuide = orders.filter((order) =>
       !([OrderStatus.cancelled, OrderStatus.refunded, OrderStatus.delivered] as OrderStatus[]).includes(order.status) &&
       !order.shipments.some((shipment) => shipment.trackingNumber || shipment.providerShipmentId),
@@ -456,7 +600,7 @@ export class GetAdminReportsUseCase {
 
   private buildNotificationsReport(
     statusRows: Array<{ status: string; _count: { status: number } }>,
-    failedNotifications: Prisma.NotificationGetPayload<{}>[],
+    failedNotifications: FailedNotificationForReports[],
   ) {
     const counts = Object.fromEntries(statusRows.map((row) => [row.status, row._count.status]));
     return {
@@ -472,14 +616,20 @@ export class GetAdminReportsUseCase {
         status: notification.status,
         provider: notification.provider,
         attempts: notification.attempts,
-        lastError: this.safeText(notification.lastError ?? 'Sin detalle'),
+          lastError: this.safeErrorCode(notification.lastError),
         createdAt: notification.createdAt.toISOString(),
       })),
       empty: statusRows.length === 0,
     };
   }
 
-  private buildAuditReport(audit: Array<Prisma.AuditLogGetPayload<{ include: { actor: true } }>>) {
+  private buildAuditReport(audit: Array<{
+    action: string;
+    entityType: string;
+    entityId: string;
+    createdAt: Date;
+    actor: { email: string } | null;
+  }>) {
     return {
       kpis: {
         auditEvents: audit.length,
@@ -571,7 +721,9 @@ export class GetAdminReportsUseCase {
 
   private reportType(value?: string): ReportType {
     const allowed: ReportType[] = ['summary', 'sales', 'orders', 'payments', 'inventory', 'shipping', 'notifications', 'readiness', 'audit'];
-    return allowed.includes(value as ReportType) ? value as ReportType : 'summary';
+    if (value === undefined) return 'summary';
+    if (!allowed.includes(value as ReportType)) throw new BadRequestException('Tipo de reporte no permitido.');
+    return value as ReportType;
   }
 
   private toCsv(rows: Array<Record<string, unknown>>, metadata?: {
@@ -585,14 +737,14 @@ export class GetAdminReportsUseCase {
     const headers = Array.from(new Set(normalized.flatMap((row) => Object.keys(row))));
     const lines = [
       ...(metadata ? [
-        `title,${this.csvCell(metadata.title)}`,
-        `range,${this.csvCell(metadata.range)}`,
-        `generatedAt,${this.csvCell(generatedAt)}`,
-        `user,${this.csvCell(metadata.actor)}`,
-        `filters,${this.csvCell(JSON.stringify(metadata.filters))}`,
+        `title,${csvCell(metadata.title)}`,
+        `range,${csvCell(metadata.range)}`,
+        `generatedAt,${csvCell(generatedAt)}`,
+        `user,${csvCell(metadata.actor)}`,
+        `filters,${csvCell(JSON.stringify(metadata.filters))}`,
       ] : []),
       headers.join(','),
-      ...normalized.map((row) => headers.map((header) => this.csvCell(row[header])).join(',')),
+      ...normalized.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
     ];
     return lines.join('\n');
   }
@@ -697,8 +849,10 @@ export class GetAdminReportsUseCase {
       label = 'Mes actual';
       from.setDate(1);
       from.setHours(0, 0, 0, 0);
-    } else {
+    } else if (range === undefined || range === '30d') {
       from.setDate(from.getDate() - 30);
+    } else {
+      throw new BadRequestException('Rango de reporte no permitido.');
     }
     return { key, label, from: from.toISOString(), to: now.toISOString() };
   }
@@ -734,8 +888,33 @@ export class GetAdminReportsUseCase {
     return `${local.slice(0, 2)}***@${domain}`;
   }
 
-  private csvCell(value: unknown) {
-    const text = Array.isArray(value) ? value.join(' | ') : String(value ?? '');
-    return `"${this.safeText(text).replace(/"/g, '""')}"`;
+  private safeErrorCode(value: string | null) {
+    if (!value) return 'Sin detalle';
+    return /^[A-Z][A-Z0-9_-]{0,79}$/.test(value) ? value : '[DETAILS_REDACTED]';
   }
+
+  private validateQuery(query: ReportQuery & { type?: string; format?: string; includePii?: boolean }) {
+    if (query.range !== undefined && !['today', '7d', '30d', 'month'].includes(query.range)) {
+      throw new BadRequestException('Rango de reporte no permitido.');
+    }
+    if (query.status !== undefined && !Object.values(OrderStatus).includes(query.status as OrderStatus)) {
+      throw new BadRequestException('Estado de pedido no permitido.');
+    }
+    if (query.paymentStatus !== undefined && !Object.values(PaymentStatus).includes(query.paymentStatus as PaymentStatus)) {
+      throw new BadRequestException('Estado de pago no permitido.');
+    }
+    if (query.shippingStatus !== undefined && !Object.values(ShipmentStatus).includes(query.shippingStatus as ShipmentStatus)) {
+      throw new BadRequestException('Estado de envío no permitido.');
+    }
+    for (const value of [query.module, query.status, query.paymentStatus, query.shippingStatus]) {
+      if (value !== undefined && value.length > 80) throw new BadRequestException('Filtro excede el límite permitido.');
+    }
+    if (query.format !== undefined && !['csv', 'pdf'].includes(query.format)) {
+      throw new BadRequestException('Formato de exportación no permitido.');
+    }
+    if (query.includePii !== undefined && typeof query.includePii !== 'boolean') {
+      throw new BadRequestException('includePii debe ser booleano.');
+    }
+  }
+
 }

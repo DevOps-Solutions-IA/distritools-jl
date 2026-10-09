@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { parsePageSize } from 'src/common/utils/pagination.util';
 import { ListNotificationsUseCase } from 'src/modules/notifications/application/use-cases/list-notifications.use-case';
 
 @ApiTags('notifications')
@@ -22,7 +23,7 @@ export class NotificationsController {
   ) {
     return this.listNotificationsUseCase.execute(
       actor,
-      limit ? Number(limit) : undefined,
+      parsePageSize(limit, 50),
     );
   }
 }

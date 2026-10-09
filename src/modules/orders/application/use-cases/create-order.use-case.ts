@@ -312,6 +312,7 @@ export class CreateOrderUseCase {
     return {
       order: orderEntity.toAdminResponse(
         order.items.map((item) => OrderItemEntity.fromState(item).toResponse()),
+        { sensitive: false, financial: true },
       ),
       trackingCode: order.duplicate
         ? this.orderTrackingCodeService.create(order.order.orderNumber)

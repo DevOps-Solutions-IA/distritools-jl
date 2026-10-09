@@ -84,31 +84,44 @@ export class OrderEntity {
     return phone.length <= 4 ? '****' : `${phone.slice(0, 3)}***${phone.slice(-2)}`;
   }
 
-  toAdminResponse(orderItems: unknown[]) {
+  toAdminResponse(orderItems: unknown[], options: { sensitive: boolean; financial: boolean }) {
     return {
       id: this.state.id,
       orderNumber: this.state.orderNumber,
       status: this.state.status,
       customer: {
-        name: this.state.customerName,
+        name: options.sensitive ? this.state.customerName : this.maskName(this.state.customerName),
         email: this.maskEmail(this.state.customerEmail),
         phone: this.maskPhone(this.state.customerPhone),
       },
       shipping: {
-        address: 'Dirección protegida',
+        address: options.sensitive ? this.state.shippingAddress : 'Dirección protegida',
         city: this.state.shippingCity,
-        notes: this.state.shippingNotes,
+        notes: options.sensitive ? this.state.shippingNotes : '[PROTECTED]',
       },
       totals: {
-        subtotal: this.state.subtotal,
-        discountTotal: this.state.discountTotal,
-        taxTotal: this.state.taxTotal,
-        shippingTotal: this.state.shippingTotal,
-        grandTotal: this.state.grandTotal,
+        subtotal: options.financial ? this.state.subtotal : 'NO_PERMISSION',
+        discountTotal: options.financial ? this.state.discountTotal : 'NO_PERMISSION',
+        taxTotal: options.financial ? this.state.taxTotal : 'NO_PERMISSION',
+        shippingTotal: options.financial ? this.state.shippingTotal : 'NO_PERMISSION',
+        grandTotal: options.financial ? this.state.grandTotal : 'NO_PERMISSION',
       },
-      items: orderItems,
+      items: options.financial
+        ? orderItems
+        : (orderItems as Array<Record<string, unknown>>).map((item) => ({
+            ...item,
+            unitPrice: 'NO_PERMISSION',
+            lineSubtotal: 'NO_PERMISSION',
+            lineTaxTotal: 'NO_PERMISSION',
+            lineGrandTotal: 'NO_PERMISSION',
+            lineDiscountTotal: 'NO_PERMISSION',
+          })),
       createdAt: this.state.createdAt,
       updatedAt: this.state.updatedAt,
     };
+  }
+
+  private maskName(name: string) {
+    return name.trim().split(/\s+/).filter(Boolean).map((part) => `${part[0]}***`).join(' ') || '[PROTECTED]';
   }
 }

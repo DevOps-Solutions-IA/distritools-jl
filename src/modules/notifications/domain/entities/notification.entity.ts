@@ -36,16 +36,26 @@ export class NotificationEntity {
   }
 
   toResponse() {
-    const payload =
-      this.state.payload && typeof this.state.payload === 'object'
-        ? sanitizeNotificationPayload(this.state.payload as Record<string, unknown>)
-        : this.state.payload;
-
     return {
-      ...this.state,
+      id: this.state.id,
+      eventName: this.state.eventName,
+      channel: this.state.channel,
       recipient: maskRecipient(this.state.recipient),
-      payload,
+      subject: this.state.subject ? '[PROTECTED]' : null,
+      provider: this.state.provider,
+      status: this.state.status,
+      attempts: this.state.attempts,
+      lastError: this.safeErrorCode(this.state.lastError),
+      sentAt: this.state.sentAt,
+      failedAt: this.state.failedAt,
+      createdAt: this.state.createdAt,
+      updatedAt: this.state.updatedAt,
     };
+  }
+
+  private safeErrorCode(value: string | null): string | null {
+    if (!value) return null;
+    return /^[A-Z][A-Z0-9_-]{0,79}$/.test(value) ? value : '[DETAILS_REDACTED]';
   }
 }
 
@@ -65,24 +75,4 @@ function maskRecipient(recipient: string): string {
   }
 
   return `${digits.slice(0, 3)}***${digits.slice(-2)}`;
-}
-
-function sanitizeNotificationPayload(payload: Record<string, unknown>) {
-  const sanitized: Record<string, unknown> = { ...payload };
-
-  for (const key of ['customerEmail', 'customerPhone', 'email', 'phone', 'token', 'secret']) {
-    if (typeof sanitized[key] === 'string') {
-      sanitized[key] = key.toLowerCase().includes('email')
-        ? maskRecipient(sanitized[key])
-        : '[redacted]';
-    }
-  }
-
-  for (const key of ['orderId', 'customerId', 'userId', 'sessionId']) {
-    if (key in sanitized) {
-      delete sanitized[key];
-    }
-  }
-
-  return sanitized;
 }

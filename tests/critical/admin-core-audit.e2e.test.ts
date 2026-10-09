@@ -293,6 +293,107 @@ describe('Enterprise admin core audit guards', () => {
     await app.close();
   });
 
+  it('enforces financial report permissions and keeps PII export disabled', async () => {
+    const { app, http, seeded, adminToken } = await boot();
+    const createdOrder = await http.post('/api/v1/orders').send({
+      customer: { fullName: 'Financial Report Buyer', email: 'financial-report@example.com', phone: '3005554444' },
+      shipping: { address: 'Calle 7', city: 'Cali' },
+      items: [{ variantId: seeded.inventory.variantId, warehouseId: seeded.inventory.warehouseId, quantity: 1 }],
+    });
+    assert.equal(createdOrder.status, 201);
+    await prisma.payment.create({
+      data: {
+        id: uuidv7(), orderId: createdOrder.body.order.id, gateway: 'cash_on_delivery',
+        gatewayReference: `report-${createdOrder.body.order.orderNumber}`, amount: '12345.00',
+        currency: 'COP', status: 'pending',
+      },
+    });
+    const reportRead = await prisma.permission.findUniqueOrThrow({ where: { slug: 'reports.read' } });
+    const reportExport = await prisma.permission.findUniqueOrThrow({ where: { slug: 'reports.export' } });
+    const dashboardRead = await prisma.permission.findUniqueOrThrow({ where: { slug: 'dashboard.read' } });
+    const paymentsRead = await prisma.permission.findUniqueOrThrow({ where: { slug: 'payments.read' } });
+    const customersExport = await prisma.permission.findUniqueOrThrow({ where: { slug: 'customers.export' } });
+    await prisma.rolePermission.createMany({
+      data: [reportRead, reportExport, dashboardRead, paymentsRead, customersExport].map((permission) => ({
+        id: uuidv7(), roleId: seeded.roles.limitedRoleId, permissionId: permission.id,
+      })),
+      skipDuplicates: true,
+    });
+    const viewer = await loginAsAdmin(http, seeded.users.viewerEmail, seeded.users.viewerPassword, seeded.users.twoFactorSecret);
+    const headers = { Authorization: `Bearer ${viewer.accessToken}` };
+
+    const summary = await http.get('/api/v1/admin/reports/summary').set(headers);
+    assert.equal(summary.status, 200);
+    assert.equal(summary.body.reports.payments.rows.every((row: { amount: string }) => row.amount === 'NO_PERMISSION'), true);
+    assert.equal(summary.body.reports.orders.rows.every((row: { total: string }) => row.total === 'NO_PERMISSION'), true);
+    assert.equal(summary.body.reports.sales.chart.every((row: { amount: string }) => row.amount === 'NO_PERMISSION'), true);
+
+    const dashboard = await http.get('/api/v1/admin/dashboard').set(headers);
+    assert.equal(dashboard.status, 200);
+    assert.equal(dashboard.body.kpis.sales.totalSalesAmount, 'NO_PERMISSION');
+    assert.equal(dashboard.body.recentActivity.payments.every((row: { amount: string }) => row.amount === 'NO_PERMISSION'), true);
+
+    const paymentList = await http.get('/api/v1/admin/payments').set(headers);
+    assert.equal(paymentList.status, 200);
+    assert.equal(paymentList.body.data.every((row: { amount: string }) => row.amount === 'NO_PERMISSION'), true);
+    const paymentDetail = await http.get(`/api/v1/admin/payments/${(await prisma.payment.findFirstOrThrow()).id}`).set(headers);
+    assert.equal(paymentDetail.status, 403);
+
+    const payments = await http.get('/api/v1/admin/reports/payments').set(headers);
+    assert.equal(payments.status, 403);
+    const paymentExport = await http.post('/api/v1/admin/reports/export').set(headers).send({ type: 'payments' });
+    assert.equal(paymentExport.status, 403);
+
+    const piiExport = await http
+      .post('/api/v1/admin/reports/export')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ type: 'summary', includePii: true });
+    assert.equal(piiExport.status, 403);
+    assert.equal(JSON.stringify(piiExport.body).includes('private@example.com'), false);
+
+    const auditExport = await http.post('/api/v1/admin/reports/export')
+      .set(headers)
+      .send({ type: 'audit', format: 'csv' });
+    assert.equal(auditExport.status, 403);
+
+    const customerExport = await http.post('/api/v1/admin/customers/export').set(headers).send({});
+    assert.equal(customerExport.status, 201);
+    assert.equal(customerExport.body.exported, false);
+    assert.equal(await prisma.auditLog.count({ where: { action: 'customer.export_blocked' } }) >= 1, true);
+
+    const financial = await prisma.permission.findUniqueOrThrow({ where: { slug: 'reports.financial.read' } });
+    await prisma.rolePermission.create({
+      data: { id: uuidv7(), roleId: seeded.roles.limitedRoleId, permissionId: financial.id },
+    });
+    const financialViewer = await loginAsAdmin(http, seeded.users.viewerEmail, seeded.users.viewerPassword, seeded.users.twoFactorSecret);
+    const permittedPayments = await http.get('/api/v1/admin/reports/payments')
+      .set('Authorization', `Bearer ${financialViewer.accessToken}`);
+    assert.equal(permittedPayments.status, 200);
+    assert.equal(permittedPayments.body.rows.some((row: { amount: string }) => row.amount === '12345.00'), true);
+
+    const invalidRange = await http.get('/api/v1/admin/reports/summary?range=all-time')
+      .set('Authorization', `Bearer ${adminToken}`);
+    assert.equal(invalidRange.status, 400);
+
+    await app.close();
+  });
+
+  it('neutralizes spreadsheet formulas in a real CSV export', async () => {
+    const { app, http, seeded, adminToken } = await boot();
+    await prisma.product.update({
+      where: { id: seeded.inventory.productId },
+      data: { name: '=HYPERLINK("https://invalid.example","open")' },
+    });
+    const response = await http.post('/api/v1/admin/reports/export')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ type: 'inventory', format: 'csv', range: '30d' });
+    assert.equal(response.status, 200);
+    assert.match(response.text, /'=HYPERLINK/);
+    assert.equal(response.text.includes('"=HYPERLINK'), false);
+
+    await app.close();
+  });
+
   it('keeps public tracking free of PII and blocks production readiness with known missing providers', async () => {
     const { app, http, seeded, adminToken } = await boot();
 

@@ -24,7 +24,7 @@ export class GetPaymentStatusUseCase {
 
   async execute(input: GetPaymentStatusInput) {
     if (input.actor) {
-      assertHasPermissions(input.actor.permissions, ['payments.read']);
+      assertHasPermissions(input.actor.permissions, ['payments.read', 'reports.financial.read']);
     }
 
     const paymentRecord = await this.paymentRepository.findById(input.paymentId);

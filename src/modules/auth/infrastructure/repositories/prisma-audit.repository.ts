@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { RequestContextService } from 'src/common/request/request-context.service';
+import { parsePageSize } from 'src/common/utils/pagination.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AuditLogQuery,
@@ -45,6 +46,7 @@ export class PrismaAuditRepository implements AuditRepository {
     for (const key of Object.keys(redacted)) {
       const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (
+        this.isSensitiveField(normalizedKey) ||
         normalizedKey.includes('secret') ||
         normalizedKey.includes('token') ||
         normalizedKey.includes('password') ||
@@ -54,8 +56,13 @@ export class PrismaAuditRepository implements AuditRepository {
         normalizedKey.includes('totp') ||
         normalizedKey.includes('recovery') ||
         normalizedKey.includes('challenge') ||
+        normalizedKey.includes('credential') ||
+        normalizedKey.includes('apikey') ||
+        normalizedKey.includes('accesskey') ||
+        normalizedKey.includes('privatekey') ||
         normalizedKey === 'signature' ||
-        normalizedKey === 'rawpayload'
+        normalizedKey.includes('payload') ||
+        normalizedKey === 'rawbody'
       ) {
         redacted[key] = '[REDACTED]';
         continue;
@@ -65,6 +72,13 @@ export class PrismaAuditRepository implements AuditRepository {
     }
 
     return redacted;
+  }
+
+  private isSensitiveField(normalizedKey: string): boolean {
+    return [
+      'email', 'phone', 'mobile', 'address', 'document', 'customername', 'fullname',
+      'firstname', 'lastname', 'recipient',
+    ].some((field) => normalizedKey.includes(field));
   }
 
   private mapRecord(record: {
@@ -89,8 +103,8 @@ export class PrismaAuditRepository implements AuditRepository {
       entityId: record.entityId,
       requestId: record.requestId,
       correlationId: record.correlationId,
-      beforeData: record.beforeData,
-      afterData: record.afterData,
+      beforeData: this.sanitizePayload(record.beforeData),
+      afterData: this.sanitizePayload(record.afterData),
       ipAddress: record.ipAddress,
       userAgent: record.userAgent,
       createdAt: record.createdAt,
@@ -121,6 +135,7 @@ export class PrismaAuditRepository implements AuditRepository {
   }
 
   async list(query: AuditLogQuery = {}): Promise<AuditLogRecord[]> {
+    const limit = parsePageSize(query.limit, 50);
     const records = await this.prisma.auditLog.findMany({
       where: {
         action: query.action,
@@ -130,7 +145,7 @@ export class PrismaAuditRepository implements AuditRepository {
       orderBy: {
         createdAt: 'desc',
       },
-      take: query.limit ?? 50,
+      take: limit,
     });
 
     return records.map((record) => this.mapRecord(record));
