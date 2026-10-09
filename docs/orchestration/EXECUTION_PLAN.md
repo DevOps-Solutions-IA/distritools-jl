@@ -40,7 +40,7 @@ Sub-runs: EX-06.1 Inventory Reservation, Commit and Release Invariants PASS/MERG
 ## EX-07 — Internal operations: admin, analytics, search, notifications, CRM/content — ACTIVE
 Goal: stabilize admin APIs, reports/exports, PII masking, search/reindex, notification persistence/retry, CRM/quotes, legal/footer workflows, and split highest-risk admin controller seams.
 Exit: operational workflows are test-backed and fail closed.
-Sub-runs: EX-07.1 Admin Operations Access, PII and Export Safety is PLANNED next. Runbook docs/orchestration/runs/EX-07.1-admin-access-pii-exports-plan.md.
+Sub-runs: EX-07.1 Admin Operations Access, PII and Export Safety PASS/MERGED via PR #40 (7/7 exact-head CI, product merge e6ae83aeb99ece1d5961c90eeefd712215028728). EX-07.2 Notification Persistence, Recovery and Consumer Disposition is PLANNED next. Runbook docs/orchestration/runs/EX-07.2-notification-delivery-recovery-plan.md. order.paid business template/recipient/channel remains BLOCKED_DECISION; no fake durable consumer or real provider activation.
 
 ## EX-08 — Admin UX and operator usability
 Goal: browser-audit admin routes, eliminate cloned-page feel, improve hierarchy/readiness/alerts/forms/tables/actions, click-test all controls, validate PDF/CSV output.

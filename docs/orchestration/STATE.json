@@ -2,12 +2,12 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "9a76cd3c072d59f0df742dd1eaa5725d25d38cc7",
-  "state_base_sha": "9a76cd3c072d59f0df742dd1eaa5725d25d38cc7",
+  "validated_product_sha": "e6ae83aeb99ece1d5961c90eeefd712215028728",
+  "state_base_sha": "e6ae83aeb99ece1d5961c90eeefd712215028728",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
-  "updated_at": "2026-10-08",
+  "updated_at": "2026-10-09",
   "phase": "internal-hardening",
-  "active_execution": "EX-07.1",
+  "active_execution": "EX-07.2",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -30,7 +30,8 @@
     "EX-05.1",
     "EX-05",
     "EX-06.1",
-    "EX-06.2"
+    "EX-06.2",
+    "EX-07.1"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -42,9 +43,9 @@
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
-    "frontend_tests": "62/62 PASS (EX-06.2 PR #38 CI 37874226272)",
-    "backend_unit_tests": "136/136 PASS (EX-06.2 PR #38 CI 37874226272)",
-    "critical_e2e": "PASS (EX-06.2 PR #38 CI: 21 files / 186 tests plus 4 environment isolation guards)",
+    "frontend_tests": "62/62 PASS (EX-07.1 PR #40 CI run 37940210860)",
+    "backend_unit_tests": "150/150 PASS (EX-07.1 PR #40 CI run 37940210860)",
+    "critical_e2e": "PASS (EX-07.1 PR #40 CI: 21 files / 190 tests, plus 4 separate environment isolation guards)",
     "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
@@ -52,25 +53,25 @@
     "frontend_high": 5,
     "frontend_moderate": 0,
     "frontend_low": 0,
-    "frontend_audit_fresh": "PASS: EX-06.2 PR #38 CI 37874226272; existing frontend tooling advisories remain; no dependency change",
+    "frontend_audit_fresh": "PASS: EX-07.1 PR #40 CI run 37940210860; inherited frontend tooling advisories unchanged, no dependency edits",
     "backend_critical": 0,
     "backend_high": 4,
     "backend_moderate": 2,
     "backend_low": 1,
-    "backend_audit_fresh": "PASS: EX-06.2 PR #38 CI 37874226272; existing Prisma/Swagger audit advisories remain; no dependency change"
+    "backend_audit_fresh": "PASS: EX-07.1 PR #40 CI run 37940210860; inherited Prisma/Swagger advisories unchanged, no dependency edits"
   },
   "current_workstreams": [
     {
-      "execution": "EX-07.1",
+      "execution": "EX-07.2",
       "parent": "EX-07",
-      "branch": "admin/ex07-1-rbac-pii-exports-2026-10",
+      "branch": "notifications/ex07-2-delivery-recovery-2026-10",
       "status": "PLANNED",
-      "objective": "Audit and harden admin sensitive reads, exports, RBAC, PII masking and audit/serialization boundaries without broad role grants or production provider activation.",
-      "user_impact": "SECURITY_ADMIN",
-      "hard_stop": "No real providers, live production changes, EX-06 financial reconciliation policy invention, low-stock producer threshold invention, PII export expansion, permissions weakening, event-bus cutover or destructive migrations.",
-      "prior": "EX-06.1/EX-06.2 internal order/inventory hardening PASS/MERGED; EX-06 parent remains decision-blocked for late approved webhook reconciliation and low-stock producer semantics. EX-06.2 product merge 9a76cd3c072d59f0df742dd1eaa5725d25d38cc7.",
-      "runbook": "docs/orchestration/runs/EX-07.1-admin-access-pii-exports-plan.md",
-      "next_action": "INICIA FASE EX-07.1"
+      "objective": "Prove internal notification persistence/recovery, consumer eligibility, retry/uncertain/parking/replay controls and protected operator status; surface order.paid template gap without inventing policy or activating providers.",
+      "user_impact": "NOTIFICATION",
+      "hard_stop": "No real providers, template/recipient invention, order.paid fake durable handler, EX-06 financial/stock policy invention, historical held replay, event-bus promotion, auth/RBAC relaxation or destructive migrations.",
+      "prior": "EX-07.1 admin RBAC, PII masking and bounded reporting/export safety PASS/MERGED via PR #40, product merge e6ae83aeb99ece1d5961c90eeefd712215028728. EX-06 payment-after-cancel reconciliation and low-stock producer remain BLOCKED_DECISION.",
+      "runbook": "docs/orchestration/runs/EX-07.2-notification-delivery-recovery-plan.md",
+      "next_action": "INICIA FASE EX-07.2"
     }
   ],
   "provider_status": {
@@ -88,7 +89,8 @@
     "GitHub branch protection/rulesets unavailable on current private-repo plan; manual PR + 7/7 exact-head governance is active until provider capability is upgraded.",
     "EX-05.1 security runtime hardening is merged; organizational approval of maximum token lifetimes and the 2FA challenge/legacy seed rollout plan remain mandatory before production GO. Multi-replica auth throttling and trusted-proxy topology are still deployment-boundary debt.",
     "EX-06 inventory.low_stock_detected producer remains BLOCKED_DECISION: Product/Inventory Operations must define authoritative threshold crossing (minStock vs reorderPoint), transition/dedup/re-arm semantics, event payload, producer owner and notification timing. No producer or cutover is authorized.",
-    "EX-06 payment reconciliation remains BLOCKED_DECISION: when cancellation wins before an approved external webhook, the order reservation is released and the payment/receipt remains pending and retryable. Product/Payments/Finance must authorize held/reconciliation versus reversal/refund/compensation and safe operator workflow; no fake approval or arbitrary terminal state."
+    "EX-06 payment reconciliation remains BLOCKED_DECISION: when cancellation wins before an approved external webhook, the order reservation is released and the payment/receipt remains pending and retryable. Product/Payments/Finance must authorize held/reconciliation versus reversal/refund/compensation and safe operator workflow; no fake approval or arbitrary terminal state.",
+    "EX-07 notification order.paid remains BLOCKED_DECISION: source registers only a legacy no-op subscriber and excludes order.paid from durable notifications. Product/Notifications/Payments must approve template, recipient/channel, trigger and payload/owner; no fake consumer or business message is authorized."
   ],
   "known_debt": [
     "PrismaService used directly in application layer",
@@ -98,15 +100,15 @@
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
   ],
   "last_transition": {
-    "execution": "EX-06.2",
+    "execution": "EX-07.1",
     "status": "MERGED",
-    "pr": 38,
-    "merge_sha": "9a76cd3c072d59f0df742dd1eaa5725d25d38cc7",
-    "validation_head_sha": "3891e6c64e0ae8f9435d802f6cb495f681d0cc6c",
-    "workflow_run": 37874226272,
-    "result": "Order request idempotency, strict mock-only payment/webhook states and raw-body verification merged after 7/7 exact-head CI, 0-behind remote diff audit. EX-06 remains business-policy-blocked for late approved webhook after cancellation and low-stock producer. EX-07.1 proceeds independently without production authorization."
+    "pr": 40,
+    "merge_sha": "e6ae83aeb99ece1d5961c90eeefd712215028728",
+    "validation_head_sha": "135caf4f465d281ac06ab10fe8ed69fe9d251014",
+    "workflow_run": 37940210860,
+    "result": "Granular admin permissions, PII masking, read-only customer list, consistent bounded reports, audit/export protections and safe DTOs merged after 7/7 exact-head CI and 0-behind audit. No production provider/cutover or broader EX-07 acceptance."
   },
-  "next_action": "INICIA FASE EX-07.1",
+  "next_action": "INICIA FASE EX-07.2",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
