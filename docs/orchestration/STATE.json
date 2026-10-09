@@ -2,12 +2,12 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "e6ae83aeb99ece1d5961c90eeefd712215028728",
-  "state_base_sha": "e6ae83aeb99ece1d5961c90eeefd712215028728",
+  "validated_product_sha": "d0862858b432d6b71de035b8e9a32c33ec088f9a",
+  "state_base_sha": "d0862858b432d6b71de035b8e9a32c33ec088f9a",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-09",
   "phase": "internal-hardening",
-  "active_execution": "EX-07.2",
+  "active_execution": "EX-07.3",
   "completed_executions": [
     "EX-00",
     "EX-01.1",
@@ -31,7 +31,8 @@
     "EX-05",
     "EX-06.1",
     "EX-06.2",
-    "EX-07.1"
+    "EX-07.1",
+    "EX-07.2"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -43,9 +44,9 @@
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
     "frontend_build": "PASS",
-    "frontend_tests": "62/62 PASS (EX-07.1 PR #40 CI run 37940210860)",
-    "backend_unit_tests": "150/150 PASS (EX-07.1 PR #40 CI run 37940210860)",
-    "critical_e2e": "PASS (EX-07.1 PR #40 CI: 21 files / 190 tests, plus 4 separate environment isolation guards)",
+    "frontend_tests": "62/62 PASS (EX-07.2 PR #42 CI 37964400434)",
+    "backend_unit_tests": "151/151 PASS (EX-07.2 PR #42 CI 37964400434)",
+    "critical_e2e": "PASS (EX-07.2 PR #42 CI: 21 files / 196 tests plus 4 environment isolation guards)",
     "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
@@ -53,25 +54,25 @@
     "frontend_high": 5,
     "frontend_moderate": 0,
     "frontend_low": 0,
-    "frontend_audit_fresh": "PASS: EX-07.1 PR #40 CI run 37940210860; inherited frontend tooling advisories unchanged, no dependency edits",
+    "frontend_audit_fresh": "PASS: EX-07.2 PR #42 CI 37964400434; inherited tooling advisories remain; no dependency change",
     "backend_critical": 0,
     "backend_high": 4,
     "backend_moderate": 2,
     "backend_low": 1,
-    "backend_audit_fresh": "PASS: EX-07.1 PR #40 CI run 37940210860; inherited Prisma/Swagger advisories unchanged, no dependency edits"
+    "backend_audit_fresh": "PASS: EX-07.2 PR #42 CI 37964400434; inherited Prisma/Swagger advisories remain; no dependency change"
   },
   "current_workstreams": [
     {
-      "execution": "EX-07.2",
+      "execution": "EX-07.3",
       "parent": "EX-07",
-      "branch": "notifications/ex07-2-delivery-recovery-2026-10",
+      "branch": "search/ex07-3-reindex-consistency-2026-10",
       "status": "PLANNED",
-      "objective": "Prove internal notification persistence/recovery, consumer eligibility, retry/uncertain/parking/replay controls and protected operator status; surface order.paid template gap without inventing policy or activating providers.",
-      "user_impact": "NOTIFICATION",
-      "hard_stop": "No real providers, template/recipient invention, order.paid fake durable handler, EX-06 financial/stock policy invention, historical held replay, event-bus promotion, auth/RBAC relaxation or destructive migrations.",
-      "prior": "EX-07.1 admin RBAC, PII masking and bounded reporting/export safety PASS/MERGED via PR #40, product merge e6ae83aeb99ece1d5961c90eeefd712215028728. EX-06 payment-after-cancel reconciliation and low-stock producer remain BLOCKED_DECISION.",
-      "runbook": "docs/orchestration/runs/EX-07.2-notification-delivery-recovery-plan.md",
-      "next_action": "INICIA FASE EX-07.2"
+      "objective": "Prove and harden catalog search/autocomplete projections, event-driven reindex idempotency, stale visibility, concurrency, bounded batches and authorized manual reindex.",
+      "user_impact": "SEARCH_CATALOG",
+      "hard_stop": "No ranking or product visibility policy invention, real providers, live production changes, payment/stock/notification business gap invention, historical held replay, event-bus cutover, auth/RBAC relaxation or destructive migrations.",
+      "prior": "EX-07.2 notification delivery recovery PASS/MERGED via PR #42, product merge d0862858b432d6b71de035b8e9a32c33ec088f9a. Three business gaps remain blocked: order.paid notification template, low-stock producer and late approved-payment reconciliation.",
+      "runbook": "docs/orchestration/runs/EX-07.3-search-reindex-plan.md",
+      "next_action": "INICIA FASE EX-07.3"
     }
   ],
   "provider_status": {
@@ -97,18 +98,19 @@
     "Admin operations controller approximately 2915 lines",
     "Several as never casts",
     "Documentation duplication and stale status files",
-    "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities"
+    "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities",
+    "EX-07.2 notification manual post-exhaustion retry and uncertain-outcome operator reconciliation remain unimplemented pending an explicit operations policy; do not blindly resend failed/uncertain notifications."
   ],
   "last_transition": {
-    "execution": "EX-07.1",
+    "execution": "EX-07.2",
     "status": "MERGED",
-    "pr": 40,
-    "merge_sha": "e6ae83aeb99ece1d5961c90eeefd712215028728",
-    "validation_head_sha": "135caf4f465d281ac06ab10fe8ed69fe9d251014",
-    "workflow_run": 37940210860,
-    "result": "Granular admin permissions, PII masking, read-only customer list, consistent bounded reports, audit/export protections and safe DTOs merged after 7/7 exact-head CI and 0-behind audit. No production provider/cutover or broader EX-07 acceptance."
+    "pr": 42,
+    "merge_sha": "d0862858b432d6b71de035b8e9a32c33ec088f9a",
+    "validation_head_sha": "5f19a1b20ca5c9c09b4e2c4b7df3ac2a6ff9caec",
+    "workflow_run": 37964400434,
+    "result": "Retained failed/completed BullMQ job reconciliation, three-claim durable retry limit, legacy stale-claim recovery and production/staging mock-provider fences merged after 7/7 exact-head CI and remote zero-behind audit. order.paid template, inventory.low_stock_detected producer and approved-webhook-after-cancellation remain BLOCKED_DECISION; real providers and production cutover remain unauthorized."
   },
-  "next_action": "INICIA FASE EX-07.2",
+  "next_action": "INICIA FASE EX-07.3",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
