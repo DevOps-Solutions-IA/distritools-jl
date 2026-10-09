@@ -16,6 +16,7 @@ test('one Redis enqueue failure opens a bounded circuit, releases the batch and 
     releaseDispatchClaim: async (id: string) => { released.push(id); },
   };
   const queue = {
+    getJob: async () => undefined,
     add: async () => { adds += 1; throw Object.assign(new Error('redis unavailable'), { code: 'ECONNREFUSED' }); },
   };
   const recovery = new NotificationDispatchRecoveryService(repository as never, queue as never);
@@ -40,7 +41,7 @@ test('shutdown stops new claims and waits only for its bounded active batch', as
     claimDispatchBatch: async () => { claimCalls += 1; return [{ id: 'notification-1', claimToken: 'claim-1' }]; },
     releaseDispatchClaim: async () => undefined,
   };
-  const queue = { add: async () => { notifyAddStarted(); return adding; } };
+  const queue = { getJob: async () => undefined, add: async () => { notifyAddStarted(); return adding; } };
   const recovery = new NotificationDispatchRecoveryService(repository as never, queue as never, 20);
   const active = recovery.recoverBatch();
   await addStarted;

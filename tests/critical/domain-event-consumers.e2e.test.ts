@@ -201,6 +201,45 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
     }
   });
 
+  it('rolls back notification intent and inbox completion when either queued write fails', async () => {
+    let fault: 'notification' | 'audit' | null = null;
+    let recoveryCalls = 0;
+    const client = prisma.$extends({ query: {
+      notification: {
+        async createMany({ args, query }) {
+          if (fault === 'notification') throw new Error('EX072_NOTIFICATION_INTENT_FAILURE');
+          return query(args);
+        },
+      },
+      notificationAuditIntent: {
+        async createMany({ args, query }) {
+          if (fault === 'audit') throw new Error('EX072_NOTIFICATION_AUDIT_INTENT_FAILURE');
+          return query(args);
+        },
+      },
+    } });
+    const inbox = new PrismaDomainEventInboxRepository(client as never);
+    const useCase = new QueueNotificationsFromEventUseCase(
+      new NotificationTemplateService(), inbox,
+      { enqueueEvent: async () => { recoveryCalls += 1; return []; } } as never,
+    );
+    const payload = {
+      orderId: randomUUID(), orderNumber: `ROLLBACK-${randomUUID()}`, trackingCode: 'TRACK-ROLLBACK', status: 'pending',
+      totals: { subtotal: '10', discountTotal: '0', taxTotal: '0', shippingTotal: '0', grandTotal: '10' },
+      customerEmail: 'synthetic@example.test', customerPhone: null, items: [],
+    };
+
+    for (const boundary of ['notification', 'audit'] as const) {
+      const message = event('order.created', payload);
+      fault = boundary;
+      await assert.rejects(useCase.execute(message), new RegExp(`EX072_${boundary === 'notification' ? 'NOTIFICATION_INTENT' : 'NOTIFICATION_AUDIT_INTENT'}_FAILURE`));
+      assert.equal(await prisma.notification.count({ where: { eventId: message.eventId } }), 0);
+      assert.equal(await prisma.domainEventInbox.count({ where: { eventId: message.eventId, consumerKey: 'notifications.v1' } }), 0);
+    }
+
+    assert.equal(recoveryCalls, 0);
+  });
+
   it('an unavailable audit sink cannot exhaust delivery attempts or strand the queued job', async () => {
     const queueName = `ex043-audit-outage-${token}`;
     const connection = redis.duplicate({ maxRetriesPerRequest: null });
@@ -555,6 +594,7 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
     const repository = new PrismaNotificationRepository(prisma as never);
     let failOnce = true;
     const queuePort = {
+      getJob: (...args: Parameters<Queue['getJob']>) => notificationQueue.getJob(...args),
       add: async (...args: Parameters<Queue['add']>) => {
         if (failOnce) { failOnce = false; throw new Error('synthetic Redis enqueue failure'); }
         return notificationQueue.add(...args);
@@ -599,6 +639,177 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
     assert.equal((await prisma.notification.findUniqueOrThrow({ where: { id } })).status, 'sent');
   });
 
+  it('reconstructs only the remaining bounded retry after Redis loses a failed notification job', async () => {
+    const eventId = randomUUID();
+    const retryId = randomUUID();
+    const exhaustedId = randomUUID();
+    await prisma.notification.createMany({ data: [
+      {
+        id: retryId, eventId, eventName: 'synthetic.retryable', channel: NotificationChannel.internal,
+        recipient: 'retryable-internal', content: 'synthetic', provider: 'internal-log',
+        status: 'failed', attempts: 1, dispatchEligible: true,
+      },
+      {
+        id: exhaustedId, eventId, eventName: 'synthetic.retryable', channel: NotificationChannel.internal,
+        recipient: 'exhausted-internal', content: 'synthetic', provider: 'internal-log',
+        status: 'failed', attempts: 3, dispatchEligible: true,
+      },
+    ] });
+
+    const repository = new PrismaNotificationRepository(prisma as never);
+    const recovery = new NotificationDispatchRecoveryService(repository, notificationQueue as never);
+    const [claimsA, claimsB] = await Promise.all([
+      repository.claimDispatchBatch(10, 30_000, eventId),
+      repository.claimDispatchBatch(10, 30_000, eventId),
+    ]);
+    const acquired = [...claimsA, ...claimsB];
+    assert.equal(acquired.length, 1, 'concurrent recovery workers cannot claim the same retry row twice');
+    await repository.releaseDispatchClaim(acquired[0].id, acquired[0].claimToken);
+    assert.deepEqual(await recovery.recoverBatch(eventId), [retryId]);
+
+    const recoveredJob = await notificationQueue.getJob(retryId);
+    assert.ok(recoveredJob, 'a missing Redis retry job is reconstructed from the durable failed row');
+    assert.equal(recoveredJob.id, retryId);
+    assert.equal(await notificationQueue.getJob(exhaustedId), undefined, 'exhausted attempts remain parked for review');
+    const claim = await repository.claimForSend(retryId, 30_000);
+    assert.ok(claim, 'the reconstructed stable job can claim the next provider attempt');
+    assert.equal((await prisma.notification.findUniqueOrThrow({ where: { id: retryId } })).attempts, 2);
+    assert.equal(await repository.claimForSend(exhaustedId, 30_000), null);
+    assert.equal(await repository.markFailedWithClaim(retryId, claim.claimToken, 'RETRY_NOT_SENT'), true);
+    await repository.flushAuditIntents(10, retryId);
+    await recoveredJob.remove();
+  });
+
+  it('reactivates a retained failed BullMQ job using its stable ID when PostgreSQL still permits a retry', async () => {
+    const eventId = randomUUID();
+    const id = randomUUID();
+    await prisma.notification.create({ data: {
+      id, eventId, eventName: 'synthetic.retained-failure', channel: NotificationChannel.internal,
+      recipient: 'retryable-internal', content: 'synthetic', provider: 'internal-log',
+      status: 'failed', attempts: 1, dispatchEligible: true,
+    } });
+
+    const failedWorkerConnection = redis.duplicate({ maxRetriesPerRequest: null });
+    connections.push(failedWorkerConnection);
+    const failedWorker = new Worker(notificationQueueName, async () => {
+      throw new Error('synthetic worker-level failure before database claim');
+    }, { connection: failedWorkerConnection, concurrency: 1 });
+    const failed = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('worker did not fail the seeded job')), 5_000);
+      failedWorker.on('failed', (job) => {
+        if (job?.id === id) { clearTimeout(timeout); resolve(); }
+      });
+    });
+    await notificationQueue.add('send-notification', { notificationId: id }, {
+      jobId: id, attempts: 1, removeOnFail: false,
+    });
+    await failed;
+    await failedWorker.close();
+
+    const retained = await notificationQueue.getJob(id);
+    assert.ok(retained);
+    assert.equal(await retained.getState(), 'failed');
+    assert.equal((await prisma.notification.findUniqueOrThrow({ where: { id } })).attempts, 1,
+      'a worker-level failure before claim does not spend a provider-attempt budget');
+
+    const recoveryA = new NotificationDispatchRecoveryService(
+      new PrismaNotificationRepository(prisma as never), notificationQueue as never,
+    );
+    const recoveryB = new NotificationDispatchRecoveryService(
+      new PrismaNotificationRepository(prisma as never), notificationQueue as never,
+    );
+    const recovered = await Promise.all([recoveryA.recoverBatch(eventId), recoveryB.recoverBatch(eventId)]);
+    assert.equal(recovered.flat().filter((notificationId) => notificationId === id).length, 1,
+      'independent recovery instances coordinate through the durable claim lease');
+    const sameJob = await notificationQueue.getJob(id);
+    assert.equal(sameJob?.id, id, 'recovery preserves the stable BullMQ job identity');
+    assert.ok(['waiting', 'delayed', 'active'].includes(await sameJob!.getState()),
+      'a retained failed job is returned to executable queue state');
+    assert.equal((await notificationQueue.getJobs(['waiting', 'delayed', 'active'])).filter((job) => job.id === id).length, 1);
+    await sameJob!.remove();
+  });
+
+  it('rebuilds a completed transport job only while DB intent remains eligible and survives re-add failure', async () => {
+    const eventId = randomUUID();
+    const id = randomUUID();
+    await prisma.notification.create({ data: {
+      id, eventId, eventName: 'synthetic.completed-transport', channel: NotificationChannel.internal,
+      recipient: 'retryable-internal', content: 'synthetic', provider: 'internal-log',
+      status: 'failed', attempts: 1, dispatchEligible: true,
+    } });
+
+    const completedWorkerConnection = redis.duplicate({ maxRetriesPerRequest: null });
+    connections.push(completedWorkerConnection);
+    const completedWorker = new Worker(notificationQueueName, async () => undefined, {
+      connection: completedWorkerConnection, concurrency: 1,
+    });
+    const completed = new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error('worker did not complete the seeded job')), 5_000);
+      completedWorker.on('completed', (job) => {
+        if (job.id === id) { clearTimeout(timeout); resolve(); }
+      });
+    });
+    await notificationQueue.add('send-notification', { notificationId: id }, {
+      jobId: id, attempts: 1, removeOnComplete: false,
+    });
+    await completed;
+    await completedWorker.close();
+    assert.equal(await (await notificationQueue.getJob(id))?.getState(), 'completed');
+
+    let failReAdd = true;
+    const queuePort = {
+      getJob: (...args: Parameters<Queue['getJob']>) => notificationQueue.getJob(...args),
+      add: async (...args: Parameters<Queue['add']>) => {
+        if (failReAdd) { failReAdd = false; throw new Error('synthetic Redis re-add failure'); }
+        return notificationQueue.add(...args);
+      },
+    };
+    const firstRecovery = new NotificationDispatchRecoveryService(
+      new PrismaNotificationRepository(prisma as never), queuePort as never, 5_000, 10,
+    );
+    assert.deepEqual(await firstRecovery.recoverBatch(eventId), []);
+    assert.equal(await notificationQueue.getJob(id), undefined,
+      'failed re-add leaves no misleading completed transport job');
+    const durableRow = await prisma.notification.findUniqueOrThrow({ where: { id } });
+    assert.equal(durableRow.status, 'failed');
+    assert.equal(durableRow.attempts, 1);
+    assert.equal(durableRow.dispatchClaimToken, null, 'failed enqueue releases the durable dispatch claim');
+
+    const secondRecovery = new NotificationDispatchRecoveryService(
+      new PrismaNotificationRepository(prisma as never), notificationQueue as never,
+    );
+    assert.deepEqual(await secondRecovery.recoverBatch(eventId), [id]);
+    const rebuilt = await notificationQueue.getJob(id);
+    assert.equal(rebuilt?.id, id, 'DB intent recreates transport with the exact same identity');
+    assert.ok(['waiting', 'delayed', 'active'].includes(await rebuilt!.getState()));
+    await rebuilt!.remove();
+  });
+
+  it('fails closed when an existing BullMQ job reuses a notification ID with conflicting identity', async () => {
+    const eventId = randomUUID();
+    const id = randomUUID();
+    await prisma.notification.create({ data: {
+      id, eventId, eventName: 'synthetic.identity-conflict', channel: NotificationChannel.internal,
+      recipient: 'retryable-internal', content: 'synthetic', provider: 'internal-log',
+      status: 'failed', attempts: 1, dispatchEligible: true,
+    } });
+    await notificationQueue.add('unexpected-job-name', { notificationId: randomUUID() }, {
+      jobId: id, attempts: 1, removeOnFail: false,
+    });
+
+    const recovery = new NotificationDispatchRecoveryService(
+      new PrismaNotificationRepository(prisma as never), notificationQueue as never,
+    );
+    assert.deepEqual(await recovery.recoverBatch(eventId), [], 'identity conflict must not report dispatch acceptance');
+    const notification = await prisma.notification.findUniqueOrThrow({ where: { id } });
+    assert.equal(notification.status, 'failed');
+    assert.equal(notification.attempts, 1);
+    assert.equal(notification.dispatchClaimToken, null, 'conflict handling releases the durable claim');
+    const conflicting = await notificationQueue.getJob(id);
+    assert.equal(conflicting?.name, 'unexpected-job-name', 'recovery does not rewrite a conflicting queue payload');
+    await conflicting!.remove();
+  });
+
   it('moves expired in-flight provider attempts to uncertain instead of resending', async () => {
     const id = randomUUID();
     await prisma.notification.create({ data: {
@@ -610,6 +821,22 @@ describe('EX-04.3 real registered consumers over isolated BullMQ', () => {
     assert.equal(await repository.recoverExpiredSends(10), 1);
     assert.equal((await prisma.notification.findUniqueOrThrow({ where: { id } })).status, 'uncertain');
     assert.equal(await repository.claimForSend(id, 60_000), null);
+  });
+
+  it('parks an expired sending row without a legacy claim token and persists its audit intent', async () => {
+    const id = randomUUID();
+    await prisma.notification.create({ data: {
+      id, eventId: randomUUID(), eventName: 'synthetic.legacy-expired-send', channel: NotificationChannel.internal,
+      recipient: 'ops@internal', content: 'synthetic', provider: 'internal-log', status: 'sending',
+      dispatchEligible: true, dispatchLeaseUntil: new Date(Date.now() - 1000),
+    } });
+    const repository = new PrismaNotificationRepository(prisma as never);
+
+    assert.equal(await repository.recoverExpiredSends(10), 1);
+    assert.equal((await prisma.notification.findUniqueOrThrow({ where: { id } })).status, 'uncertain');
+    assert.equal(await prisma.notificationAuditIntent.count({ where: {
+      notificationId: id, action: 'notification.uncertain', recordedAt: null,
+    } }), 1);
   });
 
   it('keeps pre-existing queued notification rows ineligible for startup recovery', async () => {

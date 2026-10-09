@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import { NOTIFICATION_REPOSITORY, NotificationRepository } from 'src/modules/notifications/domain/repositories/notification.repository';
-import { NOTIFICATIONS_QUEUE_NAME } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
+import { NOTIFICATION_MAX_DELIVERY_ATTEMPTS, NOTIFICATIONS_QUEUE_NAME } from 'src/modules/notifications/infrastructure/queue/notifications.queue.constants';
 
 @Injectable()
 export class NotificationDispatchRecoveryService implements OnModuleInit, OnModuleDestroy {
@@ -72,14 +72,8 @@ export class NotificationDispatchRecoveryService implements OnModuleInit, OnModu
           break;
         }
         try {
-          await this.queue.add('send-notification', { notificationId: claim.id }, {
-            jobId: claim.id,
-            attempts: 3,
-            backoff: { type: 'exponential', delay: 2_000, jitter: 0.5 },
-            removeOnComplete: { age: 7 * 24 * 60 * 60, count: 10_000 },
-            removeOnFail: false,
-          });
-          enqueued.push(claim.id);
+          const job = await this.enqueueOrRecover(claim.id);
+          if (job) enqueued.push(claim.id);
         } catch {
           this.openCircuit();
           this.logger.warn(JSON.stringify({ category: 'REDIS_OUTAGE', action: 'release_batch_and_back_off' }));
@@ -95,6 +89,42 @@ export class NotificationDispatchRecoveryService implements OnModuleInit, OnModu
       this.logger.warn('Notification dispatch recovery batch failed; queued intents remain recoverable');
     }
     return enqueued;
+  }
+
+  private async enqueueOrRecover(notificationId: string): Promise<Job | null> {
+    let job = await this.queue.getJob(notificationId);
+    if (!job) {
+      return this.queue.add('send-notification', { notificationId }, this.jobOptions(notificationId));
+    }
+    if (job.name !== 'send-notification' || job.data?.notificationId !== notificationId) {
+      throw new Error('Notification queue job identity conflict');
+    }
+
+    const state = await job.getState();
+    if (state === 'failed') {
+      // PostgreSQL attempts are authoritative; this only reactivates the same transport identity.
+      await job.retry('failed', { resetAttemptsMade: true });
+      return job;
+    }
+    if (state === 'completed') {
+      const notification = await this.notifications.findById(notificationId);
+      if (!notification || !['queued', 'failed'].includes(notification.status) ||
+        notification.attempts >= NOTIFICATION_MAX_DELIVERY_ATTEMPTS) return null;
+      await job.remove();
+      return this.queue.add('send-notification', { notificationId }, this.jobOptions(notificationId));
+    }
+    if (['waiting', 'active', 'delayed', 'waiting-children', 'prioritized'].includes(state)) return job;
+    throw new Error('Notification queue job state cannot be recovered safely');
+  }
+
+  private jobOptions(notificationId: string) {
+    return {
+      jobId: notificationId,
+      attempts: NOTIFICATION_MAX_DELIVERY_ATTEMPTS,
+      backoff: { type: 'exponential' as const, delay: 2_000, jitter: 0.5 },
+      removeOnComplete: { age: 7 * 24 * 60 * 60, count: 10_000 },
+      removeOnFail: false,
+    };
   }
 
   private async releaseClaims(claims: Array<{ id: string; claimToken: string }>): Promise<void> {
