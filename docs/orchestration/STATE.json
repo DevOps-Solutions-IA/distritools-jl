@@ -2,8 +2,8 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "bb36de81b0da1c78c9ccee3b4517dc825b5e8cc0",
-  "state_base_sha": "bb36de81b0da1c78c9ccee3b4517dc825b5e8cc0",
+  "validated_product_sha": "5092e8415ec4f8af48043ccedc28953fa115e456",
+  "state_base_sha": "5092e8415ec4f8af48043ccedc28953fa115e456",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-10",
   "phase": "internal-hardening",
@@ -34,21 +34,22 @@
     "EX-07.1",
     "EX-07.2",
     "EX-07.3",
-    "EX-07.4"
+    "EX-07.4",
+    "EX-08.F0"
   ],
   "baseline": {
     "git_canonical": "PASS",
-    "gitleaks": "PASS (EX-07.4 PR #46 CI secret-scan)",
+    "gitleaks": "PASS (EX-08.F0 PR #48 exact-head CI secret-scan)",
     "prisma_validate": "PASS",
     "backend_typecheck": "PASS",
     "backend_lint": "PASS",
     "backend_build": "PASS (EX-07.4 PR #46 CI and local)",
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
-    "frontend_build": "PASS (EX-07.4 PR #46 CI Next build/route manifest and local)",
-    "frontend_tests": "88/88 PASS (EX-07.4 PR #46 exact-head CI 38073960147)",
-    "backend_unit_tests": "283/283 PASS (EX-07.4 PR #46 exact-head CI 38073960147)",
-    "critical_e2e": "PASS (EX-07.4 PR #46 exact-head CI 38073960147: 29 critical files / 241 tests plus 4 test-environment guards)",
+    "frontend_build": "PASS (EX-08.F0 PR #48 exact-head CI and independent Next build/42-route manifest)",
+    "frontend_tests": "88/88 PASS (EX-08.F0 PR #48 exact-head CI 38084943973)",
+    "backend_unit_tests": "283/283 PASS (EX-08.F0 PR #48 exact-head CI 38084943973)",
+    "critical_e2e": "PASS (EX-08.F0 PR #48 CI 38084943973 attempt 2: 241 critical tests plus 4 environment guards; attempt 1 hook deadlock and 7 cancellations preserved)",
     "architecture_check": "DEBT_DETECTED (112 findings after EX-03.4; four highest-risk transaction seams removed)"
   },
   "security": {
@@ -56,25 +57,25 @@
     "frontend_high": 5,
     "frontend_moderate": 0,
     "frontend_low": 0,
-    "frontend_audit_fresh": "PASS regression baseline EX-07.4 PR #46 exact-head CI 38073960147; 5 existing HIGH frontend dev tooling full, runtime 0; OPEN advisories not waived.",
+    "frontend_audit_fresh": "PASS regression baseline EX-08.F0 PR #48 exact-head CI 38084943973; 5 existing HIGH frontend dev tooling full, runtime 0; OPEN advisories not waived.",
     "backend_critical": 0,
     "backend_high": 4,
     "backend_moderate": 2,
     "backend_low": 1,
-    "backend_audit_fresh": "PASS regression baseline EX-07.4 PR #46 exact-head CI 38073960147; 4 existing HIGH, 2 MODERATE, 1 LOW backend full; OPEN advisories not waived."
+    "backend_audit_fresh": "PASS regression baseline EX-08.F0 PR #48 exact-head CI 38084943973; 4 existing HIGH, 2 MODERATE, 1 LOW backend full; OPEN advisories not waived."
   },
   "current_workstreams": [
     {
       "execution": "EX-08",
       "parent": "EX-08",
-      "branch": "ui/ex08-f0-admin-screen-seams-2026-10",
+      "branch": "ui/ex08-f1-api-platform-2026-10 + ui/ex08-f2-design-shell-2026-10",
       "status": "PLANNED",
       "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditoría, errores visibles y pruebas de navegador. No rediseño cosmético.",
       "user_impact": "ADMIN_OPERATOR",
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producción o inventar políticas de negocio.",
-      "prior": "EX-07.4 product PR #46 merged at bb36de81b0da1c78c9ccee3b4517dc825b5e8cc0 after 7/7 exact-head CI PASS on d5e5ccfb9f5b56792d4f9559cb8cce194bf74305 (run 38073960147); backend unit 283, frontend 88, critical 241+4 guards. EX-07 parent and EX-06 policy blockers preserved.",
+      "prior": "EX-08.F0 PR #48 merged at 5092e8415ec4f8af48043ccedc28953fa115e456 after 7/7 exact-head CI on f12de57c5b23a2c9fbdb99fae52edac467b591f2; 22 adapters, 42 route files unchanged, 26 scope paths, independent challenger no P0/P1/P2. EX-08 parent remains active; 71 action workflows and live browser certification NOT_TESTED by F0.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "INICIA EX-08.F0: extraer pantallas admin compartidas sin alterar operaciones; después estabilizar contratos API/shell y coordinar dominios en worktrees exclusivos."
+      "next_action": "INICIA EX-08.F1 contratos API autenticados y EX-08.F2 shell empresarial desde main posterior a esta transición; ownership disjunto. No iniciar dominios antes de integrar F1/F2."
     }
   ],
   "provider_status": {
@@ -102,18 +103,20 @@
     "Several as never casts",
     "Documentation duplication and stale status files",
     "Frontend has 5 HIGH advisory nodes in development-only eslint-config-next tooling chain; runtime audit is 0 vulnerabilities",
-    "EX-07.2 notification manual post-exhaustion retry and uncertain-outcome operator reconciliation remain unimplemented pending an explicit operations policy; do not blindly resend failed/uncertain notifications."
+    "EX-07.2 notification manual post-exhaustion retry and uncertain-outcome operator reconciliation remain unimplemented pending an explicit operations policy; do not blindly resend failed/uncertain notifications.",
+    "EX-08.F0 CI attempt 1: resetDatabase hook deadlock SQLSTATE 40P01, 7 tests cancelled; unchanged-head attempt 2 passed 245/245 including 4 guards. Controlled actual-Prisma probe shows P2010/meta.code 40P01 or 55P03 maps to P2010 and misses retry; separate QA harness hardening follow-up, not changed in F0. This is not proof of the unique deadlock origin."
   ],
   "last_transition": {
-    "execution": "EX-07.4",
+    "execution": "EX-08.F0",
     "status": "MERGED",
-    "pr": 46,
-    "merge_sha": "bb36de81b0da1c78c9ccee3b4517dc825b5e8cc0",
-    "validation_head_sha": "d5e5ccfb9f5b56792d4f9559cb8cce194bf74305",
-    "workflow_run": 38073960147,
-    "result": "Orchestrator independently checked 52 transferred SHA-256 files, 100 EX-07.4 local unit and 88 frontend tests, typechecks/lints/build/Next manifest; PR #46 7/7 exact-head GitHub CI PASS: backend unit/security 283, frontend 88, critical 241 plus 4 environment guards. Product merged; business BLOCKED_DECISION, providers, SEC/GOV, cutover and production NO-GO remain."
+    "pr": 48,
+    "merge_sha": "5092e8415ec4f8af48043ccedc28953fa115e456",
+    "validation_head_sha": "f12de57c5b23a2c9fbdb99fae52edac467b591f2",
+    "workflow_run": 38084943973,
+    "workflow_attempt": 2,
+    "result": "Orchestrator independently revalidated 7/7 exact-head checks, behind=0, 26-file scope/22 adapters, 42 route hashes and clean tree; critical retry 245/245 PASS. First attempt FAIL preserved. No backend, helper, workflow or lockfile change in F0; 71 action workflows remain NOT_TESTED. Parent EX-08, providers, business decisions, SEC/GOV and production NO-GO remain."
   },
-  "next_action": "INICIA EX-08.F0: extraer pantallas admin compartidas sin alterar operaciones; después estabilizar contratos API/shell y coordinar dominios en worktrees exclusivos.",
+  "next_action": "INICIA EX-08.F1 contratos API autenticados y EX-08.F2 shell empresarial desde main posterior a esta transición; ownership disjunto. No iniciar dominios antes de integrar F1/F2.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
