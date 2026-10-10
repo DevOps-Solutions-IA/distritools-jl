@@ -1,0 +1,21 @@
+module,title,route,permission_declared,readiness_label_STATIC_NOT_LIVE,actions_declared,endpoints_declared,UI_execution_verified
+dashboard,Dashboard,/admin/dashboard,dashboard.read,READY,Revisar alertas | Abrir reportes | Auditar catálogo,/api/v1/admin/analytics/operational-metrics,NO_STATIC_ONLY
+productos,Productos,/admin/productos,products.write,GO_WITH_RISKS,Crear producto | Editar producto | Activar/desactivar | Archivar | Validar vendibilidad,/api/v1/admin/products | /api/v1/admin/products/:id/archive | /api/v1/admin/products/:id/validate-sellability | /api/v1/admin/catalog/metrics,NO_STATIC_ONLY
+marcas,Marcas,/admin/marcas,brands.write,GO_WITH_RISKS,Crear marca | Editar marca | Activar/desactivar | Ver productos asociados,/api/v1/admin/brands | /api/v1/admin/catalog/overview,NO_STATIC_ONLY
+categorias,Categorías,/admin/categorias,categories.write,GO_WITH_RISKS,Crear categoría | Editar categoría | Ordenar jerarquía | Ver productos asociados,/api/v1/admin/categories | /api/v1/admin/catalog/overview,NO_STATIC_ONLY
+inventario,Inventario,/admin/inventario,inventory.adjust,READY,Ajustar stock | Ver kardex | Conteo físico | Import/export | Valorización,/api/v1/admin/inventory/overview | /api/v1/admin/inventory/history | /api/v1/admin/inventory/imports/dry-run | /api/v1/admin/inventory/export,NO_STATIC_ONLY
+precios,Precios,/admin/precios,prices.write,GO_WITH_RISKS,Editar precio | Revisar sin precio | Ver historial | Validar impacto en venta,/api/v1/admin/prices/:variantId | /api/v1/admin/prices/history | /api/v1/admin/catalog/overview,NO_STATIC_ONLY
+pedidos,Pedidos,/admin/pedidos,orders.read,READY,Ver detalle | Cancelar con permiso | Revisar pago/envío,/api/v1/admin/orders | /api/v1/admin/orders/:orderId | /api/v1/admin/orders/:orderId/status,NO_STATIC_ONLY
+cotizaciones,Cotizaciones,/admin/cotizaciones,quotes.read,PARTIAL,Revisar solicitud | Asignar precio | Convertir a pedido,/api/v1/admin/quotes,NO_STATIC_ONLY
+clientes,Clientes,/admin/clientes,customers.read,READY,Buscar cliente | Ver pedidos | Exportar con permiso,/api/v1/admin/customers,NO_STATIC_ONLY
+pagos,Pagos,/admin/pagos,payments.read,BLOCKED_PROVIDER,Consultar pago | Reconciliar COD | Revisar errores provider,/api/v1/admin/payments | /api/v1/admin/payments/:paymentId/events,NO_STATIC_ONLY
+envios,Envíos,/admin/envios,shipping.read,BLOCKED_PROVIDER,Probar login | Cotizar envío | Crear preenvío | Descargar PDF | Sincronizar novedades,/api/v1/admin/shipping/login-test | /api/v1/admin/shipping/quote | /api/v1/admin/orders/:orderId/shipment | /api/v1/admin/shipments/:shipmentId/label | /api/v1/admin/shipping/branch-issues,NO_STATIC_ONLY
+rastreo,Rastreo,/admin/rastreo,tracking.read,GO_WITH_RISKS,Buscar pedido | Sincronizar provider | Ver eventos | Abrir rastreo público,/api/v1/admin/shipments/:shipmentId/tracking | /api/v1/orders/track?query=,NO_STATIC_ONLY
+notificaciones,Notificaciones,/admin/notificaciones,notifications.read,BLOCKED_PROVIDER,Ver historial | Revisar fallos | Validar provider local/test,/api/v1/admin/notifications,NO_STATIC_ONLY
+contenido-legal,Legal,/admin/legal,legal.read,PARTIAL,Editar borrador | Previsualizar | Marcar revisión | Publicar,/api/v1/admin/content/legal,NO_STATIC_ONLY
+contenido-footer,Footer,/admin/footer,footer.read,PARTIAL,Editar enlaces | Validar rutas | Publicar footer,/api/v1/admin/content/footer,NO_STATIC_ONLY
+configuracion,Configuración,/admin/configuracion,settings.read,BLOCKED_CONFIGURATION,Revisar providers | Actualizar datos públicos | Validar secretos,/api/v1/admin/settings | ENV backend | provider ports,NO_STATIC_ONLY
+usuarios,Usuarios,/admin/usuarios,users.read,GO_WITH_RISKS,Crear usuario | Editar usuario | Desactivar usuario,/api/v1/admin/users,NO_STATIC_ONLY
+roles,Roles,/admin/roles,roles.write,GO_WITH_RISKS,Crear rol | Asignar permisos | Asignar usuario,/api/v1/admin/roles | /api/v1/admin/permissions/matrix,NO_STATIC_ONLY
+auditoria,Auditoría,/admin/auditoria,audit.read,GO_WITH_RISKS,Filtrar eventos | Ver cambios | Revisar usuario/acción,/api/v1/admin/audit,NO_STATIC_ONLY
+reportes,Reportes,/admin/reportes,reports.read,READY,Productos incompletos | Pedidos por estado | Pagos/envíos por estado,/api/v1/admin/analytics/*,NO_STATIC_ONLY
