@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import {
@@ -33,6 +34,9 @@ import {
   AUDIT_REPOSITORY,
   AuditRepository,
 } from 'src/modules/auth/domain/repositories/audit.repository';
+
+import { assertFooterRoutes, FOOTER_LINK_LIMIT } from 'src/modules/admin-operations/application/footer-route-authority';
+import { allocateQuoteNumber, lockQuote } from 'src/modules/admin-operations/application/quote-transaction';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -172,7 +176,6 @@ const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   refunded: [],
 };
 
-const INTERNAL_LINK_PATTERN = /^\/(?!\/)[a-z0-9\-/?=&%#]*$/i;
 const LEGAL_PLACEHOLDER_PATTERN = /\[(RAZÓN SOCIAL|NIT|DIRECCIÓN|CORREO DE PRIVACIDAD|TELÉFONO OFICIAL|RESPONSABLE DEL TRATAMIENTO|CANAL DE RECLAMOS|DOMICILIO PRINCIPAL) PENDIENTE\]/i;
 
 const LEGAL_PAGE_REQUIREMENTS: Record<string, string[]> = {
@@ -706,9 +709,9 @@ export class AdminOperationsController {
     });
   }
 
-  private async ensureCustomerFromBody(body: CreateQuoteBody) {
+  private async ensureCustomerFromBody(body: CreateQuoteBody, tx: Prisma.TransactionClient) {
     if (body.customerId) {
-      const customer = await this.prisma.customer.findUnique({ where: { id: body.customerId } });
+      const customer = await tx.customer.findUnique({ where: { id: body.customerId } });
       if (!customer) {
         throw new NotFoundException('Cliente no encontrado.');
       }
@@ -721,7 +724,7 @@ export class AdminOperationsController {
       throw new BadRequestException('Cliente con nombre y email es obligatorio para la cotización.');
     }
 
-    return this.prisma.customer.upsert({
+    return tx.customer.upsert({
       where: { email },
       create: {
         id: uuidv7(),
@@ -748,10 +751,12 @@ export class AdminOperationsController {
     });
   }
 
-  private async nextSequence(prefix: string, model: 'quote' | 'footerRevision') {
+  private async nextSequence(prefix: string, model: 'quote' | 'footerRevision', tx?: Prisma.TransactionClient) {
     if (model === 'quote') {
-      const total = await this.prisma.quote.count();
-      return `${prefix}-${String(total + 1).padStart(6, '0')}`;
+      if (!tx || prefix !== 'QTE') {
+        throw new Error('QTE allocation requires the quote creation transaction.');
+      }
+      return allocateQuoteNumber(tx);
     }
 
     return (await this.prisma.footerRevision.count()) + 1;
@@ -833,6 +838,17 @@ export class AdminOperationsController {
     };
   }
 
+  private async contentTransaction<T>(
+    domain: 'legal' | 'footer',
+    operation: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.prisma.$transaction(async (tx) => {
+      // Transaction-scoped locks serialize competing revisions, including an empty published set.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(74074, ${domain === 'legal' ? 1 : 2}::integer)`;
+      return operation(tx);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+  }
+
   private sanitizeLegalContent(content: unknown) {
     const asText = JSON.stringify(content ?? {});
     if (/<script|javascript:/i.test(asText)) {
@@ -847,16 +863,21 @@ export class AdminOperationsController {
   }
 
   private validateFooterGroups(groups: FooterUpdateBody['groups']) {
-    if (!Array.isArray(groups) || groups.length === 0) {
-      throw new BadRequestException('Los grupos de footer son obligatorios.');
+    if (!Array.isArray(groups) || groups.length === 0 || groups.length > FOOTER_LINK_LIMIT) {
+      throw new BadRequestException(`El footer requiere entre 1 y ${FOOTER_LINK_LIMIT} grupos.`);
     }
 
+    let linkCount = 0;
     for (const group of groups) {
-      if (!group.title?.trim()) {
+      if (!group || typeof group.title !== 'string' || !group.title.trim() || !Array.isArray(group.links)) {
         throw new BadRequestException('Cada grupo de footer requiere título.');
       }
-      for (const link of group.links ?? []) {
-        if (!link.label?.trim() || !INTERNAL_LINK_PATTERN.test(link.href) || link.href === '#') {
+      linkCount += group.links.length;
+      if (linkCount > FOOTER_LINK_LIMIT) {
+        throw new BadRequestException(`El footer admite como máximo ${FOOTER_LINK_LIMIT} enlaces por revisión.`);
+      }
+      for (const link of group.links) {
+        if (!link || typeof link.label !== 'string' || !link.label.trim() || typeof link.href !== 'string') {
           throw new BadRequestException('El footer solo acepta links internos visibles y válidos.');
         }
       }
@@ -872,6 +893,7 @@ export class AdminOperationsController {
     afterData: unknown,
     ipAddress?: string,
     userAgent?: string,
+    tx?: Prisma.TransactionClient,
   ) {
     await this.auditRepository.write({
       actorUserId: actor.sub,
@@ -882,7 +904,7 @@ export class AdminOperationsController {
       afterData,
       ipAddress,
       userAgent,
-    });
+    }, tx);
   }
 
   @Permissions('orders.read')
@@ -1144,8 +1166,6 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const customer = await this.ensureCustomerFromBody(body);
-    const quoteNumber = await this.nextSequence('QTE', 'quote') as string;
     const items = body.items ?? [];
     const subtotal = items.reduce((sum, item) => {
       const price = this.parseMoney(item.unitPrice, 'Precio unitario') ?? 0;
@@ -1156,41 +1176,45 @@ export class AdminOperationsController {
       return sum + price * quantity;
     }, 0);
 
-    const quote = await this.prisma.quote.create({
-      data: {
-        id: uuidv7(),
-        quoteNumber,
-        customerId: customer.id,
-        status: items.some((item) => item.unitPrice !== undefined) ? 'quoted' : 'requested',
-        subtotal,
-        notes: body.notes?.trim() || null,
-        internalNotes: body.internalNotes?.trim() || null,
-        expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
-        createdById: actor.sub,
-        updatedById: actor.sub,
-        items: {
-          create: items.map((item) => {
-            const price = this.parseMoney(item.unitPrice, 'Precio unitario');
-            const quantity = Number(item.quantity);
-            return {
-              id: uuidv7(),
-              productId: item.productId,
-              variantId: item.variantId ?? null,
-              nameSnapshot: item.nameSnapshot?.trim() || 'Producto por cotizar',
-              skuSnapshot: item.skuSnapshot?.trim() || null,
-              quantity,
-              unitPrice: price,
-              totalPrice: price === null ? null : price * quantity,
-              notes: item.notes?.trim() || null,
-            };
-          }),
+    return this.prisma.$transaction(async (tx) => {
+      const customer = await this.ensureCustomerFromBody(body, tx);
+      const quoteNumber = await this.nextSequence('QTE', 'quote', tx) as string;
+      const quote = await tx.quote.create({
+        data: {
+          id: uuidv7(),
+          quoteNumber,
+          customerId: customer.id,
+          status: items.some((item) => item.unitPrice !== undefined) ? 'quoted' : 'requested',
+          subtotal,
+          notes: body.notes?.trim() || null,
+          internalNotes: body.internalNotes?.trim() || null,
+          expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
+          createdById: actor.sub,
+          updatedById: actor.sub,
+          items: {
+            create: items.map((item) => {
+              const price = this.parseMoney(item.unitPrice, 'Precio unitario');
+              const quantity = Number(item.quantity);
+              return {
+                id: uuidv7(),
+                productId: item.productId,
+                variantId: item.variantId ?? null,
+                nameSnapshot: item.nameSnapshot?.trim() || 'Producto por cotizar',
+                skuSnapshot: item.skuSnapshot?.trim() || null,
+                quantity,
+                unitPrice: price,
+                totalPrice: price === null ? null : price * quantity,
+                notes: item.notes?.trim() || null,
+              };
+            }),
+          },
         },
-      },
-      include: { customer: true, order: true, items: true },
-    });
+        include: { customer: true, order: true, items: true },
+      });
 
-    await this.audit(actor, 'quote.created', 'quote', quote.id, null, this.serializeQuote(quote), ipAddress, userAgent);
-    return this.serializeQuote(quote);
+      await this.auditQuote(tx, actor, 'quote.created', quote.id, null, this.serializeQuote(quote), ipAddress, userAgent);
+      return this.serializeQuote(quote);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('quotes.write')
@@ -1202,31 +1226,34 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const current = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: { customer: true, order: true, items: true },
-    });
-    if (!current) {
-      throw new NotFoundException('Cotización no encontrada.');
-    }
-    if (body.status && !['requested', 'in_review', 'quoted', 'cancelled'].includes(body.status)) {
-      throw new BadRequestException('Use las acciones dedicadas para cambiar este estado.');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      await lockQuote(tx, quoteId);
+      const current = await tx.quote.findUnique({
+        where: { id: quoteId },
+        include: { customer: true, order: true, items: true },
+      });
+      if (!current) {
+        throw new NotFoundException('Cotización no encontrada.');
+      }
+      if (body.status && !['requested', 'in_review', 'quoted', 'cancelled'].includes(body.status)) {
+        throw new BadRequestException('Use las acciones dedicadas para cambiar este estado.');
+      }
 
-    const updated = await this.prisma.quote.update({
-      where: { id: quoteId },
-      data: {
-        notes: body.notes ?? current.notes,
-        internalNotes: body.internalNotes ?? current.internalNotes,
-        expiresAt: body.expiresAt === undefined ? current.expiresAt : body.expiresAt ? new Date(body.expiresAt) : null,
-        status: body.status ?? current.status,
-        updatedById: actor.sub,
-      },
-      include: { customer: true, order: true, items: true },
-    });
+      const updated = await tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          notes: body.notes ?? current.notes,
+          internalNotes: body.internalNotes ?? current.internalNotes,
+          expiresAt: body.expiresAt === undefined ? current.expiresAt : body.expiresAt ? new Date(body.expiresAt) : null,
+          status: body.status ?? current.status,
+          updatedById: actor.sub,
+        },
+        include: { customer: true, order: true, items: true },
+      });
 
-    await this.audit(actor, 'quote.updated', 'quote', quoteId, this.serializeQuote(current), this.serializeQuote(updated), ipAddress, userAgent);
-    return this.serializeQuote(updated);
+      await this.auditQuote(tx, actor, 'quote.updated', quoteId, this.serializeQuote(current), this.serializeQuote(updated), ipAddress, userAgent);
+      return this.serializeQuote(updated);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('quotes.write')
@@ -1241,18 +1268,27 @@ export class AdminOperationsController {
     if (!Array.isArray(body.items) || body.items.length === 0) {
       throw new BadRequestException('Debe enviar al menos un item con precio.');
     }
-    const current = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: { customer: true, order: true, items: true },
-    });
-    if (!current) {
-      throw new NotFoundException('Cotización no encontrada.');
-    }
-    if (['accepted', 'rejected', 'converted_to_order', 'cancelled'].includes(current.status)) {
-      throw new BadRequestException('No se pueden modificar precios en una cotización cerrada.');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      await lockQuote(tx, quoteId);
+      const current = await tx.quote.findUnique({
+        where: { id: quoteId },
+        include: { customer: true, order: true, items: true },
+      });
+      if (!current) {
+        throw new NotFoundException('Cotización no encontrada.');
+      }
+      if (['accepted', 'rejected', 'converted_to_order', 'cancelled'].includes(current.status)) {
+        throw new BadRequestException('No se pueden modificar precios en una cotización cerrada.');
+      }
 
-    await this.prisma.$transaction(async (tx) => {
+      // Check the complete batch against the locked quote before writing.
+      const ownedItemIds = new Set(current.items
+        .filter((item) => item.quoteId === quoteId)
+        .map((item) => item.id));
+      if ((body.items ?? []).some((item) => item.id && !ownedItemIds.has(item.id))) {
+        throw new BadRequestException('El item no pertenece a esta cotización.');
+      }
+
       for (const item of body.items ?? []) {
         const unitPrice = this.parseMoney(item.unitPrice, 'Precio unitario');
         if (unitPrice === null) {
@@ -1305,14 +1341,14 @@ export class AdminOperationsController {
           updatedById: actor.sub,
         },
       });
-    });
 
-    const updated = await this.prisma.quote.findUniqueOrThrow({
-      where: { id: quoteId },
-      include: { customer: true, order: true, items: true },
-    });
-    await this.audit(actor, 'quote.items_priced', 'quote', quoteId, this.serializeQuote(current), this.serializeQuote(updated), ipAddress, userAgent);
-    return this.serializeQuote(updated);
+      const updated = await tx.quote.findUniqueOrThrow({
+        where: { id: quoteId },
+        include: { customer: true, order: true, items: true },
+      });
+      await this.auditQuote(tx, actor, 'quote.items_priced', quoteId, this.serializeQuote(current), this.serializeQuote(updated), ipAddress, userAgent);
+      return this.serializeQuote(updated);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('quotes.write')
@@ -1335,9 +1371,12 @@ export class AdminOperationsController {
     @Headers('user-agent') userAgent?: string,
   ) {
     const notificationProvider = process.env.NOTIFICATION_PROVIDER ?? process.env.EMAIL_PROVIDER ?? 'none';
-    if (notificationProvider === 'none') {
-      const quote = await this.transitionQuote(quoteId, actor, 'quoted', 'quote.manual_send_required', ipAddress, userAgent);
-      await this.prisma.notificationEvent.create({
+    if (notificationProvider !== 'none') {
+      throw new ServiceUnavailableException('El envío de cotizaciones no está disponible para el proveedor configurado.');
+    }
+    return this.prisma.$transaction(async (tx) => {
+      const quote = await this.transitionQuote(quoteId, actor, 'quoted', 'quote.manual_send_required', ipAddress, userAgent, {}, tx);
+      await tx.notificationEvent.create({
         data: {
           id: uuidv7(),
           entityType: 'quote',
@@ -1356,8 +1395,7 @@ export class AdminOperationsController {
           message: 'No se marcó como enviada porque no hay provider real de notificaciones configurado.',
         },
       };
-    }
-    return this.transitionQuote(quoteId, actor, 'sent', 'quote.sent', ipAddress, userAgent, { sentAt: new Date() });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('quotes.approve')
@@ -1394,37 +1432,42 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: { customer: true, order: true, items: true },
-    });
-    if (!quote) {
-      throw new NotFoundException('Cotización no encontrada.');
-    }
-    if (quote.orderId) {
-      return { ...this.serializeQuote(quote), alreadyConverted: true };
-    }
-    if (quote.items.length === 0 || quote.items.some((item) => !item.unitPrice || !item.totalPrice)) {
-      throw new BadRequestException('No se puede convertir una cotización sin items con precio.');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      await lockQuote(tx, quoteId);
+      const quote = await tx.quote.findUnique({
+        where: { id: quoteId },
+        include: { customer: true, order: true, items: true },
+      });
+      if (!quote) {
+        throw new NotFoundException('Cotización no encontrada.');
+      }
+      if (quote.orderId) {
+        return { ...this.serializeQuote(quote), alreadyConverted: true };
+      }
+      if (quote.items.length === 0 || quote.items.some((item) => !item.unitPrice || !item.totalPrice)) {
+        throw new BadRequestException('No se puede convertir una cotización sin items con precio.');
+      }
 
-    const updated = await this.prisma.quote.update({
-      where: { id: quoteId },
-      data: {
-        status: 'converted_to_order',
-        convertedAt: new Date(),
-        updatedById: actor.sub,
-      },
-      include: { customer: true, order: true, items: true },
-    });
-    await this.audit(actor, 'quote.convert_requested', 'quote', quoteId, this.serializeQuote(quote), this.serializeQuote(updated), ipAddress, userAgent);
-    return {
-      ...this.serializeQuote(updated),
-      operationalState: {
-        status: 'manual_order_creation_required',
-        message: 'La cotización quedó lista para conversión; no se inventó pedido ni inventario sin checkout real.',
-      },
-    };
+      const updated = quote.status === 'converted_to_order' ? quote : await tx.quote.update({
+        where: { id: quoteId },
+        data: {
+          status: 'converted_to_order',
+          convertedAt: new Date(),
+          updatedById: actor.sub,
+        },
+        include: { customer: true, order: true, items: true },
+      });
+      if (quote.status !== 'converted_to_order') {
+        await this.auditQuote(tx, actor, 'quote.convert_requested', quoteId, this.serializeQuote(quote), this.serializeQuote(updated), ipAddress, userAgent);
+      }
+      return {
+        ...this.serializeQuote(updated),
+        operationalState: {
+          status: 'manual_order_creation_required',
+          message: 'La cotización quedó lista para conversión; no se inventó pedido ni inventario sin checkout real.',
+        },
+      };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('quotes.write')
@@ -1446,37 +1489,66 @@ export class AdminOperationsController {
     ipAddress?: string,
     userAgent?: string,
     extra: Partial<Prisma.QuoteUncheckedUpdateInput> = {},
+    transaction?: Prisma.TransactionClient,
   ) {
-    const current = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: { customer: true, order: true, items: true },
-    });
-    if (!current) {
-      throw new NotFoundException('Cotización no encontrada.');
-    }
+    const transition = async (tx: Prisma.TransactionClient) => {
+      await lockQuote(tx, quoteId);
+      const current = await tx.quote.findUnique({
+        where: { id: quoteId },
+        include: { customer: true, order: true, items: true },
+      });
+      if (!current) {
+        throw new NotFoundException('Cotización no encontrada.');
+      }
 
-    const valid: Record<QuoteStatus, QuoteStatus[]> = {
-      requested: ['in_review', 'quoted', 'cancelled'],
-      in_review: ['quoted', 'cancelled'],
-      quoted: ['sent', 'accepted', 'rejected', 'cancelled', 'converted_to_order'],
-      sent: ['accepted', 'rejected', 'expired', 'cancelled'],
-      accepted: ['converted_to_order', 'cancelled'],
-      rejected: [],
-      expired: [],
-      converted_to_order: [],
-      cancelled: [],
+      const valid: Record<QuoteStatus, QuoteStatus[]> = {
+        requested: ['in_review', 'quoted', 'cancelled'],
+        in_review: ['quoted', 'cancelled'],
+        quoted: ['sent', 'accepted', 'rejected', 'cancelled', 'converted_to_order'],
+        sent: ['accepted', 'rejected', 'expired', 'cancelled'],
+        accepted: ['converted_to_order', 'cancelled'],
+        rejected: [],
+        expired: [],
+        converted_to_order: [],
+        cancelled: [],
+      };
+      if (!valid[current.status].includes(status) && current.status !== status) {
+        throw new BadRequestException('Transición de cotización no permitida.');
+      }
+
+      const updated = await tx.quote.update({
+        where: { id: quoteId },
+        data: { ...extra, status, updatedById: actor.sub } as Prisma.QuoteUncheckedUpdateInput,
+        include: { customer: true, order: true, items: true },
+      });
+      await this.auditQuote(tx, actor, action, quoteId, this.serializeQuote(current), this.serializeQuote(updated), ipAddress, userAgent);
+      return this.serializeQuote(updated);
     };
-    if (!valid[current.status].includes(status) && current.status !== status) {
-      throw new BadRequestException('Transición de cotización no permitida.');
-    }
+    return transaction
+      ? transition(transaction)
+      : this.prisma.$transaction(transition, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+  }
 
-    const updated = await this.prisma.quote.update({
-      where: { id: quoteId },
-      data: { ...extra, status, updatedById: actor.sub } as Prisma.QuoteUncheckedUpdateInput,
-      include: { customer: true, order: true, items: true },
-    });
-    await this.audit(actor, action, 'quote', quoteId, this.serializeQuote(current), this.serializeQuote(updated), ipAddress, userAgent);
-    return this.serializeQuote(updated);
+  private async auditQuote(
+    tx: Prisma.TransactionClient,
+    actor: CurrentUser,
+    action: string,
+    quoteId: string,
+    beforeData: unknown,
+    afterData: unknown,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
+    await this.auditRepository.write({
+      actorUserId: actor.sub,
+      action,
+      entityType: 'quote',
+      entityId: quoteId,
+      beforeData,
+      afterData,
+      ipAddress,
+      userAgent,
+    }, tx);
   }
 
   @Permissions('payments.read')
@@ -1969,27 +2041,30 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const current = await this.prisma.customer.findUnique({ where: { id: customerId } });
-    if (!current) {
-      throw new NotFoundException('Cliente no encontrado.');
-    }
-    const email = this.normalizeEmail(body.email);
-    const updated = await this.prisma.customer.update({
-      where: { id: customerId },
-      data: {
-        fullName: body.fullName?.trim() ?? current.fullName,
-        email: email ?? current.email,
-        phone: body.phone?.trim() ?? current.phone,
-        defaultAddress: body.defaultAddress?.trim() ?? current.defaultAddress,
-        city: body.city?.trim() ?? current.city,
-        department: body.department?.trim() ?? current.department,
-        country: body.country?.trim() ?? current.country,
-        marketingConsent: body.marketingConsent ?? current.marketingConsent,
-        dataTreatmentConsent: body.dataTreatmentConsent ?? current.dataTreatmentConsent,
-      },
-    });
-    await this.audit(actor, 'customer.updated', 'customer', customerId, this.publicCustomer(current), this.publicCustomer(updated), ipAddress, userAgent);
-    return this.publicCustomer(updated);
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT "id" FROM "customers" WHERE "id" = ${customerId}::uuid FOR UPDATE`;
+      const current = await tx.customer.findUnique({ where: { id: customerId } });
+      if (!current) {
+        throw new NotFoundException('Cliente no encontrado.');
+      }
+      const email = this.normalizeEmail(body.email);
+      const updated = await tx.customer.update({
+        where: { id: customerId },
+        data: {
+          fullName: body.fullName?.trim() ?? current.fullName,
+          email: email ?? current.email,
+          phone: body.phone?.trim() ?? current.phone,
+          defaultAddress: body.defaultAddress?.trim() ?? current.defaultAddress,
+          city: body.city?.trim() ?? current.city,
+          department: body.department?.trim() ?? current.department,
+          country: body.country?.trim() ?? current.country,
+          marketingConsent: body.marketingConsent ?? current.marketingConsent,
+          dataTreatmentConsent: body.dataTreatmentConsent ?? current.dataTreatmentConsent,
+        },
+      });
+      await this.audit(actor, 'customer.updated', 'customer', customerId, this.publicCustomer(current), this.publicCustomer(updated), ipAddress, userAgent, tx);
+      return this.publicCustomer(updated);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('customers.read')
@@ -2253,31 +2328,33 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const pageKey = body.pageKey?.trim();
-    const title = body.title?.trim();
-    const slug = body.slug?.trim() ?? pageKey;
-    if (!pageKey || !title || !slug) {
-      throw new BadRequestException('pageKey, title y slug son obligatorios.');
-    }
-    const latest = await this.prisma.legalVersion.findFirst({
-      where: { pageKey },
-      orderBy: { version: 'desc' },
+    return this.contentTransaction('legal', async (tx) => {
+      const pageKey = body.pageKey?.trim();
+      const title = body.title?.trim();
+      const slug = body.slug?.trim() ?? pageKey;
+      if (!pageKey || !title || !slug) {
+        throw new BadRequestException('pageKey, title y slug son obligatorios.');
+      }
+      const latest = await tx.legalVersion.findFirst({
+        where: { pageKey },
+        orderBy: { version: 'desc' },
+      });
+      const created = await tx.legalVersion.create({
+        data: {
+          id: uuidv7(),
+          pageKey,
+          title,
+          slug,
+          content: this.sanitizeLegalContent(body.content ?? { sections: [], pendingPlaceholders: true }) as Prisma.InputJsonValue,
+          checklist: (body.checklist ?? {}) as Prisma.InputJsonValue,
+          status: 'draft',
+          version: (latest?.version ?? 0) + 1,
+          submittedById: actor.sub,
+        },
+      });
+      await this.audit(actor, 'legal.created', 'legalVersion', created.id, null, created, ipAddress, userAgent, tx);
+      return created;
     });
-    const created = await this.prisma.legalVersion.create({
-      data: {
-        id: uuidv7(),
-        pageKey,
-        title,
-        slug,
-        content: this.sanitizeLegalContent(body.content ?? { sections: [], pendingPlaceholders: true }) as Prisma.InputJsonValue,
-        checklist: (body.checklist ?? {}) as Prisma.InputJsonValue,
-        status: 'draft',
-        version: (latest?.version ?? 0) + 1,
-        submittedById: actor.sub,
-      },
-    });
-    await this.audit(actor, 'legal.created', 'legalVersion', created.id, null, created, ipAddress, userAgent);
-    return created;
   }
 
   @Permissions('legal.write')
@@ -2289,37 +2366,44 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const current = await this.prisma.legalVersion.findUnique({ where: { id } });
-    if (!current) {
-      throw new NotFoundException('Contenido legal no encontrado.');
-    }
-    if (current.status === 'published' || current.status === 'archived') {
-      throw new BadRequestException('No se edita una versión publicada o archivada; cree nueva versión.');
-    }
+    return this.contentTransaction('legal', async (tx) => {
+      const current = await tx.legalVersion.findUnique({ where: { id } });
+      if (!current) {
+        throw new NotFoundException('Contenido legal no encontrado.');
+      }
+      if (current.status !== 'draft' && current.status !== 'pending_legal_review') {
+        throw new BadRequestException('No se edita una versión aprobada, publicada o archivada; cree nueva versión.');
+      }
 
-    const updated = await this.prisma.legalVersion.update({
-      where: { id },
-      data: {
-        title: body.title ?? current.title,
-        slug: body.slug ?? current.slug,
-        content: this.sanitizeLegalContent(body.content ?? (body.body ? { text: body.body } : current.content)) as Prisma.InputJsonValue,
-        checklist: (body.checklist ?? current.checklist ?? {}) as Prisma.InputJsonValue,
-        status: body.status ?? current.status,
-      },
+      if (body.status !== undefined && body.status !== current.status) {
+        throw new BadRequestException('Use las acciones de revisión, aprobación y publicación para cambiar el estado.');
+      }
+
+      const updated = await tx.legalVersion.update({
+        where: { id },
+        data: {
+          title: body.title ?? current.title,
+          slug: body.slug ?? current.slug,
+          content: this.sanitizeLegalContent(body.content ?? (body.body ? { text: body.body } : current.content)) as Prisma.InputJsonValue,
+          checklist: (body.checklist ?? current.checklist ?? {}) as Prisma.InputJsonValue,
+          status: current.status,
+        },
+      });
+
+      await this.audit(
+        actor,
+        'legal.updated',
+        'legalVersion',
+        id,
+        current,
+        updated,
+        ipAddress,
+        userAgent,
+        tx,
+      );
+
+      return updated;
     });
-
-    await this.audit(
-      actor,
-      'legal.updated',
-      'legalVersion',
-      id,
-      current,
-      updated,
-      ipAddress,
-      userAgent,
-    );
-
-    return updated;
   }
 
   @Permissions('legal.review')
@@ -2353,36 +2437,42 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const current = await this.prisma.legalVersion.findUnique({ where: { id } });
-    if (!current) {
-      throw new NotFoundException('Contenido legal no encontrado.');
+    if (body?.legalOverride !== undefined && typeof body?.legalOverride !== 'boolean') {
+      throw new BadRequestException('legalOverride debe ser booleano.');
     }
-    if (current.status !== 'approved') {
-      throw new BadRequestException('El contenido legal requiere aprobación antes de publicar.');
-    }
-    const checklist = current.checklist as Record<string, boolean> | null;
-    if (!this.legalChecklistComplete(current.pageKey, checklist) && !body.legalOverride) {
-      throw new BadRequestException('Checklist legal crítico incompleto. Publicación bloqueada.');
-    }
-    const contentText = JSON.stringify(current.content);
-    if (LEGAL_PLACEHOLDER_PATTERN.test(contentText) && !body.legalOverride) {
-      throw new BadRequestException('Existen placeholders legales pendientes. Requiere revisión o legal_override auditado.');
-    }
+    const legalOverride = body?.legalOverride === true;
+    return this.contentTransaction('legal', async (tx) => {
+      const current = await tx.legalVersion.findUnique({ where: { id } });
+      if (!current) {
+        throw new NotFoundException('Contenido legal no encontrado.');
+      }
+      if (current.status !== 'approved') {
+        throw new BadRequestException('El contenido legal requiere aprobación antes de publicar.');
+      }
+      const checklist = current.checklist as Record<string, boolean> | null;
+      if (!this.legalChecklistComplete(current.pageKey, checklist) && !legalOverride) {
+        throw new BadRequestException('Checklist legal crítico incompleto. Publicación bloqueada.');
+      }
+      const contentText = JSON.stringify(current.content);
+      if (LEGAL_PLACEHOLDER_PATTERN.test(contentText) && !legalOverride) {
+        throw new BadRequestException('Existen placeholders legales pendientes. Requiere revisión o legal_override auditado.');
+      }
 
-    await this.prisma.legalVersion.updateMany({
-      where: { pageKey: current.pageKey, status: 'published' },
-      data: { status: 'archived' },
+      await tx.legalVersion.updateMany({
+        where: { pageKey: current.pageKey, status: 'published' },
+        data: { status: 'archived' },
+      });
+      const updated = await tx.legalVersion.update({
+        where: { id },
+        data: {
+          status: 'published',
+          publishedAt: new Date(),
+          publishedById: actor.sub,
+        },
+      });
+      await this.audit(actor, legalOverride ? 'legal.published_with_override' : 'legal.published', 'legalVersion', id, current, updated, ipAddress, userAgent, tx);
+      return updated;
     });
-    const updated = await this.prisma.legalVersion.update({
-      where: { id },
-      data: {
-        status: 'published',
-        publishedAt: new Date(),
-        publishedById: actor.sub,
-      },
-    });
-    await this.audit(actor, body.legalOverride ? 'legal.published_with_override' : 'legal.published', 'legalVersion', id, current, updated, ipAddress, userAgent);
-    return updated;
   }
 
   @Permissions('legal.write')
@@ -2403,22 +2493,32 @@ export class AdminOperationsController {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    const current = await this.prisma.legalVersion.findUnique({ where: { id } });
-    if (!current) {
-      throw new NotFoundException('Contenido legal no encontrado.');
-    }
-    const updated = await this.prisma.legalVersion.update({
-      where: { id },
-      data: {
-        status: workflowStatus,
-        submittedAt: workflowStatus === 'pending_legal_review' ? new Date() : current.submittedAt,
-        approvedAt: workflowStatus === 'approved' ? new Date() : current.approvedAt,
-        submittedById: workflowStatus === 'pending_legal_review' ? actor.sub : current.submittedById,
-        approvedById: workflowStatus === 'approved' ? actor.sub : current.approvedById,
-      },
+    return this.contentTransaction('legal', async (tx) => {
+      const current = await tx.legalVersion.findUnique({ where: { id } });
+      if (!current) {
+        throw new NotFoundException('Contenido legal no encontrado.');
+      }
+      const canTransition = workflowStatus === 'pending_legal_review'
+        ? current.status === 'draft'
+        : workflowStatus === 'approved'
+          ? current.status === 'draft' || current.status === 'pending_legal_review'
+          : workflowStatus === 'archived' && current.status !== 'archived';
+      if (!canTransition) {
+        throw new BadRequestException('Transición de contenido no permitida desde el estado actual.');
+      }
+      const updated = await tx.legalVersion.update({
+        where: { id },
+        data: {
+          status: workflowStatus,
+          submittedAt: workflowStatus === 'pending_legal_review' ? new Date() : current.submittedAt,
+          approvedAt: workflowStatus === 'approved' ? new Date() : current.approvedAt,
+          submittedById: workflowStatus === 'pending_legal_review' ? actor.sub : current.submittedById,
+          approvedById: workflowStatus === 'approved' ? actor.sub : current.approvedById,
+        },
+      });
+      await this.audit(actor, `legal.${workflowStatus}`, 'legalVersion', id, current, updated, ipAddress, userAgent, tx);
+      return updated;
     });
-    await this.audit(actor, `legal.${workflowStatus}`, 'legalVersion', id, current, updated, ipAddress, userAgent);
-    return updated;
   }
 
   private async ensureDefaultLegalVersions() {
@@ -2452,16 +2552,44 @@ export class AdminOperationsController {
   @Get('content/footer')
   async getFooterContent() {
     await this.ensureDefaultFooterRevision();
-    const revisions = await this.prisma.footerRevision.findMany({
-      include: { links: { orderBy: { order: 'asc' } } },
-      orderBy: { version: 'desc' },
+    const [revisions, published] = await Promise.all([
+      this.prisma.footerRevision.findMany({
+        include: { links: { orderBy: { order: 'asc' } } },
+        orderBy: { version: 'desc' },
+        take: 20,
+      }),
+      this.prisma.footerRevision.findFirst({
+        where: { status: 'published' },
+        include: { links: { orderBy: { order: 'asc' } } },
+        orderBy: { version: 'desc' },
+      }),
+    ]);
+
+    const invalidationAlerts = published ? await this.prisma.auditLog.findMany({
+      where: { action: 'footer.route_invalidated', entityType: 'footerRevision', entityId: published.id },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: 20,
+      select: { id: true, createdAt: true, afterData: true },
+    }) : [];
+    const routeAlerts = invalidationAlerts.map((alert) => {
+      const data: Prisma.JsonObject = alert.afterData && typeof alert.afterData === 'object' && !Array.isArray(alert.afterData)
+        ? alert.afterData : {};
+      const invalidLinks = Array.isArray(data.invalidLinks) ? data.invalidLinks.flatMap((link) => {
+        if (!link || typeof link !== 'object' || Array.isArray(link)) return [];
+        return typeof link.linkId === 'string' && typeof link.reason === 'string'
+          ? [{ linkId: link.linkId, reason: link.reason }] : [];
+      }) : [];
+      return { id: alert.id, createdAt: alert.createdAt,
+        version: typeof data.version === 'number' ? data.version : published?.version,
+        invalidLinks };
     });
 
     return {
       data: revisions[0] ?? null,
-      published: revisions.find((revision) => revision.status === 'published') ?? null,
+      published,
       history: revisions,
+      routeAlerts,
+      requiresReview: invalidationAlerts.length > 0,
     };
   }
 
@@ -2479,6 +2607,16 @@ export class AdminOperationsController {
   }
 
   @Permissions('footer.write')
+  @Post('content/footer/validate')
+  async validateFooterContent(@Body() body: FooterUpdateBody) {
+    return this.contentTransaction('footer', async (tx) => {
+      this.validateFooterGroups(body?.groups);
+      await assertFooterRoutes(tx, body.groups!);
+      return { valid: true };
+    });
+  }
+
+  @Permissions('footer.write')
   @Post('content/footer')
   async createFooterContent(
     @Body() body: FooterUpdateBody,
@@ -2486,43 +2624,47 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    this.validateFooterGroups(body.groups);
-    const version = await this.nextSequence('footer', 'footerRevision') as number;
-    const created = await this.prisma.footerRevision.create({
-      data: {
-        id: uuidv7(),
-        version,
-        status: 'draft',
-        groupsJson: body.groups as Prisma.InputJsonValue,
-        submittedById: actor.sub,
-        links: {
-          create: body.groups!.flatMap((group, groupIndex) =>
-            group.links.map((link, linkIndex) => ({
-              id: uuidv7(),
-              group: group.title,
-              label: link.label,
-              href: link.href,
-              order: groupIndex * 100 + linkIndex,
-              isVisible: link.isVisible ?? true,
-            })),
-          ),
+    return this.contentTransaction('footer', async (tx) => {
+      this.validateFooterGroups(body?.groups);
+      await assertFooterRoutes(tx, body.groups!);
+      const version = (await tx.footerRevision.count()) + 1;
+      const created = await tx.footerRevision.create({
+        data: {
+          id: uuidv7(),
+          version,
+          status: 'draft',
+          groupsJson: body.groups as Prisma.InputJsonValue,
+          submittedById: actor.sub,
+          links: {
+            create: body.groups!.flatMap((group, groupIndex) =>
+              group.links.map((link, linkIndex) => ({
+                id: uuidv7(),
+                group: group.title,
+                label: link.label,
+                href: link.href,
+                order: groupIndex * 100 + linkIndex,
+                isVisible: link.isVisible ?? true,
+              })),
+            ),
+          },
         },
-      },
-      include: { links: true },
+        include: { links: true },
+      });
+
+      await this.audit(
+        actor,
+        'footer.created',
+        'footerRevision',
+        created.id,
+        null,
+        created,
+        ipAddress,
+        userAgent,
+        tx,
+      );
+
+      return created;
     });
-
-    await this.audit(
-      actor,
-      'footer.created',
-      'footerRevision',
-      created.id,
-      null,
-      created,
-      ipAddress,
-      userAgent,
-    );
-
-    return created;
   }
 
   @Permissions('footer.write')
@@ -2534,17 +2676,22 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    this.validateFooterGroups(body.groups);
-    const current = await this.prisma.footerRevision.findUnique({ where: { id }, include: { links: true } });
-    if (!current) {
-      throw new NotFoundException('Revisión de footer no encontrada.');
-    }
-    if (current.status === 'published' || current.status === 'archived') {
-      throw new BadRequestException('No se edita una revisión publicada o archivada.');
-    }
-    const updated = await this.prisma.$transaction(async (tx) => {
+    return this.contentTransaction('footer', async (tx) => {
+      this.validateFooterGroups(body?.groups);
+      await assertFooterRoutes(tx, body.groups!);
+      const current = await tx.footerRevision.findUnique({ where: { id }, include: { links: true } });
+      if (!current) {
+        throw new NotFoundException('Revisión de footer no encontrada.');
+      }
+      if (current.status !== 'draft' && current.status !== 'pending_legal_review') {
+        throw new BadRequestException('No se edita una revisión aprobada, publicada o archivada; cree nueva revisión.');
+      }
+      if (body.status !== undefined && body.status !== current.status) {
+        throw new BadRequestException('Use las acciones de revisión, aprobación y publicación para cambiar el estado.');
+      }
+
       await tx.footerLink.deleteMany({ where: { revisionId: id } });
-      return tx.footerRevision.update({
+      const updated = await tx.footerRevision.update({
         where: { id },
         data: {
           groupsJson: body.groups as Prisma.InputJsonValue,
@@ -2563,9 +2710,9 @@ export class AdminOperationsController {
         },
         include: { links: true },
       });
+      await this.audit(actor, 'footer.updated', 'footerRevision', id, current, updated, ipAddress, userAgent, tx);
+      return updated;
     });
-    await this.audit(actor, 'footer.updated', 'footerRevision', id, current, updated, ipAddress, userAgent);
-    return updated;
   }
 
   @Permissions('footer.write')
@@ -2598,25 +2745,28 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const current = await this.prisma.footerRevision.findUnique({ where: { id }, include: { links: true } });
-    if (!current) {
-      throw new NotFoundException('Revisión de footer no encontrada.');
-    }
-    if (current.status !== 'approved') {
-      throw new BadRequestException('El footer requiere aprobación antes de publicar.');
-    }
-    this.validateFooterGroups(current.groupsJson as FooterUpdateBody['groups']);
-    await this.prisma.footerRevision.updateMany({
-      where: { status: 'published' },
-      data: { status: 'archived' },
+    return this.contentTransaction('footer', async (tx) => {
+      const current = await tx.footerRevision.findUnique({ where: { id }, include: { links: true } });
+      if (!current) {
+        throw new NotFoundException('Revisión de footer no encontrada.');
+      }
+      if (current.status !== 'approved') {
+        throw new BadRequestException('El footer requiere aprobación antes de publicar.');
+      }
+      this.validateFooterGroups(current.groupsJson as FooterUpdateBody['groups']);
+      await assertFooterRoutes(tx, current.groupsJson as NonNullable<FooterUpdateBody['groups']>);
+      await tx.footerRevision.updateMany({
+        where: { status: 'published' },
+        data: { status: 'archived' },
+      });
+      const updated = await tx.footerRevision.update({
+        where: { id },
+        data: { status: 'published', publishedAt: new Date(), publishedById: actor.sub },
+        include: { links: true },
+      });
+      await this.audit(actor, 'footer.published', 'footerRevision', id, current, updated, ipAddress, userAgent, tx);
+      return updated;
     });
-    const updated = await this.prisma.footerRevision.update({
-      where: { id },
-      data: { status: 'published', publishedAt: new Date(), publishedById: actor.sub },
-      include: { links: true },
-    });
-    await this.audit(actor, 'footer.published', 'footerRevision', id, current, updated, ipAddress, userAgent);
-    return updated;
   }
 
   private async setFooterWorkflow(
@@ -2626,23 +2776,37 @@ export class AdminOperationsController {
     ipAddress?: string,
     userAgent?: string,
   ) {
-    const current = await this.prisma.footerRevision.findUnique({ where: { id }, include: { links: true } });
-    if (!current) {
-      throw new NotFoundException('Revisión de footer no encontrada.');
-    }
-    const updated = await this.prisma.footerRevision.update({
-      where: { id },
-      data: {
-        status,
-        submittedAt: status === 'pending_legal_review' ? new Date() : current.submittedAt,
-        approvedAt: status === 'approved' ? new Date() : current.approvedAt,
-        submittedById: status === 'pending_legal_review' ? actor.sub : current.submittedById,
-        approvedById: status === 'approved' ? actor.sub : current.approvedById,
-      },
-      include: { links: true },
+    return this.contentTransaction('footer', async (tx) => {
+      const current = await tx.footerRevision.findUnique({ where: { id }, include: { links: true } });
+      if (!current) {
+        throw new NotFoundException('Revisión de footer no encontrada.');
+      }
+      const canTransition = status === 'pending_legal_review'
+        ? current.status === 'draft'
+        : status === 'approved'
+          ? current.status === 'draft' || current.status === 'pending_legal_review'
+          : status === 'archived' && current.status !== 'archived';
+      if (!canTransition) {
+        throw new BadRequestException('Transición de contenido no permitida desde el estado actual.');
+      }
+      if (status === 'pending_legal_review' || status === 'approved') {
+        this.validateFooterGroups(current.groupsJson as FooterUpdateBody['groups']);
+        await assertFooterRoutes(tx, current.groupsJson as NonNullable<FooterUpdateBody['groups']>);
+      }
+      const updated = await tx.footerRevision.update({
+        where: { id },
+        data: {
+          status,
+          submittedAt: status === 'pending_legal_review' ? new Date() : current.submittedAt,
+          approvedAt: status === 'approved' ? new Date() : current.approvedAt,
+          submittedById: status === 'pending_legal_review' ? actor.sub : current.submittedById,
+          approvedById: status === 'approved' ? actor.sub : current.approvedById,
+        },
+        include: { links: true },
+      });
+      await this.audit(actor, `footer.${status}`, 'footerRevision', id, current, updated, ipAddress, userAgent, tx);
+      return updated;
     });
-    await this.audit(actor, `footer.${status}`, 'footerRevision', id, current, updated, ipAddress, userAgent);
-    return updated;
   }
 
   private async ensureDefaultFooterRevision() {

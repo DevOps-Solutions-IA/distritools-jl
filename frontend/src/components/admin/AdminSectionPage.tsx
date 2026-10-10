@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { FooterRouteEditor } from './FooterRouteEditor';
+import type { FooterRevisionInput } from '@/lib/api/footer';
 import type React from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -700,6 +702,30 @@ export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
                 <p className="mt-2 text-xl font-semibold text-[var(--color-off-white)]">{((operations.footer.data as { links?: unknown[] } | undefined)?.links ?? []).length}</p>
               </div>
             </div>
+            {operations.footer.requiresReview ? (
+              <div
+                role="alert"
+                className="mt-4 rounded-xl border border-amber-300/25 p-4 text-amber-100"
+              >
+                Hay destinos publicados que dejaron de estar disponibles. Los
+                enlaces afectados se ocultan en la tienda. Cree una nueva
+                revisión para corregirlos y solicitar aprobación.
+              </div>
+            ) : null}
+            {Array.isArray(operations.footer.routeAlerts) ? (
+              <p className="mt-2 text-sm">
+                Alertas de destinos: {operations.footer.routeAlerts.length}
+              </p>
+            ) : null}
+            <FooterRouteEditor
+              key={String(
+                (operations.footer.data as FooterRevisionInput | undefined)
+                  ?.id ?? 'new',
+              )}
+              revision={
+                operations.footer.data as FooterRevisionInput | undefined
+              }
+            />
           </section>
         ) : null}
 
