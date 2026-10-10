@@ -1,56 +1,38 @@
+'use client';
+
 import Link from 'next/link';
 import { DistriToolsLogo } from '@/components/brand/DistriToolsLogo';
-import { siteConfig } from '@/config/site';
-
-interface FooterLinkItem {
-  label: string;
-  href: string;
-  external?: boolean;
-}
-
-interface FooterLinkGroup {
-  title: string;
-  items: FooterLinkItem[];
-}
-
-const footerLinks: FooterLinkGroup[] = [
-  {
-    title: 'Catálogo',
-    items: [
-      { label: 'Productos', href: '/productos' },
-      { label: 'Marcas', href: '/marcas' },
-      { label: 'Categorías', href: '/categorias' },
-    ],
-  },
-  {
-    title: 'Líneas clave',
-    items: [
-      { label: 'Compresores y aire', href: '/productos?category=compresores' },
-      { label: 'Fijación industrial', href: '/productos?category=fijacion' },
-      { label: 'Soldadura y corte', href: '/productos?category=soldadura' },
-    ],
-  },
-  {
-    title: 'Atención',
-    items: [
-      { label: 'Rastreo de pedido', href: '/rastreo-de-pedido' },
-      { label: 'Contacto', href: '/contacto' },
-      { label: 'WhatsApp', href: siteConfig.whatsappUrl, external: true },
-    ],
-  },
-  {
-    title: 'Legal',
-    items: [
-      { label: 'Política de privacidad', href: '/politica-de-privacidad' },
-      { label: 'Tratamiento de datos', href: '/tratamiento-de-datos' },
-      { label: 'Términos y condiciones', href: '/terminos-y-condiciones' },
-      { label: 'Política de envíos', href: '/politica-de-envios' },
-      { label: 'Cambios y garantías', href: '/cambios-devoluciones-y-garantias' },
-    ],
-  },
-];
+import { useEffect, useState } from 'react';
+import { getPublicFooter, type PublicFooter } from '@/lib/api/footer';
 
 export function StorefrontFooter() {
+  const [footerLinks, setFooterLinks] = useState<PublicFooter['groups']>([]);
+  useEffect(() => {
+    let active = true;
+    let sequence = 0;
+    const refresh = () => {
+      const request = ++sequence;
+      setFooterLinks([]);
+      getPublicFooter()
+        .then((footer) => {
+          if (active && request === sequence) setFooterLinks(footer.groups);
+        })
+        .catch(() => {
+          if (active && request === sequence) setFooterLinks([]);
+        });
+    };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
   return (
     <footer className="mt-10 border-t border-[var(--color-border)] bg-[#050505] sm:mt-16 lg:mt-20">
       <div className="enterprise-grid grid gap-6 py-7 sm:gap-10 sm:py-10 lg:grid-cols-[0.8fr_1.2fr]">
@@ -64,7 +46,8 @@ export function StorefrontFooter() {
             Herramientas que construyen resultados
           </p>
           <p className="max-w-md text-sm leading-6 text-[var(--color-text-secondary)] sm:leading-7">
-            Soluciones para industria, mantenimiento, construcción y operación técnica.
+            Soluciones para industria, mantenimiento, construcción y operación
+            técnica.
           </p>
         </div>
 
@@ -75,27 +58,16 @@ export function StorefrontFooter() {
                 {group.title}
               </h3>
               <div className="grid gap-3">
-                {group.items.map((item) =>
-                  item.external ? (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-off-white)]"
-                    >
-                      {item.label}
-                    </a>
-                  ) : (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-off-white)]"
-                    >
-                      {item.label}
-                    </Link>
-                  ),
-                )}
+                {group.items.map((item) => (
+                  <Link
+                    key={`${item.label}:${item.href}`}
+                    href={item.href}
+                    prefetch={false}
+                    className="text-sm text-[var(--color-text-secondary)] transition hover:text-[var(--color-off-white)]"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </div>
             </div>
           ))}
