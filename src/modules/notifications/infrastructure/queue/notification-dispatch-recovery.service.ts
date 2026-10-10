@@ -113,7 +113,9 @@ export class NotificationDispatchRecoveryService implements OnModuleInit, OnModu
       await job.remove();
       return this.queue.add('send-notification', { notificationId }, this.jobOptions(notificationId));
     }
-    if (['waiting', 'active', 'delayed', 'waiting-children', 'prioritized'].includes(state)) return job;
+    // Another batch may have released its lease after making this job executable.
+    // Seeing that existing transport is not a new recovery by this batch.
+    if (['waiting', 'active', 'delayed', 'waiting-children', 'prioritized'].includes(state)) return null;
     throw new Error('Notification queue job state cannot be recovered safely');
   }
 

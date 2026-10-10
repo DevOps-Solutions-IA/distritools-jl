@@ -3,6 +3,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
 import { AUTH_QUEUE_NAME } from 'src/common/constants/auth.constants';
 import { createProducerRedisOptions, createWorkerRedisOptions } from 'src/infra/queue/redis-role-connection-options';
+import { RoleAwareWorker } from 'src/infra/queue/role-aware-worker';
+
+BullModule.workerClass = RoleAwareWorker;
 
 const DOMAIN_EVENTS_QUEUE = 'domain-events';
 

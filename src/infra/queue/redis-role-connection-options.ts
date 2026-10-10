@@ -27,8 +27,12 @@ export function createProducerRedisOptions(redisUrl: string): RedisOptions {
 }
 
 export function createWorkerRedisOptions(redisUrl: string, random: () => number = Math.random): RedisOptions {
+  return createWorkerRedisOptionsFromConnection(baseOptions(redisUrl), random);
+}
+
+export function createWorkerRedisOptionsFromConnection(connection: RedisOptions, random: () => number = Math.random): RedisOptions {
   return {
-    ...baseOptions(redisUrl),
+    ...connection,
     enableOfflineQueue: true,
     maxRetriesPerRequest: null,
     retryStrategy: (attempt) => {
