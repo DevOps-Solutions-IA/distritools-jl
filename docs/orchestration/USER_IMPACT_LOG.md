@@ -380,3 +380,8 @@ Addendum posterior ROOT: seguridad history/tree/full72diff0 y audit baseline PAS
 
 
 EX-08.INV — nueve A17-A25 inventario/precios verificadas conpersistencia/audit/RBAC/costos/rollback7afterINSERT; cantidadCSV inválida400sinparciales yrecuperaciónsinretryciego. ProductPR63 e0eaf2949101aed8e3a2ccb45909c8d046222007 exactseven; ROOT34729090341/nineactualactions/18quantity+7negative, challengerPASS. Total22CAT+INV/49pending trasestatransición; listas250/100 explícitas y exportread500auditpersist1 calificados. ProducciónNO-GO/SEC/providers/policies intactos; rollbackPRlimitado.
+
+
+## EX-08.LOG tracking event boundary — 2026-10-11
+
+API_CONTRACT / AUTH_SECURITY. Both tracking response branches now use the existing safe events contract: id/status/occurredAt, newest100, deterministic timestamp/id ordering. Persisted description/location/rawPayload and synthetic recipient/credential details disappear from this read response; all stored history remains. Current tracking.read/JWT revocation/audit, guide/provider/error envelopes are preserved. ROOT354unit291critical90E2E,7focusedunit/8compiledHTTP,22guards42safety/fresh ownPrisma18+13migrations PASS on official INV main. Final six-file challenger/seven exact-head PR controls pending at entry freeze; no extra action certified (22/49unchanged). Real providerStatus payload and create/sync atomicity NOT_TESTED outside scope; SEC/GOV/providers/business/held/cutover fences remain, productionNO-GO. Negative risk: consumers relying on private/unbounded event rows lose those fields; rollback via governed product revert reintroduces inherited exposure, with no data/schema rollback. Details EX-08.LOG-raw-tracking-orchestrator-validation.md.
