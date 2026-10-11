@@ -124,7 +124,13 @@ export class GetAdminReportsUseCase {
   ) {}
 
   async execute(actor: CurrentUser, query: ReportQuery = {}) {
+    return this.readReport(actor, query, false);
+  }
+
+  private async readReport(actor: CurrentUser, query: ReportQuery, auditForExport: boolean) {
     assertHasPermissions(actor.permissions, ['reports.read']);
+    const auditAllowed = actor.permissions.includes('audit.read')
+      || (auditForExport && actor.permissions.includes('audit.export'));
 
     this.validateQuery(query);
     const range = this.resolveRange(query.range);
@@ -213,7 +219,7 @@ export class GetAdminReportsUseCase {
         take: 80,
         select: { eventName: true, status: true, provider: true, attempts: true, lastError: true, createdAt: true },
       }),
-      tx.auditLog.findMany({
+      auditAllowed ? tx.auditLog.findMany({
         where: {
           createdAt: { gte: from, lte: to },
           ...(query.module ? { entityType: query.module } : {}),
@@ -224,7 +230,7 @@ export class GetAdminReportsUseCase {
         },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 80,
-      }),
+      }) : Promise.resolve([]),
       tx.shipment.findMany({
         where: { createdAt: { gte: from, lte: to } },
         select: {
@@ -266,7 +272,7 @@ export class GetAdminReportsUseCase {
     const paymentsReport = this.buildPaymentsReport(payments, actor.permissions);
     const shipping = this.buildShippingReport(filteredOrders, shipments);
     const notifications = this.buildNotificationsReport(notificationsByStatus, notificationsFailed);
-    const auditReport = this.buildAuditReport(audit);
+    const auditReport = this.buildAuditReport(audit, auditAllowed);
     const blockers = readiness.modules
       .filter((module) =>
         ['BLOCKED_PROVIDER', 'BLOCKED_CONFIGURATION', 'MOCK_ONLY', 'NO_GO'].includes(module.status),
@@ -354,7 +360,7 @@ export class GetAdminReportsUseCase {
       throw new ForbiddenException('Exportar auditoría requiere audit.export.');
     }
 
-    const report = await this.execute(actor, query);
+    const report = await this.readReport(actor, query, type === 'audit');
     const rows = this.exportRows(type, report).slice(0, 1000);
     const format = query.format ?? 'csv';
     return {
@@ -629,11 +635,12 @@ export class GetAdminReportsUseCase {
     entityId: string;
     createdAt: Date;
     actor: { email: string } | null;
-  }>) {
+  }>, allowed: boolean) {
     return {
+      accessStatus: allowed ? 'GRANTED' : 'NO_PERMISSION',
       kpis: {
-        auditEvents: audit.length,
-        reportsExports: audit.filter((entry) => entry.action === 'reports.exported').length,
+        auditEvents: allowed ? audit.length : 'NO_PERMISSION',
+        reportsExports: allowed ? audit.filter((entry) => entry.action === 'reports.exported').length : 'NO_PERMISSION',
       },
       chart: this.countValues(audit.map((entry) => entry.action)),
       rows: audit.slice(0, 80).map((entry) => ({
@@ -643,7 +650,7 @@ export class GetAdminReportsUseCase {
         entityId: entry.entityId,
         createdAt: entry.createdAt.toISOString(),
       })),
-      empty: audit.length === 0,
+      empty: allowed && audit.length === 0,
     };
   }
 

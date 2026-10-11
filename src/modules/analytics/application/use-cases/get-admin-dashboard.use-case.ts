@@ -82,6 +82,7 @@ export class GetAdminDashboardUseCase {
   async execute(actor: CurrentUser, rangeKey?: string) {
     assertHasPermissions(actor.permissions, ['dashboard.read']);
     const financialAllowed = actor.permissions.includes('reports.financial.read');
+    const auditAllowed = actor.permissions.includes('audit.read');
 
     const range = this.resolveRange(rangeKey);
     const from = new Date(range.from);
@@ -171,20 +172,20 @@ export class GetAdminDashboardUseCase {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
       }),
-      tx.auditLog.findMany({
+      auditAllowed ? tx.auditLog.findMany({
         select: { id: true, action: true, entityType: true, createdAt: true, actor: { select: { email: true } } },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
-      }),
+      }) : Promise.resolve([]),
       tx.notification.findMany({
         where: { status: 'failed' },
         select: { eventName: true, eventId: true, lastError: true, createdAt: true },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 5,
       }),
-      tx.auditLog.count({
+      auditAllowed ? tx.auditLog.count({
         where: { createdAt: { gte: from, lte: to } },
-      }),
+      }) : Promise.resolve(0),
       tx.shipment.findMany({
         where: { createdAt: { gte: from, lte: to } },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -333,7 +334,7 @@ export class GetAdminDashboardUseCase {
           partialModulesCount: (readinessCounts.PARTIAL ?? 0) + (readinessCounts.GO_WITH_RISKS ?? 0),
           readyModulesCount: readinessCounts.READY ?? 0,
           productionBlockersCount: readiness.blockedModules.length,
-          lastAuditEventsCount: auditEventsCount,
+          lastAuditEventsCount: auditAllowed ? auditEventsCount : 'NO_PERMISSION',
         },
       },
       charts: {
@@ -360,6 +361,7 @@ export class GetAdminDashboardUseCase {
         shippingProviderStatus: this.shippingProviderStatus(),
       }),
       recentActivity: {
+        auditAccessStatus: auditAllowed ? 'GRANTED' : 'NO_PERMISSION',
         orders: recentOrders.map((order) => ({
           orderNumber: order.orderNumber,
           status: order.status,
