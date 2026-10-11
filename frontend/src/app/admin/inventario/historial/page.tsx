@@ -1,9 +1,20 @@
 import { AdminShell } from '@/components/layout/AdminShell';
 import { Badge } from '@/components/ui/Badge';
-import { getAdminOperationalSnapshot } from '@/lib/admin/server-data';
+import { AdminReadFailure } from '@/features/admin/platform/ReadFailure';
+import { AdminReadError, getAdminOperationalSnapshot, type AdminOperationalSnapshot } from '@/lib/admin/server-data';
+
+export const dynamic = 'force-dynamic';
 
 export default async function AdminInventoryHistoryPage() {
-  const operations = await getAdminOperationalSnapshot();
+  let operations: Pick<AdminOperationalSnapshot, 'inventoryHistory'>;
+  try {
+    operations = await getAdminOperationalSnapshot(['inventoryHistory']);
+  } catch (error) {
+    if (error instanceof AdminReadError) {
+      return <AdminShell><AdminReadFailure result={error.result} /></AdminShell>;
+    }
+    throw error;
+  }
   const rows = operations.inventoryHistory.data.slice(0, 150);
 
   return (

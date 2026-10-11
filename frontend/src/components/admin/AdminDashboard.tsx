@@ -1,3 +1,5 @@
+import { AdminReadError } from '@/lib/admin/server-data';
+import { AdminReadFailure } from '@/features/admin/platform/ReadFailure';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { KpiCard } from '@/components/ui/KpiCard';
@@ -273,7 +275,12 @@ function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }
 }
 
 export async function AdminDashboard({ range = '30d' }: { range?: string } = {}) {
-  const dashboard = await getAdminDashboardData(range);
+  let dashboard: AdminDashboardData;
+  try { dashboard = await getAdminDashboardData(range); }
+  catch (error) {
+    if (!(error instanceof AdminReadError)) throw error;
+    return <section className="space-y-4"><h1 className="text-2xl font-semibold">Centro operativo</h1><AdminReadFailure result={error.result} /><p className="text-sm text-[var(--color-text-secondary)]">Las ventas del periodo, alertas críticas y readiness no están disponibles hasta recuperar la lectura administrativa.</p></section>;
+  }
   const activeRange = dashboard.range.key;
   const kpis = dashboard.kpis;
   const primaryKpis = [

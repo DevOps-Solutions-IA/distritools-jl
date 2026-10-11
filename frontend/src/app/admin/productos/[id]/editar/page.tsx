@@ -22,7 +22,7 @@ export default async function AdminProductEditPage({ params }: PageProps) {
   const [snapshot, catalog, operations] = await Promise.all([
     getAdminCatalogSnapshot(),
     getAdminCatalogOperationsData('30d'),
-    getAdminOperationalSnapshot(),
+    getAdminOperationalSnapshot(['inventoryWarehouses']),
   ]);
   const product = snapshot.productRows.find((item) => item.id === id) ?? null;
   const operationalProduct = catalog.products.find((item) => item.id === id) ?? null;

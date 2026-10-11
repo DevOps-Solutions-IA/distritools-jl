@@ -1,3 +1,5 @@
+import { AdminReadError } from '@/lib/admin/server-data';
+import { AdminReadFailure } from '@/features/admin/platform/ReadFailure';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { KpiCard } from '@/components/ui/KpiCard';
@@ -138,7 +140,12 @@ function exportHref(range: string, type: string, format: 'csv' | 'pdf') {
 }
 
 export async function AdminReports({ range = '30d', tab = 'sales' }: { range?: string; tab?: string } = {}) {
-  const reports = await getAdminReportsData(range);
+  let reports: AdminReportsData;
+  try { reports = await getAdminReportsData(range); }
+  catch (error) {
+    if (!(error instanceof AdminReadError)) throw error;
+    return <section className="space-y-4"><h1 className="text-2xl font-semibold">Reportes admin</h1><AdminReadFailure result={error.result} /><p className="text-sm text-[var(--color-text-secondary)]">Los reportes no están disponibles hasta recuperar la lectura administrativa.</p></section>;
+  }
   const activeTab = reportTabs.some((item) => item.key === tab) ? tab : 'sales';
   const activeReport = reports.reports[activeTab as keyof typeof reports.reports];
   const activeRows = 'rows' in activeReport ? activeReport.rows as Array<Record<string, unknown>> : reports.reports.readiness.modules as Array<Record<string, unknown>>;

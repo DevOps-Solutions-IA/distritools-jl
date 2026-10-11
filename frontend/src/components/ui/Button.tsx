@@ -51,10 +51,11 @@ export function Button({
       className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || loading}
       aria-busy={loading}
+      data-admin-tone={variant}
       {...props}
     >
       {loading ? (
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span aria-hidden="true" className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
       ) : null}
       <span>{children}</span>
     </button>

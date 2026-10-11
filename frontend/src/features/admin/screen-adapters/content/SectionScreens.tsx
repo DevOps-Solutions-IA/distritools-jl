@@ -25,17 +25,17 @@ export function LegalScreen({ operations }: SectionScreenProps<'legal'>) {
           render: (row) => (
             <Badge
               variant={
-                row.workflowStatus === 'published' ? 'success' : 'warning'
+                row.status === 'published' ? 'success' : 'warning'
               }
             >
-              {String(row.workflowStatus ?? 'draft')}
+              {String(row.status ?? 'Sin estado')}
             </Badge>
           ),
         },
         {
           key: 'published',
           label: 'Publicado',
-          render: (row) => (row.isPublished ? 'Sí' : 'No'),
+          render: (row) => row.publishedAt ? new Date(String(row.publishedAt)).toLocaleString('es-CO') : 'No',
         },
         {
           key: 'updated',

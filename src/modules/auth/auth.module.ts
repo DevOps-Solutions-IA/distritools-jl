@@ -23,6 +23,7 @@ import { VerifyTwoFactorUseCase } from 'src/modules/auth/application/use-cases/v
 import { TOKEN_SERVICE } from 'src/modules/auth/application/ports/token-service.port';
 import { TWO_FACTOR_PORT } from 'src/modules/auth/application/ports/two-factor.port';
 import { AuthController } from 'src/modules/auth/infrastructure/http/controllers/auth.controller';
+import { AdminSessionController } from 'src/modules/auth/infrastructure/http/controllers/admin-session.controller';
 import { PrismaAuditRepository } from 'src/modules/auth/infrastructure/repositories/prisma-audit.repository';
 import { PrismaAuthSessionRepository } from 'src/modules/auth/infrastructure/repositories/prisma-auth-session.repository';
 import { PrismaTwoFactorChallengeRepository } from 'src/modules/auth/infrastructure/repositories/prisma-two-factor-challenge.repository';
@@ -52,7 +53,7 @@ import { TwoFactorEncryptionService } from 'src/common/security/two-factor-encry
       },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AdminSessionController],
   providers: [
     TwoFactorEncryptionService,
     AuthPolicyService,
