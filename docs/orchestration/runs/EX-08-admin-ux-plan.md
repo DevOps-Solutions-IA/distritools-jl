@@ -1,6 +1,6 @@
 # EX-08 — Enterprise Admin UX and Operator Usability
 
-**Status:** PLANNED, F0 NEXT. **Input:** EX-07.4 product PR #46 merged on main at bb36de81b0da1c78c9ccee3b4517dc825b5e8cc0, seven exact-head CI PASS (run 38073960147). **Production:** NO-GO; EX-09–EX-12 continue independently.
+**Status:** ACTIVE, DOMAIN WAVE NEXT; F0 + F1/F2/SESSION MERGED. **Input:** EX-07.4 product PR #46 merged on main at bb36de81b0da1c78c9ccee3b4517dc825b5e8cc0, seven exact-head CI PASS (run 38073960147). **Production:** NO-GO; EX-09–EX-12 continue independently.
 
 ## Product contract
 
@@ -15,6 +15,12 @@ Baseline inventory is **42 Next.js admin page routes**, **20 module declarations
 - docs/orchestration/runs/EX-08-admin-action-matrix.csv — 71 claimed actions, each requiring proof of backend authorization, state transition, persistence and audit.
 
 Prior detailed planning and 13 Codex tasks were prepared on the authorized workstation at /home/wundah/distritoolsjl-ex08-prep-20261010. That folder is a handoff resource, not an automatically executable plan. This runbook and the tracked CSVs are the portable, reviewable baseline.
+
+## Verified platform entry for domain work
+
+F0 product PR #48 and its documentary transition are closed. F1/F2/SESSION product PR #51 merged at `220d5f726abdbc9ade64aca39a9dafd050cbce8c`, seven exact-head checks PASS on `459b76c0669af81531ba9e63c2309b2a1acb2658` (run38097274208, attempt1, behind0,61 files). ROOT independently validated297 unit/security,260 full critical,90 E2E,214 frontend and actual compiled-Next browser/session/role/fault/persistence cases; challenger found no unresolved introducedP0/P1/P2. Full validation and preserved failures: EX-08.PLATFORM-orchestrator-validation.md.
+
+This platform entry preserves42 route paths but certifies zero of71 complete domain action workflows. All42 complete live workflows, permission-specific writes, downloads, concurrency and full domain browser/a11y acceptance remain required. Activate CAT/INV/CRM from live main only after the separate platform STATE transition, then remaining domains and QA/challenger. Dependency installation for reproducible browser infrastructure is sequential and exclusively QA-owned; it does not authorize new providers, policy or production.
 
 ## Static findings to reproduce and resolve
 
