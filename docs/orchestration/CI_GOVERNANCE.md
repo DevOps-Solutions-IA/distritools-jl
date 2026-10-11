@@ -80,3 +80,6 @@ EX-08.SESSION.RECOVERY product PR59 merged ac002cc947da8fdad3f8add786d37394f9b0b
 
 
 EX-08.CONTROL.AUDIT_BOUNDARY productPR61 `838d2122190340dae6b4dfb8469c078311b6a90d` exact `453588b518f3736a639c5072aba90f310c888335` CI38136541159 sevenPASS/behind0/scope6; ROOT actualsource1090/treeequal/264critical/5browser verified. Independent bounded challenger PASS; legacyprojection and CONTROL UI remain separate. This documentary candidate requires its own exactseven, no bypass. ProductionNO-GO.
+
+
+EX-08.INV PR63 `e0eaf2949101aed8e3a2ccb45909c8d046222007` exact `75bc78e947d1e1c6073be8df83026b85946d0ab6` CI38141357292 sevenPASS/behind0/scope72; ROOT actual1146source/treeequal/290critical/5browser/cleanup10. SeparateSTATE candidate requires freshseven; no bypass/prodGO.
