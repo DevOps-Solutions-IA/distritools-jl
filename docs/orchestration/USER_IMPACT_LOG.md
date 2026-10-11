@@ -329,3 +329,10 @@ PASS:2defectosdelharness corregidos con evidencia sin cambiar comportamiento de 
 ### EX-08.QA browser — product closure PR55
 
 Product PR55 merged ae9d3aef6cb3e994252c9d00946e49ff46c39cd2 after seven actual exact-head PASS on35cb0fea8326886ae1e33c8496e21614894e89bd (CI38122289650),behind0,scope23,independent ROOT/challenger no introducedP0/P1/P2. CI actually ran262 critical,4 environment guards,42 isolation and5 browser cases; sanitized service/cleanup/source receipts are retained. The first failed head e782a12/run38120629579 remains6/7,39/42 isolation, browserNOT_TESTED. This separate documentary candidate records the validated product ancestor and bounded QA completion; it still requires its own seven checks before merge. No complete domain action is certified, no policy/provider/schema/production change. SEC/GOV/raw audit/architecture/auth debts and held/cutover_pending remain; production NO-GO. Detailed evidence/rollback: EX-08.QA-browser-closure.md.
+
+
+### EX-08.CAT — catálogo y autoridad de medios, candidato gobernado
+
+PASS local ROOT:13 acciones A04-A16 mediante22 grupos de navegador real/99 solicitudes BFF y6 grupos adicionales de medios;320 unit/security,263 critical y90 E2E originales. Crear/editar conserva estados/metadata y comunica persistencia parcial sin repetir escrituras; archivo exige motivo, relaciones tienen paginación de vista y errores/denegaciones visibles. Imagen nueva/reemplazada requiere recurso existente y aprobación específica auditada de editor autorizado; no aprobación ficticia por escribir ruta. Editor sin variants.read puede gestionar imagen con permisos efectivos;320px sin overflow.
+
+Candidato53 desde main fb6f9149d8b8391b97396b67146ce8deb130a783: siete CI,merge y STATE separados pendientes; cero certificado global71. Límites: overview completo sin cursor backend, producto/variante secuenciales con recuperación, HIGH baseline abiertos. Rollback por rechazo previo/revert gobernado sin schema/datos históricos. SEC/GOV/providers/held/cutover/business intactos, producción NO-GO. Detalles y fallos: EX-08.CAT-orchestrator-validation.md.

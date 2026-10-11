@@ -1,3 +1,2 @@
-export { default, metadata } from '../nuevo/page';
-
-export const dynamic = 'force-dynamic';
+import { redirect } from 'next/navigation';
+export default function CanonicalTaxonomyAlias() { redirect('/admin/categorias/nuevo'); }

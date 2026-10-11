@@ -1,4 +1,7 @@
 import Link from 'next/link';
+import { CatalogPermissionProvider } from '@/features/admin/catalog/useCatalogPermissions';
+import { CatalogViewPagination, catalogViewPage } from '@/features/admin/catalog/ViewPagination';
+import { catalogPermissions } from '@/features/admin/catalog/server';
 import { AdminPriceUpdateForm, AdminProductActions } from '@/components/admin/AdminCatalogActions';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -32,9 +35,9 @@ function normalize(value: string) {
   return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
-function matchesSearch(row: { name?: string; slug?: string; sku?: string; product?: string }, search: string) {
+function matchesSearch(row: { name?: string; slug?: string; sku?: string; primarySku?: string | null; product?: string }, search: string) {
   if (!search.trim()) return true;
-  const haystack = normalize([row.name, row.slug, row.sku, row.product].filter(Boolean).join(' '));
+  const haystack = normalize([row.name, row.slug, row.sku, row.primarySku, row.product].filter(Boolean).join(' '));
   return haystack.includes(normalize(search.trim()));
 }
 
@@ -82,11 +85,12 @@ function ProductStatusBadges({ product }: { product: AdminCatalogProductRow }) {
   );
 }
 
-export async function AdminProductsScreen({ search = '', status = 'all' }: { search?: string; status?: string }) {
-  const data = await getAdminCatalogOperationsData('30d');
+export async function AdminProductsScreen({ search = '', status = 'all', page = '1' }: { search?: string; status?: string; page?: string }) {
+  const [data, permissions] = await Promise.all([getAdminCatalogOperationsData('30d'), catalogPermissions()]);
   const rows = data.products
     .filter((row) => matchesSearch(row, search))
     .filter((row) => status === 'all' || row.sellability.status === status || row.status === status);
+  const pagination = catalogViewPage([...rows].sort((a,b) => a.id.localeCompare(b.id)), page);
 
   return (
     <div className="space-y-5">
@@ -101,7 +105,7 @@ export async function AdminProductsScreen({ search = '', status = 'all' }: { sea
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant={statusVariant(data.readiness.products)}>{data.readiness.products}</Badge>
-            <Link href="/admin/productos/nuevo"><Button>Nuevo producto completo</Button></Link>
+            {permissions.includes('products.write') ? <Link href="/admin/productos/nuevo"><Button>Nuevo producto completo</Button></Link> : null}
           </div>
         </div>
       </section>
@@ -122,7 +126,7 @@ export async function AdminProductsScreen({ search = '', status = 'all' }: { sea
         statuses={['all', 'SELLABLE', 'NOT_SELLABLE', 'INCOMPLETE', 'MISSING_PRICE', 'MISSING_SKU', 'MISSING_CATEGORY', 'MISSING_BRAND', 'OUT_OF_STOCK', 'active', 'inactive', 'archived']}
       />
 
-      <section className="overflow-hidden rounded-[1.35rem] border border-[var(--color-border)] bg-[#0d0d0d]">
+      <CatalogPermissionProvider><section className="overflow-hidden rounded-[1.35rem] border border-[var(--color-border)] bg-[#0d0d0d]">
         <div className="flex items-center justify-between border-b border-white/10 p-4">
           <h2 className="text-base font-semibold text-[var(--color-off-white)]">Productos operativos</h2>
           <Badge variant="neutral">{rows.length}</Badge>
@@ -135,11 +139,11 @@ export async function AdminProductsScreen({ search = '', status = 'all' }: { sea
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {rows.map((product) => (
+              {pagination.rows.map((product) => (
                 <tr key={product.id} className="align-top">
                   <td className="px-4 py-4">
                     <div className="flex gap-3">
-                      <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-[var(--color-text-secondary)]">IMG</div>
+                      <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-xs font-semibold text-[var(--color-text-secondary)]">{product.hasApprovedImage ? 'Con imagen' : 'Pendiente'}</div>
                       <div>
                         <Link href={`/admin/productos/${product.id}`} className="font-semibold text-[var(--color-off-white)] hover:text-[var(--color-industrial-yellow)]">{product.name}</Link>
                         <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{product.slug}</p>
@@ -158,7 +162,7 @@ export async function AdminProductsScreen({ search = '', status = 'all' }: { sea
                     <div className="grid min-w-[13rem] gap-2">
                       <div className="flex flex-wrap gap-2">
                         <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}`}>Ver</Link>
-                        <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}/editar`}>Editar</Link>
+                        {permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}/editar`}>Editar</Link> : null}
                         <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/inventario?sku=${encodeURIComponent(product.primarySku ?? '')}`}>Inventario</Link>
                       </div>
                       <AdminProductActions productId={product.id} isActive={product.isActive} />
@@ -169,26 +173,27 @@ export async function AdminProductsScreen({ search = '', status = 'all' }: { sea
             </tbody>
           </table>
         </div>
+        <CatalogViewPagination path="/admin/productos" {...pagination} filters={{search, status}} />
         {!rows.length ? <div className="p-5 text-sm text-[var(--color-text-secondary)]">No hay productos para este filtro.</div> : null}
-      </section>
+      </section></CatalogPermissionProvider>
     </div>
   );
 }
 
-export async function AdminBrandsScreen({ search = '', status = 'all' }: { search?: string; status?: string }) {
-  const data = await getAdminCatalogOperationsData('30d');
+export async function AdminBrandsScreen({ search = '', status = 'all', page = '1' }: { search?: string; status?: string; page?: string }) {
+  const [data, permissions] = await Promise.all([getAdminCatalogOperationsData('30d'), catalogPermissions()]);
   const rows = data.brands
     .filter((row) => matchesSearch(row, search))
     .filter((row) => status === 'all' || row.status === status);
-  return <TaxonomyScreen type="brand" data={data} rows={rows} search={search} status={status} />;
+  return <TaxonomyScreen type="brand" data={data} rows={rows} search={search} status={status} page={page} permissions={permissions} />;
 }
 
-export async function AdminCategoriesScreen({ search = '', status = 'all' }: { search?: string; status?: string }) {
-  const data = await getAdminCatalogOperationsData('30d');
+export async function AdminCategoriesScreen({ search = '', status = 'all', page = '1' }: { search?: string; status?: string; page?: string }) {
+  const [data, permissions] = await Promise.all([getAdminCatalogOperationsData('30d'), catalogPermissions()]);
   const rows = data.categories
     .filter((row) => matchesSearch(row, search))
     .filter((row) => status === 'all' || row.status === status);
-  return <TaxonomyScreen type="category" data={data} rows={rows} search={search} status={status} />;
+  return <TaxonomyScreen type="category" data={data} rows={rows} search={search} status={status} page={page} permissions={permissions} />;
 }
 
 function TaxonomyScreen({
@@ -197,15 +202,21 @@ function TaxonomyScreen({
   rows,
   search,
   status,
+  page,
+  permissions,
 }: {
   type: 'brand' | 'category';
   data: AdminCatalogData;
   rows: AdminCatalogTaxonomyRow[];
   search: string;
   status: string;
+  page: string;
+  permissions: string[];
 }) {
   const isBrand = type === 'brand';
   const noun = isBrand ? 'marca' : 'categoría';
+  const resource = isBrand ? 'brands' : 'categories';
+  const pagination = catalogViewPage(rows, page);
   return (
     <div className="space-y-5">
       <section className="rounded-[1.75rem] border border-[var(--color-border)] bg-[linear-gradient(135deg,#101418,#050505)] p-6 shadow-elevated">
@@ -219,9 +230,10 @@ function TaxonomyScreen({
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant={statusVariant(isBrand ? data.readiness.brands : data.readiness.categories)}>{isBrand ? data.readiness.brands : data.readiness.categories}</Badge>
-            <Link href={isBrand ? '/admin/marcas/nueva' : '/admin/categorias/nueva'}><Button>Nueva {noun}</Button></Link>
+            {permissions.includes(`${resource}.write`) ? <Link href={isBrand ? '/admin/marcas/nuevo' : '/admin/categorias/nuevo'}><Button>Nueva {noun}</Button></Link> : null}
           </div>
         </div>
+        <CatalogViewPagination path={isBrand ? '/admin/marcas' : '/admin/categorias'} {...pagination} filters={{search, status}} />
       </section>
       <section className="grid gap-4 md:grid-cols-3">
         <KpiCard title={isBrand ? 'Marcas' : 'Categorías'} value={String(isBrand ? data.metrics.brandsCount ?? 0 : data.metrics.categoriesCount ?? 0)} context="Registros reales" />
@@ -238,22 +250,22 @@ function TaxonomyScreen({
           <table className="min-w-[900px] text-left text-sm">
             <thead className="text-xs uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
               <tr>
-                {['Nombre', 'Slug', isBrand ? 'Logo' : 'Padre', 'Estado', 'Productos', 'Vendibles', 'Acciones'].map((column) => <th key={column} className="px-4 py-3">{column}</th>)}
+                {['Nombre', 'Slug', ...(isBrand ? [] : ['Padre']), 'Estado', 'Productos', 'Vendibles', 'Acciones'].map((column) => <th key={column} className="px-4 py-3">{column}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {rows.map((row) => (
+              {pagination.rows.map((row) => (
                 <tr key={row.id}>
                   <td className="px-4 py-4 font-semibold text-[var(--color-off-white)]">{row.name}</td>
                   <td className="px-4 py-4 text-[var(--color-text-secondary)]">{row.slug}</td>
-                  <td className="px-4 py-4 text-[var(--color-text-secondary)]">{isBrand ? 'Asset opcional' : row.parent?.name ?? 'Raíz'}</td>
+                  {!isBrand ? <td className="px-4 py-4 text-[var(--color-text-secondary)]">{row.parent?.name ?? 'Raíz'}</td> : null}
                   <td className="px-4 py-4"><Badge variant={statusVariant(row.status)}>{row.status}</Badge></td>
                   <td className="px-4 py-4 text-[var(--color-text-secondary)]">{row.productCount}</td>
                   <td className="px-4 py-4 text-[var(--color-text-secondary)]">{row.sellableProductCount}</td>
                   <td className="px-4 py-4">
                     <div className="flex flex-wrap gap-2">
                       <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={isBrand ? `/admin/marcas/${row.id}` : `/admin/categorias/${row.id}`}>Ver</Link>
-                      <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={isBrand ? `/admin/marcas/${row.id}/editar` : `/admin/categorias/${row.id}/editar`}>Editar</Link>
+                      {permissions.includes(`${resource}.write`) && permissions.includes(`${resource}.read`) ? <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={isBrand ? `/admin/marcas/${row.id}/editar` : `/admin/categorias/${row.id}/editar`}>Editar</Link> : null}
                     </div>
                   </td>
                 </tr>
@@ -261,6 +273,7 @@ function TaxonomyScreen({
             </tbody>
           </table>
         </div>
+        <CatalogViewPagination path={isBrand ? '/admin/marcas' : '/admin/categorias'} {...pagination} filters={{search, status}} />
       </section>
     </div>
   );

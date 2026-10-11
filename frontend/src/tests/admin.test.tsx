@@ -148,7 +148,8 @@ vi.mock('@/lib/admin/operations', async (importOriginal) => {
   };
 });
 
-vi.mock('@/lib/admin/server-data', () => ({
+vi.mock('@/lib/admin/server-data', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/admin/server-data')>()),
   getAdminCatalogOperationsData: vi.fn().mockResolvedValue({
     generatedAt: '2026-05-14T12:00:00.000Z',
     range: '30d',
@@ -518,7 +519,15 @@ vi.mock('@/lib/admin/server-data', () => ({
     export: { formats: ['csv'], maxRows: 1000, standardExportContainsPii: false, piiExportRequires: 'customers.read_sensitive', enabled: true },
     errors: {},
   }),
-  adminFetch: vi.fn().mockResolvedValue({ ok: true, status: 200, data: {}, error: null }),
+  adminFetch: vi.fn(async (endpoint: string) => {
+    let data: unknown;
+    if (endpoint === '/admin/session') data = verifiedSessionFixture;
+    else if (endpoint === '/admin/brands') data = { data: [{ id: '11111111-1111-4111-8111-111111111111', name: 'TOTAL', slug: 'total', isActive: true }] };
+    else if (endpoint === '/admin/categories') data = { data: [{ id: '22222222-2222-4222-8222-222222222222', name: 'Perforación', slug: 'perforacion', parentId: null, isActive: true }] };
+    else if (endpoint === '/admin/inventory/warehouses') data = { data: [] };
+    else throw new Error(`Unexpected server read in the admin component fixture: ${endpoint}`);
+    return { ok: true, kind: 'success', status: 200, data, error: null };
+  }),
 }));
 
 // EX-08: shell now verifies the real HTTP session contract asynchronously.
@@ -531,6 +540,9 @@ const verifiedSessionFixture = {
     "permissions": [
       "audit.read",
       "catalog.read",
+      "products.write",
+      "brands.read",
+      "categories.read",
       "customers.read",
       "dashboard.read",
       "footer.read",

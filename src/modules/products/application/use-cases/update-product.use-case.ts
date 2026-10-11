@@ -1,3 +1,4 @@
+import { ProductImageApprovalService } from 'src/modules/products/domain/services/product-image-approval.service';
 import { Prisma } from '@prisma/client';
 import { DOMAIN_EVENT_OUTBOX_REPOSITORY, DomainEventOutboxRepository } from 'src/common/events/domain-event-outbox.port';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
@@ -37,6 +38,8 @@ export interface UpdateProductInput {
 @Injectable()
 export class UpdateProductUseCase {
   constructor(
+    @Inject(ProductImageApprovalService)
+    private readonly media: ProductImageApprovalService,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(PRODUCT_REPOSITORY)
@@ -143,26 +146,30 @@ export class UpdateProductUseCase {
       payload: { productId: current.id, slug: updateData.slug, isActive: updateData.isActive },
     };
     const { updated, event } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM products WHERE id::text = ${input.productId} FOR UPDATE`;
+      const locked = await tx.product.findUnique({ where: { id: input.productId } });
+      if (!locked) throw new NotFoundException('Product not found');
       const { id, ...data } = updateData;
+      data.metadata = input.metadata === undefined ? locked.metadata as Prisma.InputJsonValue | null : this.media.prepare(input.metadata, locked.metadata);
       const updated = await tx.product.update({
         where: { id },
-        data: { ...data, metadata: data.metadata === null ? Prisma.JsonNull : data.metadata },
+        data: { ...data, updatedAt: new Date(Math.max(Date.now(), locked.updatedAt.getTime() + 1)), metadata: data.metadata === null ? Prisma.JsonNull : data.metadata },
         include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } },
       });
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub,
+        action: 'product.updated',
+        entityType: 'product',
+        entityId: updated.id,
+        beforeData: locked,
+        afterData: updated,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
       const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
       return { updated, event };
     });
 
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub,
-      action: 'product.updated',
-      entityType: 'product',
-      entityId: updated.id,
-      beforeData: current,
-      afterData: updated,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
 
     await this.domainEventPublisher.publish(event, event.route);
 

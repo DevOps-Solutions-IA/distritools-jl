@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { catalogPermissions } from '@/features/admin/catalog/server';
 import Link from 'next/link';
 import { AdminProductActions } from '@/components/admin/AdminCatalogActions';
 import { AdminShell } from '@/components/layout/AdminShell';
@@ -32,7 +33,7 @@ function statusVariant(status: string) {
 
 export default async function AdminProductDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const data = await getAdminCatalogOperationsData('30d');
+  const [data, permissions] = await Promise.all([getAdminCatalogOperationsData('30d'), catalogPermissions()]);
   const product = data.products.find((item) => item.id === id) ?? null;
   const prices = data.prices.filter((item) => item.productId === id);
   const blockers = product ? [...product.sellability.blockers, ...product.sellability.warnings] : [];
@@ -51,8 +52,9 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
             </div>
             {product ? (
               <div className="flex flex-wrap gap-2">
-                <Link href={`/admin/productos/${product.id}/editar`}><Button>Editar</Button></Link>
+                {permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <Link href={`/admin/productos/${product.id}/editar`}><Button>Editar</Button></Link> : null}
                 <Link href={`/admin/inventario?sku=${encodeURIComponent(product.primarySku ?? '')}`}><Button variant="outline">Ver inventario</Button></Link>
+                {permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <Link href={`/admin/productos/${product.id}/editar?variant=new`}><Button variant="outline">Agregar variante</Button></Link> : null}
                 <Link href="/admin/precios"><Button variant="outline">Ver precios</Button></Link>
               </div>
             ) : null}
@@ -121,7 +123,7 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
                         <td className="px-4 py-3 text-[var(--color-text-secondary)]">{money(Number(price.currentPrice))}</td>
                         <td className="px-4 py-3 text-[var(--color-text-secondary)]">{price.availableStock}</td>
                         <td className="px-4 py-3 text-[var(--color-text-secondary)]">{price.missingCost ? 'MARGIN_UNAVAILABLE_MISSING_COSTS' : 'Costo configurado'}</td>
-                        <td className="px-4 py-3"><Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/precios/${price.id}`}>Historial precio</Link></td>
+                        <td className="px-4 py-3"><Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/precios/${price.id}`}>Historial precio</Link>{permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <><br /><Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}/editar?variant=${encodeURIComponent(price.id)}`}>Editar variante</Link></> : null}</td>
                       </tr>
                     ))}
                   </tbody>

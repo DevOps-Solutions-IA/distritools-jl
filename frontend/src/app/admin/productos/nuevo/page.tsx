@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { AdminProductCompleteForm } from '@/components/admin/forms/AdminProductCompleteForm';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { getAdminCatalogSnapshot } from '@/lib/admin/operations';
-import { getAdminOperationalSnapshot } from '@/lib/admin/server-data';
+import { catalogOptions } from '@/features/admin/catalog/server';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminNewProductPage() {
-  const [snapshot, operations] = await Promise.all([
-    getAdminCatalogSnapshot('options'),
-    getAdminOperationalSnapshot(['inventoryWarehouses']),
-  ]);
-  const warehouses = operations.inventoryWarehouses?.data ?? [];
+  const options = await catalogOptions();
 
   return (
     <AdminShell>
@@ -34,13 +30,9 @@ export default async function AdminNewProductPage() {
         </section>
         <AdminProductCompleteForm
           mode="create"
-          brands={snapshot.brandRows}
-          categories={snapshot.categoryRows}
-          warehouses={warehouses.map((warehouse) => ({
-            id: String(warehouse.id),
-            name: warehouse.name ? String(warehouse.name) : undefined,
-            code: warehouse.code ? String(warehouse.code) : undefined,
-          }))}
+          brands={options.brands}
+          categories={options.categories}
+          warehouses={options.warehouses}
         />
       </div>
     </AdminShell>

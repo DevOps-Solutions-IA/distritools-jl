@@ -1,3 +1,6 @@
+import { ApproveProductImageUseCase } from 'src/modules/products/application/use-cases/approve-product-image.use-case';
+import { ProductImageApprovalService } from 'src/modules/products/domain/services/product-image-approval.service';
+import { ApproveProductImageRequestDto } from 'src/modules/products/infrastructure/http/dto/approve-product-image.request.dto';
 import {
   Body,
   Controller,
@@ -30,6 +33,8 @@ import { UpdateProductRequestDto } from 'src/modules/products/infrastructure/htt
 @Controller()
 export class ProductsController {
   constructor(
+    @Inject(ProductImageApprovalService) private readonly media: ProductImageApprovalService,
+    @Inject(ApproveProductImageUseCase) private readonly approveImage: ApproveProductImageUseCase,
     @Inject(CreateProductUseCase)
     private readonly createProductUseCase: CreateProductUseCase,
     @Inject(UpdateProductUseCase)
@@ -60,6 +65,22 @@ export class ProductsController {
   getPublic(@Param('id') productId: string) {
     return this.getProductUseCase.execute({ productId });
   }
+
+  @ApiBearerAuth()
+  @Permissions('products.read')
+  @Get('admin/media-resources')
+  listMediaResources() { return { data: this.media.list() }; }
+
+  @ApiBearerAuth()
+  @Permissions('products.write')
+  @Post('admin/products/:id/image-approval')
+  approveProductImage(
+    @Param('id') productId: string,
+    @Body() body: ApproveProductImageRequestDto,
+    @CurrentUserDecorator() actor: CurrentUser,
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent?: string,
+  ) { return this.approveImage.execute({ actor, productId, ...body, ipAddress, userAgent }); }
 
   @ApiBearerAuth()
   @Permissions('products.read')

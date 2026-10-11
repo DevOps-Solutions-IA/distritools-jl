@@ -1,11 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { MediaApproval } from '@/features/admin/catalog/MediaApproval';
+import { parseMediaProduct, type MediaProduct } from '@/features/admin/catalog/media-contract';
 import type React from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import Link from 'next/link';
+import { useCatalogPermissions } from '@/features/admin/catalog/useCatalogPermissions';
+import { catalogRequest, CatalogRequestError } from '@/features/admin/catalog/request';
 import type {
   BackendBrandRecord,
   BackendCategoryRecord,
@@ -43,20 +48,24 @@ function slugify(value: string) {
     .replace(/(^-|-$)/g, '');
 }
 
-function metadataFrom(input: z.infer<typeof fullProductSchema>) {
+function record(value: unknown): Record<string, unknown> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
+function metadataFrom(input: z.infer<typeof fullProductSchema>, original: Record<string, unknown>, originalImage: string) {
   return {
+    ...original,
     shortDescription: input.shortDescription,
     longDescription: input.longDescription,
     image: input.mainImage
-      ? { status: 'approved', assetPath: input.mainImage.trim(), source: 'admin' }
-      : { status: 'pending', assetPath: null, source: 'admin' },
+      ? { ...record(original.image), status: input.mainImage.trim() === originalImage ? record(original.image).status ?? 'pending' : 'pending', assetPath: input.mainImage.trim() }
+      : { ...record(original.image), status: 'pending', assetPath: null },
     shipping: {
+      ...record(original.shipping),
       weightKg: input.weightKg,
       lengthCm: input.lengthCm,
       widthCm: input.widthCm,
       heightCm: input.heightCm,
     },
     dimensions: {
+      ...record(original.dimensions),
       weightKg: input.weightKg,
       lengthCm: input.lengthCm,
       widthCm: input.widthCm,
@@ -72,16 +81,23 @@ export function AdminProductCompleteForm({
   brands,
   categories,
   warehouses,
+  originalMetadata = {},
 }: {
   mode?: 'create' | 'edit';
+  originalMetadata?: Record<string, unknown>;
   product?: (CatalogProduct & { isActive?: boolean }) | null;
   primaryVariant?: BackendVariantRecord | null;
-  brands: BackendBrandRecord[];
-  categories: BackendCategoryRecord[];
+  brands: Array<Pick<BackendBrandRecord, 'id' | 'name'>>;
+  categories: Array<Pick<BackendCategoryRecord, 'id' | 'name'>>;
   warehouses: Array<{ id: string; name?: string; code?: string }>;
 }) {
   const router = useRouter();
-  const shipping: Record<string, unknown> = {};
+  const shipping = Object.keys(record(originalMetadata.shipping)).length ? record(originalMetadata.shipping) : record(originalMetadata.dimensions);
+  const permissions = useCatalogPermissions('product-form');
+  const [mediaProduct, setMediaProduct] = useState<MediaProduct | null>(mode === 'edit' ? parseMediaProduct(product ? { ...product, metadata: originalMetadata } : null) : null);
+  const [receipt, setReceipt] = useState<string[]>([]);
+  const [persistedId, setPersistedId] = useState<string | null>(null);
+  const [reconcile, setReconcile] = useState(false);
   const [name, setName] = useState(product?.name ?? '');
   const [slug, setSlug] = useState(product?.slug ?? '');
   const [brandId, setBrandId] = useState(product?.brand?.id ?? '');
@@ -104,22 +120,32 @@ export function AdminProductCompleteForm({
   const [success, setSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canSubmit = useMemo(() => Boolean(name.trim() && slug.trim()), [name, slug]);
-
-  async function jsonFetch(path: string, options: RequestInit) {
-    const response = await fetch(path, {
-      ...options,
-      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.message ?? `Error ${response.status}`);
+  const mediaProductId = product?.id;
+  const canReadMedia = permissions.can('products.read');
+  useEffect(() => {
+    if (mode !== 'edit' || !mediaProductId || !canReadMedia) return;
+    const controller = new AbortController();
+    let active = true;
+    const timeout = window.setTimeout(() => controller.abort(), 12000);
+    async function loadSavedImage() {
+      try {
+        const response = await fetch(`/api/admin/products/${mediaProductId}`, { credentials: 'same-origin', cache: 'no-store', signal: controller.signal });
+        if (!response.ok) throw new Error('No se pudo consultar la imagen guardada. Recarga el producto para aprobar.');
+        const current = parseMediaProduct(await response.json());
+        if (!current || current.id !== mediaProductId) throw new Error('No se pudo verificar el estado guardado de la imagen.');
+        if (active) setMediaProduct(current);
+      } catch (caught) { if (active) setError(controller.signal.aborted ? 'La consulta de la imagen guardada tardó demasiado. Recarga para aprobar.' : caught instanceof Error ? caught.message : 'No se pudo consultar la imagen.'); }
+      finally { window.clearTimeout(timeout); }
     }
-    return payload;
-  }
+    void loadSavedImage();
+    return () => { active = false; window.clearTimeout(timeout); controller.abort(); };
+  }, [mode, mediaProductId, canReadMedia]);
+
+  const canSubmit = useMemo(() => Boolean(name.trim() && slug.trim()), [name, slug]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!permissions.can('products.write') || isSubmitting || reconcile) return;
     setError(null);
     setSuccess(null);
 
@@ -150,76 +176,88 @@ export function AdminProductCompleteForm({
     }
 
     setIsSubmitting(true);
+    let productSaved = false;
     try {
       const input = parsed.data;
+      if (input.publishAction !== 'draft' && !permissions.can('products.read')) throw new Error('No tienes permiso para validar vendibilidad.');
+      if (input.publishAction === 'activate' && !permissions.can('products.publish')) throw new Error('No tienes permiso para activar productos.');
+      if ((input.stock > 0 || input.costPrice !== undefined) && !input.warehouseId) throw new Error('Selecciona una bodega autorizada para guardar stock o costo.');
+      if (input.stock > 0 && !permissions.can('inventory.adjust')) throw new Error('No tienes permiso para ajustar inventario.');
+      if (input.costPrice !== undefined && !(permissions.can('inventory.settings.write') && permissions.can('inventory.cost.write'))) throw new Error('No tienes permiso para guardar costos.');
       const productPayload = {
         name: input.name,
         slug: input.slug,
         brandId: input.brandId,
         categoryId: input.categoryId,
         description: input.shortDescription,
-        isActive: false,
-        metadata: metadataFrom(input),
+        ...(mode === 'create' ? { isActive: false } : {}),
+        metadata: metadataFrom(input, { ...originalMetadata, ...(mediaProduct?.metadata.image ? { image: mediaProduct.metadata.image } : {}) }, product?.image.assetPath ?? ''),
       };
       const savedProduct = mode === 'edit' && product
-        ? await jsonFetch(`/api/admin/products/${product.id}`, { method: 'PATCH', body: JSON.stringify(productPayload) })
-        : await jsonFetch('/api/admin/products', { method: 'POST', body: JSON.stringify(productPayload) });
-      const productId = savedProduct.id ?? product?.id;
+        ? await catalogRequest(`/api/admin/products/${product.id}`, 'PATCH', productPayload)
+        : await catalogRequest('/api/admin/products', 'POST', productPayload);
+      if (typeof savedProduct.id !== 'string') throw new CatalogRequestError('No se pudo confirmar el producto guardado.', true);
+      const productId = savedProduct.id;
+      setMediaProduct(parseMediaProduct(savedProduct));
+      productSaved = true;
+      setPersistedId(productId);
+      setReceipt(['Producto guardado']);
+      let completed = 'Producto guardado';
 
       const variantPayload = {
         productId,
         sku: input.sku,
         name: input.variantName,
         price: String(input.price),
-        taxRate: '0',
-        isActive: true,
+        ...(mode === 'create' || !primaryVariant ? { taxRate: '0', isActive: true } : {}),
       };
       const savedVariant = mode === 'edit' && primaryVariant
-        ? await jsonFetch(`/api/admin/variants/${primaryVariant.id}`, { method: 'PATCH', body: JSON.stringify(variantPayload) })
-        : await jsonFetch('/api/admin/variants', { method: 'POST', body: JSON.stringify(variantPayload) });
-      const variantId = savedVariant.id ?? primaryVariant?.id;
+        ? await catalogRequest(`/api/admin/variants/${primaryVariant.id}`, 'PATCH', variantPayload)
+        : await catalogRequest('/api/admin/variants', 'POST', variantPayload);
+      if (typeof savedVariant.id !== 'string') throw new CatalogRequestError('No se pudo confirmar la variante guardada.', true);
+      const variantId = savedVariant.id;
+      completed += ' · Variante guardada'; setReceipt((steps) => [...steps, 'Variante guardada']);
 
       if (variantId && input.warehouseId && input.stock > 0 && mode === 'create') {
-        await jsonFetch('/api/admin/inventory/adjust', {
-          method: 'PATCH',
-          body: JSON.stringify({
+        await catalogRequest('/api/admin/inventory/adjust', 'PATCH', {
             variantId,
             warehouseId: input.warehouseId,
             quantityDelta: input.stock,
             reason: 'Inventario inicial desde creación de producto completo',
             referenceId: `product-create-${productId}`,
-          }),
         });
+        completed += ' · Stock inicial guardado'; setReceipt((steps) => [...steps, 'Stock inicial guardado']);
       }
 
       if (variantId && input.warehouseId && input.costPrice !== undefined) {
-        await jsonFetch(`/api/admin/inventory/settings/${variantId}/${input.warehouseId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ costPrice: input.costPrice }),
-        });
+        await catalogRequest(`/api/admin/inventory/settings/${variantId}/${input.warehouseId}`, 'PATCH', { costPrice: input.costPrice });
+        completed += ' · Costo guardado'; setReceipt((steps) => [...steps, 'Costo guardado']);
       }
 
-      const validation = await jsonFetch(`/api/admin/products/${productId}/validate-sellability`, { method: 'POST', body: '{}' });
-      if (input.publishAction === 'activate') {
-        const blockers = (validation.blockers ?? []).filter((blocker: string) => blocker !== 'INACTIVE');
-        if (blockers.length || validation.warnings?.length) {
-          throw new Error(`No se activó: ${[...blockers, ...(validation.warnings ?? [])].join(', ')}`);
+      if (input.publishAction !== 'draft') {
+        const validation = await catalogRequest(`/api/admin/products/${productId}/validate-sellability`, 'POST');
+        if (typeof validation.status !== 'string' || !Array.isArray(validation.blockers) || !Array.isArray(validation.warnings)) throw new CatalogRequestError('No se pudo confirmar la validación de vendibilidad.', true);
+        completed += ` · Vendibilidad: ${validation.status}`; setReceipt((steps) => [...steps, `Vendibilidad: ${validation.status}`]);
+        if (input.publishAction === 'activate') {
+          await catalogRequest(`/api/admin/products/${productId}/activate`, 'PATCH');
+          completed += ' · Producto activado'; setReceipt((steps) => [...steps, 'Producto activado']);
         }
-        await jsonFetch(`/api/admin/products/${productId}/activate`, { method: 'PATCH', body: '{}' });
       }
-
-      setSuccess(input.publishAction === 'activate' ? 'Producto completo creado y activado.' : 'Producto guardado y validado.');
+      setSuccess(completed);
       router.refresh();
       router.push(`/admin/productos/${productId}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'No fue posible guardar el producto completo.');
+      setError(caught instanceof Error ? caught.message : 'No fue posible confirmar el resultado.');
+      if (caught instanceof CatalogRequestError && caught.status === 401) permissions.retry();
+      // Earlier requests may already be durable. Do not repeat creation or invent compensation.
+      setReconcile(productSaved || (caught instanceof CatalogRequestError && caught.uncertain));
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={submit} className="grid gap-6 rounded-[1.75rem] border border-[var(--color-border)] bg-[#0d0d0d] p-5 sm:p-7">
+    <form onSubmit={submit} className="grid grid-cols-1 gap-6 rounded-[1.75rem] border border-[var(--color-border)] bg-[#0d0d0d] p-5 sm:p-7">
       <section className="grid gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">Datos generales</p>
@@ -248,20 +286,20 @@ export function AdminProductCompleteForm({
           Descripción larga
           <textarea className="focus-ring min-h-36 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-3 text-sm text-[var(--color-off-white)]" value={longDescription} onChange={(event) => setLongDescription(event.target.value)} required />
         </label>
-        <Input label="Imagen principal (ruta o URL segura)" value={mainImage} onChange={(event) => setMainImage(event.target.value)} placeholder="/products/taladro.jpg" />
+        <MediaApproval value={mainImage} onChange={setMainImage} product={mediaProduct} canRead={permissions.can('products.read')} canApprove={permissions.can('products.write') && !isSubmitting} onApproved={(confirmed) => { setMediaProduct(confirmed); router.refresh(); }} />
       </section>
 
       <section className="grid gap-4 rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">Variante inicial</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-industrial-yellow)]">{mode === 'edit' && primaryVariant ? 'Variante seleccionada' : 'Nueva variante'}</p>
           <h2 className="mt-1 text-xl font-semibold text-[var(--color-off-white)]">SKU, precio, costo y stock</h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           <Input label="Nombre variante" value={variantName} onChange={(event) => setVariantName(event.target.value)} required />
           <Input label="SKU" value={sku} onChange={(event) => setSku(event.target.value.toUpperCase())} required />
           <Input label="Precio COP" type="number" min="1" value={price} onChange={(event) => setPrice(event.target.value)} required />
-          <Input label="Costo COP (opcional)" type="number" min="0" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} />
-          <Input label="Stock inicial" type="number" min="0" value={stock} onChange={(event) => setStock(event.target.value)} />
+          <Input disabled={!(permissions.can('inventory.settings.write') && permissions.can('inventory.cost.write'))} label="Costo COP (opcional)" type="number" min="0" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} />
+          <Input disabled={mode === 'edit' || !permissions.can('inventory.adjust')} label="Stock inicial" type="number" min="0" value={stock} onChange={(event) => setStock(event.target.value)} />
           <label className="grid gap-2 text-sm font-semibold text-[var(--color-off-white)]">
             Bodega
             <select className="focus-ring h-11 rounded-md border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 text-sm text-[var(--color-off-white)]" value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)}>
@@ -294,18 +332,21 @@ export function AdminProductCompleteForm({
             ['activate', 'Guardar y activar'],
           ].map(([value, text]) => (
             <label key={value} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-[var(--color-text-secondary)]">
-              <input type="radio" name="publishAction" checked={publishAction === value} onChange={() => setPublishAction(value as typeof publishAction)} />
+              <input type="radio" name="publishAction" disabled={value !== 'draft' && (!permissions.can('products.read') || (value === 'activate' && !permissions.can('products.publish')))} checked={publishAction === value} onChange={() => setPublishAction(value as typeof publishAction)} />
               {text}
             </label>
           ))}
         </div>
       </section>
 
-      {error ? <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
-      {success ? <p className="rounded-xl border border-green-400/20 bg-green-500/10 px-4 py-3 text-sm text-green-200">{success}</p> : null}
+      {error ? <p role="alert" className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{receipt.length ? `${receipt.join(' · ')}. Flujo incompleto: ` : ''}{error}</p> : null}
+      {success ? <p role="status" className="rounded-xl border border-green-400/20 bg-green-500/10 px-4 py-3 text-sm text-green-200">{success}</p> : null}
 
+      {persistedId && reconcile ? <Link className="text-[var(--color-industrial-yellow)] underline" href={`/admin/productos/${persistedId}/editar`}>Revisar producto guardado y continuar desde su estado real</Link> : null}
+      {reconcile && !persistedId ? <Link className="text-[var(--color-industrial-yellow)] underline" href="/admin/productos">Revisar catálogo antes de repetir la creación</Link> : null}
+      {!permissions.pending && !permissions.can('products.write') ? <p role="status">Sin permiso para guardar productos.</p> : null}
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" loading={isSubmitting} disabled={!canSubmit}>{mode === 'edit' ? 'Guardar producto completo' : 'Crear producto completo'}</Button>
+        <Button type="submit" loading={isSubmitting} disabled={!canSubmit || !permissions.can('products.write') || reconcile}>{mode === 'edit' ? 'Guardar producto completo' : 'Crear producto completo'}</Button>
         <Button type="button" variant="outline" onClick={() => router.push('/admin/productos')}>Cancelar</Button>
       </div>
     </form>
