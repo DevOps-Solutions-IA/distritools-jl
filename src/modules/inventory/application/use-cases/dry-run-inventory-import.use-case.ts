@@ -22,24 +22,26 @@ export class DryRunInventoryImportUseCase {
     const filename = input.body.filename ? String(input.body.filename) : 'inventory-import.csv';
     const parsed = await parseImportRows(this.prisma, csv);
 
-    const batch = await this.prisma.inventoryImportBatch.create({
-      data: {
-        id: uuidv7(),
-        status: parsed.errorRows > 0 ? 'dry_run_errors' : 'dry_run_valid',
-        filename, totalRows: parsed.rows.length,
-        validRows: parsed.rows.filter((row) => row.valid).length,
-        errorRows: parsed.errorRows, createdBy: input.actor.sub,
-        rows: { createMany: { data: parsed.rows.map((row) => ({ ...row, id: uuidv7() })) } },
-      },
-      include: { rows: true },
+    return this.prisma.$transaction(async (tx) => {
+      const batch = await tx.inventoryImportBatch.create({
+        data: {
+          id: uuidv7(),
+          status: parsed.errorRows > 0 ? 'dry_run_errors' : 'dry_run_valid',
+          filename, totalRows: parsed.rows.length,
+          validRows: parsed.rows.filter((row) => row.valid).length,
+          errorRows: parsed.errorRows, createdBy: input.actor.sub,
+          rows: { createMany: { data: parsed.rows.map((row) => ({ ...row, id: uuidv7() })) } },
+        },
+        include: { rows: true },
+      });
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub, action: 'inventory.import_dry_run',
+        entityType: 'inventory_import_batch', entityId: batch.id,
+        afterData: { id: batch.id, totalRows: batch.totalRows, validRows: batch.validRows, errorRows: batch.errorRows },
+        ipAddress: input.ipAddress, userAgent: input.userAgent,
+      }, tx);
+      return batch;
     });
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub, action: 'inventory.import_dry_run',
-      entityType: 'inventory_import_batch', entityId: batch.id,
-      afterData: { id: batch.id, totalRows: batch.totalRows, validRows: batch.validRows, errorRows: batch.errorRows },
-      ipAddress: input.ipAddress, userAgent: input.userAgent,
-    });
-    return batch;
   }
 }
 
@@ -63,7 +65,10 @@ async function parseImportRows(prisma: PrismaService, csv: string) {
     if (!variantSet.has(record.sku)) errors.push(`SKU ${record.sku} no encontrado.`);
     if (!warehouseSet.has(record.warehouseCode)) errors.push(`Bodega ${record.warehouseCode} no encontrada.`);
     const qty = Number(record.quantity);
-    if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty < 0) errors.push('Cantidad inválida.');
+    if (!Number.isFinite(qty) || !Number.isInteger(qty) || qty < -2147483648 || qty > 2147483647) {
+      throw new BadRequestException(`Fila ${i}: quantity debe ser un entero entre -2147483648 y 2147483647.`);
+    }
+    if (qty < 0) errors.push('Cantidad inválida.');
     if (!['set', 'increment', 'decrement'].includes(record.mode)) errors.push(`Modo ${record.mode} inválido.`);
     if (!record.reason?.trim()) errors.push('Falta motivo.');
     const valid = errors.length === 0;

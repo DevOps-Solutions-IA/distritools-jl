@@ -20,9 +20,10 @@ export class CloseInventoryCountSessionUseCase {
   ) {}
 
   async execute(input: CloseCountSessionInput) {
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM inventory_count_sessions WHERE id = ${input.sessionId}::uuid FOR UPDATE`;
       const session = await tx.inventoryCountSession.findUnique({
-        where: { id: input.sessionId }, include: { lines: { include: { variant: true } } },
+        where: { id: input.sessionId }, include: { lines: { include: { variant: true }, orderBy: { variantId: 'asc' } } },
       });
       if (!session) throw new NotFoundException('Sesión de conteo no encontrada.');
       if (session.status === 'closed') throw new ConflictException('La sesión ya está cerrada.');
@@ -63,14 +64,14 @@ export class CloseInventoryCountSessionUseCase {
         where: { id: input.sessionId },
         data: { status: 'closed', closedBy: input.actor.sub, closedAt: new Date() },
       });
-      return { session: closed, movements };
+      const result = { session: closed, movements };
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub, action: 'inventory.count_closed',
+        entityType: 'inventory_count_session', entityId: input.sessionId, afterData: result,
+        ipAddress: input.ipAddress, userAgent: input.userAgent,
+      }, tx);
+      return result;
     });
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub, action: 'inventory.count_closed',
-      entityType: 'inventory_count_session', entityId: input.sessionId, afterData: result,
-      ipAddress: input.ipAddress, userAgent: input.userAgent,
-    });
-    return result;
   }
 }
 

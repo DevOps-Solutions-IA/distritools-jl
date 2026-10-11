@@ -1,4 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { CurrentUser } from 'src/common/interfaces/current-user.interface';
+import { assertHasPermissions } from 'src/common/utils/authorization.util';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 
 export interface OverviewRow {
@@ -48,7 +50,9 @@ export interface SerializedRow {
 export class GetInventoryOverviewUseCase {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async execute(input: { search?: string }) {
+  async execute(input: { actor: CurrentUser; search?: string }) {
+    assertHasPermissions(input.actor.permissions, ['inventory.read']);
+    const canReadCost = input.actor.permissions.includes('inventory.cost.read');
     const where = input.search?.trim()
       ? {
           OR: [
@@ -69,8 +73,8 @@ export class GetInventoryOverviewUseCase {
     });
     const mapped = rows.map((row) => this.serializeRow(row));
     return {
-      summary: this.summary(mapped),
-      data: mapped,
+      summary: canReadCost ? this.summary(mapped) : { ...this.summary(mapped), missingCost: 'NO_PERMISSION', inventoryValue: 'NO_PERMISSION' },
+      data: canReadCost ? mapped : mapped.map((row) => ({ ...row, costPrice: 'NO_PERMISSION', inventoryValue: 'NO_PERMISSION' })),
     };
   }
 

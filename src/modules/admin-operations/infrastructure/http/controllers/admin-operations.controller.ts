@@ -2228,28 +2228,19 @@ export class AdminOperationsController {
       throw new BadRequestException('El motivo del cambio de precio es obligatorio.');
     }
 
-    const current = await this.prisma.variant.findUnique({ where: { id: variantId } });
-    if (!current) {
-      throw new NotFoundException('Variante no encontrada.');
-    }
-
-    const updated = await this.prisma.variant.update({
-      where: { id: variantId },
-      data: { price: parsed },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM variants WHERE id = ${variantId}::uuid FOR UPDATE`;
+      const current = await tx.variant.findUnique({ where: { id: variantId } });
+      if (!current) throw new NotFoundException('Variante no encontrada.');
+      const updated = await tx.variant.update({ where: { id: variantId }, data: { price: parsed } });
+      await this.audit(
+        actor, 'variant.price_updated', 'variant', variantId,
+        { price: current.price.toFixed(2) },
+        { price: updated.price.toFixed(2), reason: reason.trim() },
+        ipAddress, userAgent, tx,
+      );
+      return { id: updated.id, sku: updated.sku, price: updated.price.toFixed(2) };
     });
-
-    await this.audit(
-      actor,
-      'variant.price_updated',
-      'variant',
-      variantId,
-      { price: current.price.toFixed(2) },
-      { price: updated.price.toFixed(2), reason: reason.trim() },
-      ipAddress,
-      userAgent,
-    );
-
-    return { id: updated.id, sku: updated.sku, price: updated.price.toFixed(2) };
   }
 
   @Permissions('inventory.read')

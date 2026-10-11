@@ -1,5 +1,8 @@
+import { InventoryReadQueryDto, UpdateInventoryCountLinesDto } from 'src/modules/inventory/infrastructure/http/dto/inventory-read-query.dto';
+import { GetInventoryCountSessionsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-count-sessions.use-case';
+import { GetInventoryImportsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-imports.use-case';
 import {
-  Body, Controller, Get, Headers, Inject, Ip, Param, Patch, Post, Query, Res,
+  Body, Controller, Get, Headers, Inject, Ip, Param, ParseUUIDPipe, Patch, Post, Query, Res,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { StockMovementType } from '@prisma/client';
@@ -36,6 +39,8 @@ import { ReserveStockRequestDto } from 'src/modules/inventory/infrastructure/htt
 @Controller('admin/inventory')
 export class InventoryController {
   constructor(
+    @Inject(GetInventoryCountSessionsUseCase) private readonly countReads: GetInventoryCountSessionsUseCase,
+    @Inject(GetInventoryImportsUseCase) private readonly importReads: GetInventoryImportsUseCase,
     @Inject(ReserveStockUseCase) private readonly reserveStockUseCase: ReserveStockUseCase,
     @Inject(ReleaseStockUseCase) private readonly releaseStockUseCase: ReleaseStockUseCase,
     @Inject(CommitStockUseCase) private readonly commitStockUseCase: CommitStockUseCase,
@@ -59,8 +64,8 @@ export class InventoryController {
 
   @Permissions('inventory.read')
   @Get('overview')
-  async overview(@Query('search') search?: string) {
-    return this.getInventoryOverviewUseCase.execute({ search });
+  async overview(@CurrentUserDecorator() actor: CurrentUser, @Query('search') search?: string) {
+    return this.getInventoryOverviewUseCase.execute({ actor, search });
   }
 
   @Permissions('inventory.read')
@@ -92,6 +97,30 @@ export class InventoryController {
   @Permissions('inventory.read')
   @Get('reservations')
   async reservations() { return this.getReservationsUseCase.execute(); }
+
+  @Permissions('inventory.count.read')
+  @Get('count-sessions')
+  listCountSessions(@CurrentUserDecorator() actor: CurrentUser, @Query() query: InventoryReadQueryDto) {
+    return this.countReads.list(actor, query);
+  }
+
+  @Permissions('inventory.count.read')
+  @Get('count-sessions/:sessionId')
+  getCountSession(@CurrentUserDecorator() actor: CurrentUser, @Param('sessionId', new ParseUUIDPipe()) id: string) {
+    return this.countReads.get(actor, id);
+  }
+
+  @Permissions('inventory.import')
+  @Get('imports')
+  listImports(@CurrentUserDecorator() actor: CurrentUser, @Query() query: InventoryReadQueryDto) {
+    return this.importReads.list(actor, query);
+  }
+
+  @Permissions('inventory.import')
+  @Get('imports/:batchId')
+  getImport(@CurrentUserDecorator() actor: CurrentUser, @Param('batchId', new ParseUUIDPipe()) id: string) {
+    return this.importReads.get(actor, id);
+  }
 
   @Permissions('inventory.read')
   @Get(':variantId/:warehouseId')
@@ -143,13 +172,13 @@ export class InventoryController {
 
   @Permissions('inventory.count.write')
   @Patch('count-sessions/:sessionId/lines')
-  async updateCountLines(@Param('sessionId') sessionId: string, @Body() body: Record<string, unknown>) {
-    return this.updateCountSessionLinesUseCase.execute(sessionId, body);
+  async updateCountLines(@Param('sessionId', new ParseUUIDPipe()) sessionId: string, @Body() body: UpdateInventoryCountLinesDto, @CurrentUserDecorator() actor: CurrentUser, @Ip() ip: string, @Headers('user-agent') ua?: string) {
+    return this.updateCountSessionLinesUseCase.execute(sessionId, body, actor, ip, ua);
   }
 
   @Permissions('inventory.count.close')
   @Post('count-sessions/:sessionId/close')
-  async closeCountSession(@Param('sessionId') sessionId: string, @CurrentUserDecorator() actor: CurrentUser, @Ip() ip: string, @Headers('user-agent') ua?: string) {
+  async closeCountSession(@Param('sessionId', new ParseUUIDPipe()) sessionId: string, @CurrentUserDecorator() actor: CurrentUser, @Ip() ip: string, @Headers('user-agent') ua?: string) {
     return this.closeInventoryCountSessionUseCase.execute({ sessionId, actor, ipAddress: ip, userAgent: ua });
   }
 

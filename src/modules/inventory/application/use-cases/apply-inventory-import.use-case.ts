@@ -20,7 +20,8 @@ export class ApplyInventoryImportUseCase {
   ) {}
 
   async execute(input: ApplyImportInput) {
-    const result = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM inventory_import_batches WHERE id = ${input.batchId}::uuid FOR UPDATE`;
       const batch = await tx.inventoryImportBatch.findUnique({ where: { id: input.batchId }, include: { rows: true } });
       if (!batch) throw new NotFoundException('Import batch no encontrado.');
       if (!batch.status.startsWith('dry_run')) throw new ConflictException('Este import ya no está en dry-run.');
@@ -53,15 +54,14 @@ export class ApplyInventoryImportUseCase {
       const applied = await tx.inventoryImportBatch.update({
         where: { id: batch.id }, data: { status: 'applied', appliedBy: input.actor.sub, appliedAt: new Date() },
       });
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub, action: 'inventory.import_applied',
+        entityType: 'inventory_import_batch', entityId: input.batchId,
+        afterData: { batchId: input.batchId, movements: movements.length },
+        ipAddress: input.ipAddress, userAgent: input.userAgent,
+      }, tx);
       return { batch: applied, movements };
     });
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub, action: 'inventory.import_applied',
-      entityType: 'inventory_import_batch', entityId: input.batchId,
-      afterData: { batchId: input.batchId, movements: result.movements.length },
-      ipAddress: input.ipAddress, userAgent: input.userAgent,
-    });
-    return result;
   }
 }
 
