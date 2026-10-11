@@ -101,3 +101,6 @@ EX-08.CONTROL.AUDIT_BOUNDARY productPR61 closed 838d2122190340dae6b4dfb8469c0783
 
 
 EX-08.INV productoPR63 closed e0eaf2949101aed8e3a2ccb45909c8d046222007 after exactseven 75bc78e947d1e1c6073be8df83026b85946d0ab6/CI38141357292; ROOT347unit290critical90E2E341FE/Prisma13/Next/focal21+26 y nueveA17-A25 browser reales+18quantity+7negative. Challengerfinal72PASS/ROOT1178hashes ydoc2PASS9; actualCI1146sources290critical5browsercleanup10. Matrizcambia sóloesasnuevefilas, CAT13+INV9=22verificadas/49pendientes,parentEX08ACTIVE. Listas250/100 ylecturaexport500audit17→18calificados; sec/providers/business/held/cutover/prodNO-GO sin cambio. NextfreshSALE48/CRM44 compatibles, RAWtracking4 correction/indep, CONTROLnav3/legacy4, CONTENT39V2/IAM26+29/LOG30 preserved; cada producto+STATE sevenpropios.
+
+
+EX-08.LOG.TRACKING_EVENT_BOUNDARY productPR65 `d31dc21340574a07d50b3db2ee733d0ca1c2212a` seven exact `4150009d2d11baa26ad86b98257963cad49556fd`/CI38145037795,behind0/scope6; ROOT1151remotehash/treeequal/291critical/5browser/cleanup10 PASS. Safe3eventfields/latest100/ties/historypreserved; actualproviderStatus/createsync NOT_TESTED. No extra actioncert22/49 unchanged,parentEX08ACTIVE. SeparateSTATE requires ownseven; productionNO-GO/SEC/GOV/providers/businessfences unchanged.
