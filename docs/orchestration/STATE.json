@@ -2,8 +2,8 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "ac002cc947da8fdad3f8add786d37394f9b0bd66",
-  "state_base_sha": "ac002cc947da8fdad3f8add786d37394f9b0bd66",
+  "validated_product_sha": "838d2122190340dae6b4dfb8469c078311b6a90d",
+  "state_base_sha": "838d2122190340dae6b4dfb8469c078311b6a90d",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-11",
   "phase": "internal-hardening",
@@ -42,7 +42,8 @@
     "EX-08.QA.TEST_DB_RETRY",
     "EX-08.QA.BROWSER",
     "EX-08.CAT",
-    "EX-08.SESSION.RECOVERY"
+    "EX-08.SESSION.RECOVERY",
+    "EX-08.CONTROL.AUDIT_BOUNDARY"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -77,12 +78,12 @@
       "parent": "EX-08",
       "branch": "new domain branches from live main after this documentary merge",
       "status": "ACTIVE",
-      "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditoría, errores visibles y pruebas de navegador. No rediseño cosmético.",
+      "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditor\u00eda, errores visibles y pruebas de navegador. No redise\u00f1o cosm\u00e9tico.",
       "user_impact": "ADMIN_OPERATOR",
-      "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producción o inventar políticas de negocio.",
-      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 después de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es histórica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification.",
+      "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producci\u00f3n o inventar pol\u00edticas de negocio.",
+      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "Continue EX-08 from live main after this separate documentary closure. CAT13 A04-A16 remain certified,58 declared actions pending. Fresh ROOT integration INVENTORY68 corrected finite/int32 CSV plus cost export and UI before SALE48/CRM44 shared-controller deltas; CONTENT39V2 bounded ROOT/challenger PASS awaits fresh-main compatibility/seven. Preserve initial failed reports and all frozen candidates. IAM frontend and independent seven-mutation atomicity correction active; CONTROL dashboard/reports plus ROOT existing-audit.read boundary active; LOG not started. Last-superadmin policy BLOCKED_DECISION, manual2FA provisioning explicitly pending. Each product and STATE needs independent ROOT acceptance and its own seven exact-head. SEC/GOV/providers/held/cutover/business fences and production NO-GO remain."
+      "next_action": "Continue EX-08 from live main after this separate documentary closure. CAT13 A04-A16 remain certified and58 declared actions pending. ROOT fresh integration INVENTORY68 corrected finite/int32 CSV + cost export + UI before SALE48/CRM44 controller deltas; CONTENT39V2 preserved bounded PASS requires fresh-main compatibility/seven. IAM frontend26/backend29 and independent atomicity PASS require ROOT combined acceptance; last-superadmin BLOCKED_DECISION/manualMFA pending. CONTROL UI14 independent review and separate inherited legacy-auditcount correction active; LOG four safe read flows active, external providers/replay blocked. Each product and STATE requires ROOT independent acceptance and separate seven exact-head. SEC/GOV/held/cutover/providers/business fences and production NO-GO unchanged."
     }
   ],
   "provider_status": {
@@ -115,20 +116,20 @@
     "EX-08.QA PR #50 CI attempt1: auth-rbac logout401!=201. Actual helper/service controlled TOTP boundary reproduces missing token returned without status assertions; original CI verify response was not retained, so unique cause is not established. Unchanged-head retry passed255/255 including guards. Separate bounded test-helper robustness follow-up; no 2FA tolerance, auth policy or test assertion change."
   ],
   "last_transition": {
-    "execution": "EX-08.SESSION.RECOVERY",
-    "pr": 59,
-    "merge_sha": "ac002cc947da8fdad3f8add786d37394f9b0bd66",
-    "validation_head_sha": "5ec9f391d908aaf221f9796cbb5c4d745575a6c7",
-    "workflow_run": 38133193706,
+    "execution": "EX-08.CONTROL.AUDIT_BOUNDARY",
+    "pr": 61,
+    "merge_sha": "838d2122190340dae6b4dfb8469c078311b6a90d",
+    "validation_head_sha": "453588b518f3736a639c5072aba90f310c888335",
+    "workflow_run": 38136541159,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 8,
-    "report": "docs/orchestration/runs/EX-08.SESSION-recovery-closure.md",
+    "scope_files": 6,
+    "report": "docs/orchestration/runs/EX-08.CONTROL-audit-boundary-closure.md",
     "status": "MERGED",
-    "result": "ROOT independent320unit/263critical/90E2E/288frontend,5original+2natural browser,38business models unchanged; remote1086source samefulltree263critical4guards42isolation5browser. Separate documentary PR requires its own seven before closure."
+    "result": "Bounded audit.read enforcement for two aggregates only; ROOT326unit264critical90E2E288frontend, compiledHTTP6groups; independent complete32626490+10adversarial. Actual CI1090source264critical/5browser verified. Documentary candidate requires its own seven exact-head before closure."
   },
-  "next_action": "Continue EX-08 from live main after this separate documentary closure. CAT13 A04-A16 remain certified,58 declared actions pending. Fresh ROOT integration INVENTORY68 corrected finite/int32 CSV plus cost export and UI before SALE48/CRM44 shared-controller deltas; CONTENT39V2 bounded ROOT/challenger PASS awaits fresh-main compatibility/seven. Preserve initial failed reports and all frozen candidates. IAM frontend and independent seven-mutation atomicity correction active; CONTROL dashboard/reports plus ROOT existing-audit.read boundary active; LOG not started. Last-superadmin policy BLOCKED_DECISION, manual2FA provisioning explicitly pending. Each product and STATE needs independent ROOT acceptance and its own seven exact-head. SEC/GOV/providers/held/cutover/business fences and production NO-GO remain.",
+  "next_action": "Continue EX-08 from live main after this separate documentary closure. CAT13 A04-A16 remain certified and58 declared actions pending. ROOT fresh integration INVENTORY68 corrected finite/int32 CSV + cost export + UI before SALE48/CRM44 controller deltas; CONTENT39V2 preserved bounded PASS requires fresh-main compatibility/seven. IAM frontend26/backend29 and independent atomicity PASS require ROOT combined acceptance; last-superadmin BLOCKED_DECISION/manualMFA pending. CONTROL UI14 independent review and separate inherited legacy-auditcount correction active; LOG four safe read flows active, external providers/replay blocked. Each product and STATE requires ROOT independent acceptance and separate seven exact-head. SEC/GOV/held/cutover/providers/business fences and production NO-GO unchanged.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -198,7 +199,7 @@
     }
   ],
   "supplemental_product_validation": {
-    "scope": "EX-08 F0 closure — separately reviewed queue recovery/lifecycle corrective product",
+    "scope": "EX-08 F0 closure \u2014 separately reviewed queue recovery/lifecycle corrective product",
     "pr": 50,
     "merge_sha": "c13edfd247e9094dec18360621b8c7a7d51649be",
     "validation_head_sha": "dc75fcdd91c768f14fdf06f5a7ad35a4c485d00f",
@@ -262,22 +263,22 @@
     "production": "NO-GO"
   },
   "admin_media_authority": {
-    "decision": "Registro de recursos existentes + aprobación auditada de un editor autorizado",
+    "decision": "Registro de recursos existentes + aprobaci\u00f3n auditada de un editor autorizado",
     "source": "USER_DECISION explicit response in orchestration session",
     "status": "APPROVED_IMPLEMENTED_VALIDATED",
-    "limits": "26recursos existentes verificados; selección nueva/reemplazada pending; aprobación específica con products.write/hash/version/reason/actor/audit y held. Aprobar no concede permisosSKU/variantes; sin proveedorreal/uploader/política inventada. Evidencia EX-08.CAT-closure.md."
+    "limits": "26recursos existentes verificados; selecci\u00f3n nueva/reemplazada pending; aprobaci\u00f3n espec\u00edfica con products.write/hash/version/reason/actor/audit y held. Aprobar no concede permisosSKU/variantes; sin proveedorreal/uploader/pol\u00edtica inventada. Evidencia EX-08.CAT-closure.md."
   },
   "last_product_validation": {
-    "execution": "EX-08.SESSION.RECOVERY",
-    "pr": 59,
-    "merge_sha": "ac002cc947da8fdad3f8add786d37394f9b0bd66",
-    "validation_head_sha": "5ec9f391d908aaf221f9796cbb5c4d745575a6c7",
-    "workflow_run": 38133193706,
+    "execution": "EX-08.CONTROL.AUDIT_BOUNDARY",
+    "pr": 61,
+    "merge_sha": "838d2122190340dae6b4dfb8469c078311b6a90d",
+    "validation_head_sha": "453588b518f3736a639c5072aba90f310c888335",
+    "workflow_run": 38136541159,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 8,
-    "report": "docs/orchestration/runs/EX-08.SESSION-recovery-closure.md"
+    "scope_files": 6,
+    "report": "docs/orchestration/runs/EX-08.CONTROL-audit-boundary-closure.md"
   },
   "browser_infrastructure_validation": {
     "execution": "EX-08.QA.BROWSER",
@@ -389,6 +390,42 @@
     "remaining_debt": "Inherited mobile dashboard P2 assigned CONTROL; baseline IAM audit atomicity P1 independently reproduced and corrector active; last active superadmin policy BLOCKED_DECISION pending user. No domain closure implied.",
     "gitleaks": "PASS ROOT complete history/source1086/full8diff raw0 and exact-head secret-scan; ignores unchanged",
     "npm_audit": "PASS fingerprint regression only, known HIGH/SEC remain OPEN",
+    "production": "NO-GO"
+  },
+  "audit_projection_validation": {
+    "execution": "EX-08.CONTROL.AUDIT_BOUNDARY",
+    "pr": 61,
+    "merge_sha": "838d2122190340dae6b4dfb8469c078311b6a90d",
+    "validation_head_sha": "453588b518f3736a639c5072aba90f310c888335",
+    "workflow_run": 38136541159,
+    "workflow_attempt": 1,
+    "seven_exact_head_checks": "PASS",
+    "behind_at_acceptance": 0,
+    "scope_files": 6,
+    "report": "docs/orchestration/runs/EX-08.CONTROL-audit-boundary-closure.md",
+    "ROOT_unit_security": 326,
+    "ROOT_full_critical": 264,
+    "ROOT_full_e2e": 90,
+    "ROOT_frontend": 288,
+    "ROOT_focused_unit": 6,
+    "ROOT_compiled_HTTP_tests": 1,
+    "ROOT_HTTP_groups": 6,
+    "ROOT_guards": 22,
+    "ROOT_browser_safety": 42,
+    "ROOT_fresh_Prismagenerate": "PASS own unshared generatedclient",
+    "ROOT_migrations": 13,
+    "ROOT_standard_Next_build": "PASS",
+    "CI_actual_checkout": "efc928a915f0abf2419aa6468e4c95bf8e4a7be6",
+    "CI_source_hashes_verified": 1090,
+    "CI_full_tree": "eafe56e18bdd15de6651235841063e89a6d05747",
+    "CI_critical": 264,
+    "CI_original_browser": 5,
+    "CI_browser_isolation": 42,
+    "independent_challenger": "PASS complete326unit264critical90E2E/10adversarial; no introducedP0/P1/P2 in bounded6filecandidate",
+    "challenger_report_SHA256": "16b692a8d172440c25d5d563be49ff82169f637d970eb010831f63dbb7317a8c",
+    "gitleaks": "PASS raw0 history/tree1090/complete6diff; originalignores unchanged",
+    "npm_audit": "PASS baseline fingerprints only; existingHIGH SEC OPEN",
+    "remaining_debt": "Legacy operational-metrics auditcount inherited DEBT_DETECTED in separately owned correction. CONTROL UI14 frozen with independent review active, not certified here. Lastsuperadmin BLOCKED_DECISION and secureMFA provisioning pending. Historical401 cause NOT_VERIFIED; failed challenger attempts preserved. No all42/71 certification.",
     "production": "NO-GO"
   }
 }
