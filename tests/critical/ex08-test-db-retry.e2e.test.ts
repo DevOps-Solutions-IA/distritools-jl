@@ -39,6 +39,8 @@ describe('EX-08 reset retry with actual isolated PostgreSQL failures', () => {
     let attempts = 0;
     Object.assign(prisma, { $executeRawUnsafe: async (sql: string) => {
       attempts += 1;
+      // Inject the lock timeout once; retries execute the real reset query.
+      if (attempts > 1) return original.call(prisma, sql);
       try {
         return await executor.$transaction(async (tx) => {
           await tx.$executeRawUnsafe("SET LOCAL lock_timeout = '100ms'");

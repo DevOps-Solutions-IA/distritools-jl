@@ -185,6 +185,37 @@ jobs:
           mkdir -p artifacts
           set -o pipefail
           npm run test:critical 2>&1 | tee artifacts/critical-integration.log
+      - name: Install frontend browser dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install versioned Chromium browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Verify browser isolation failure modes
+        working-directory: frontend
+        run: npm run test:browser:safety
+      - name: Run isolated real admin browser suite
+        run: |
+          env -u DATABASE_URL -u REDIS_URL -u APP_ENV -u NODE_ENV \
+            EX08_BROWSER_EVIDENCE_DIR="$RUNNER_TEMP/ex08-browser" \
+            npm --prefix frontend run test:browser
+      - name: Upload sanitized browser test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: admin-browser-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ex08-browser/**/browser-results.json
+            ${{ runner.temp }}/ex08-browser/**/acceptance.json
+            ${{ runner.temp }}/ex08-browser/**/cleanup.json
+            ${{ runner.temp }}/ex08-browser/**/failure.json
+            ${{ runner.temp }}/ex08-browser/**/entry.json
+            ${{ runner.temp }}/ex08-browser/**/services.json
+            ${{ runner.temp }}/ex08-browser/**/service-version-proof.json
+            ${{ runner.temp }}/ex08-browser/**/source-hashes.json
+            ${{ runner.temp }}/ex08-browser/**/*-receipt.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload critical test evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

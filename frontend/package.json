@@ -9,7 +9,9 @@
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:browser": "node e2e/run.cjs",
+    "test:browser:safety": "node --test e2e/safety.test.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -28,6 +30,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.25.1",
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
