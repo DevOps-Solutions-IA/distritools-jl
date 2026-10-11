@@ -2,8 +2,8 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "8b9eba627c2c7190284c303d23550cdd14d25b44",
-  "state_base_sha": "8b9eba627c2c7190284c303d23550cdd14d25b44",
+  "validated_product_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
+  "state_base_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-11",
   "phase": "internal-hardening",
@@ -39,11 +39,12 @@
     "EX-08.F1",
     "EX-08.F2",
     "EX-08.SESSION",
-    "EX-08.QA.TEST_DB_RETRY"
+    "EX-08.QA.TEST_DB_RETRY",
+    "EX-08.QA.BROWSER"
   ],
   "baseline": {
     "git_canonical": "PASS",
-    "gitleaks": "PASS (EX-08.QA.TEST_DB_RETRY PR53 seven exact-head CI and ROOT committed history/tree/diff)",
+    "gitleaks": "PASS (QA browser PR55 exacthead35cb0fe/run38122289650 secret-scan plus ROOT188history/complete1048source/diff zero leaks; generatedNext raw7 FAIL retained separately)",
     "prisma_validate": "PASS",
     "backend_typecheck": "PASS",
     "backend_lint": "PASS",
@@ -53,7 +54,7 @@
     "frontend_build": "PASS (EX-08.PLATFORM PR #51 exact-head CI and independent real Next production build; 42 admin route paths preserved)",
     "frontend_tests": "214/214 PASS (PR53 CI38102079752 and independent ROOT unchanged frontend)",
     "backend_unit_tests": "315/315 PASS (PR53 CI38102079752 and ROOT clean CI-style unit/security without .env.test or service targets)",
-    "critical_e2e": "PASS (PR53 CI38102079752 attempt1:262 critical +4 environment guards,266/266; ROOT262 full critical and90 original E2E; zero fail/cancelled/skipped)",
+    "critical_e2e": "PASS (PR55 CI38122289650 exacthead35cb0fe:262 full original critical,4 separate environment guards,42 browser isolation and5 real browser; ROOT262critical/90originalE2E; zero fail/cancelled/skipped)",
     "architecture_check": "DEBT_DETECTED (optional architecture command FAIL:165 identical base/candidate findings, ARCH-001136/00219/0039/0051; regression delta PASS, no debt closure)"
   },
   "security": {
@@ -79,7 +80,7 @@
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producción o inventar políticas de negocio.",
       "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "Continuar EX-08: integrar runner QA reproducible después de esta transición; aceptar CAT/INV/CRM por hashes y pruebas reales. Completar backend INV V6 para cuatro P1 adicionales reproducidos por ROOT (auditoría countstart/dryrun/apply y doble aplicación concurrente), transferir delta controlado al consumidor INV. Implementar autoridad de imágenes aprobada por usuario: registro de recursos existentes y aprobación auditada por editor autorizado. Continuar SALE/CONTENT/IAM/LOG/CONTROL; certificar individualmente71 acciones/42 rutas. Sin producción/proveedores reales ni cierre de políticas pendientes."
+      "next_action": "Continuar EX-08 desde main real: aceptar CAT+mediaV3, INV V6+CSV+UI y CRM por hashes/pruebas ROOT/challenger. CONTENT17 y PUBLIC_LEGAL17 congelados: unir deltas y corregir comunicación estática, verificar GUI publicación→cinco rutas públicas/invalidación footer. SALE activo: cancelación real por orderNumber y políticas/permisos existentes; demostrar/remediar ruta duplicada y filtro pago orderId con ownership separado. Después IAM/LOG/CONTROL; certificar cada una de71 acciones y42 rutas. No producción/proveedores reales, cutover ni decisiones/SEC/GOV cerrados por este QA."
     }
   ],
   "provider_status": {
@@ -124,7 +125,7 @@
     "files": 6,
     "result": "ROOT independently reviewed six exact hashes/full diff and six-file remote scope, all seven same-head checks, zero behind live main and actual GitHub squash result.315 unit/security,266 CIcritical including4guards,214 frontend and ROOT90 originalE2E PASS. Technical/documentary challenger zero introducedP0/P1/P2. All71 complete actions remain NOT_TESTED and EX08 ACTIVE/productionNO-GO. Separate documentary transition required."
   },
-  "next_action": "Continuar EX-08: integrar runner QA reproducible después de esta transición; aceptar CAT/INV/CRM por hashes y pruebas reales. Completar backend INV V6 para cuatro P1 adicionales reproducidos por ROOT (auditoría countstart/dryrun/apply y doble aplicación concurrente), transferir delta controlado al consumidor INV. Implementar autoridad de imágenes aprobada por usuario: registro de recursos existentes y aprobación auditada por editor autorizado. Continuar SALE/CONTENT/IAM/LOG/CONTROL; certificar individualmente71 acciones/42 rutas. Sin producción/proveedores reales ni cierre de políticas pendientes.",
+  "next_action": "Continuar EX-08 desde main real: aceptar CAT+mediaV3, INV V6+CSV+UI y CRM por hashes/pruebas ROOT/challenger. CONTENT17 y PUBLIC_LEGAL17 congelados: unir deltas y corregir comunicación estática, verificar GUI publicación→cinco rutas públicas/invalidación footer. SALE activo: cancelación real por orderNumber y políticas/permisos existentes; demostrar/remediar ruta duplicada y filtro pago orderId con ownership separado. Después IAM/LOG/CONTROL; certificar cada una de71 acciones y42 rutas. No producción/proveedores reales, cutover ni decisiones/SEC/GOV cerrados por este QA.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -262,5 +263,45 @@
     "source": "USER_DECISION explicit response in orchestration session",
     "status": "APPROVED_IMPLEMENTATION_PENDING",
     "limits": "Conservar aprobaciones existentes; no aprobación ficticia de referencia nueva, proveedor real ni política inventada. Nueva subtarea de ownership y pruebas reales necesaria."
+  },
+  "last_product_validation": {
+    "execution": "EX-08.QA.BROWSER",
+    "pr": 55,
+    "merge_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
+    "validation_head_sha": "35cb0fea8326886ae1e33c8496e21614894e89bd",
+    "workflow_run": 38122289650,
+    "workflow_attempt": 1,
+    "seven_exact_head_checks": "PASS",
+    "behind_at_acceptance": 0,
+    "scope_files": 23,
+    "report": "docs/orchestration/runs/EX-08.QA-browser-closure.md"
+  },
+  "browser_infrastructure_validation": {
+    "execution": "EX-08.QA.BROWSER",
+    "product_pr": 55,
+    "product_merge_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
+    "validation_head_sha": "35cb0fea8326886ae1e33c8496e21614894e89bd",
+    "workflow_run": 38122289650,
+    "seven_exact_head_checks": "PASS",
+    "files": 23,
+    "root_unit_security": 315,
+    "root_full_critical": 262,
+    "root_full_e2e": 90,
+    "root_frontend": 214,
+    "root_actual_browser": 5,
+    "CI_full_critical": 262,
+    "CI_separate_environment_guards": 4,
+    "CI_browser_isolation": 42,
+    "CI_actual_browser": 5,
+    "independent_challenger": "PASS zero introducedP0/P1/P2; actual canonicalRED39/42, GREEN42/42 three contexts,20 negative boundary probes/fourguards",
+    "failed_first_head": "e782a12de08755c90beccf19feb8a34b289afff0",
+    "failed_first_workflow": 38120629579,
+    "failed_first_result": "6/7 PASS;262critical+4guards PASS;39/42 isolation FAIL;browserNOT_TESTED; originalrawlogs retained",
+    "domain_workflows_certified": 0,
+    "scope_qualification": "bounded testinfra only; directdevPlaywright retained by Nextoptionalpeer inactualomitdev graph; muslNOT_TESTED; 42routes/71 completeactions still require domain evidence",
+    "report": "docs/orchestration/runs/EX-08.QA-browser-closure.md",
+    "production": "NO-GO",
+    "actual_actions_checkout_sha": "dac8ae4b4dc36528a60cd7774d08595022a0c6de",
+    "actual_checkout_source_binding": "PASS same full Git tree as reviewed35cb0fe and squashae9d3ae;1048uploadedhashes verified"
   }
 }
