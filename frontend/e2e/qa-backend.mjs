@@ -1,0 +1,57 @@
+import { assertEnvironmentFiles } from './environment.mjs';
+import console from 'node:console';
+import process from 'node:process';
+import { createRequire } from 'node:module';
+const nodeRequire = createRequire(import.meta.url);
+import fs from 'node:fs';
+import path from 'node:path';
+const root = path.resolve(import.meta.dirname, '../..');
+import { validateTargets, verifyContainer } from './safety.mjs';
+import { execFileSync } from 'node:child_process';
+assertEnvironmentFiles(root);
+const evidence = process.env.EX08_BROWSER_RUN_DIR;
+const descriptor = JSON.parse(fs.readFileSync(path.join(evidence, 'services.json')));
+validateTargets({ ports: { postgres: descriptor.containers.find(item => item.kind === 'postgres').port, redis: descriptor.containers.find(item => item.kind === 'redis').port }, owner: descriptor.owner, databaseUrl: process.env.DATABASE_URL, redisUrl: process.env.REDIS_URL, appEnv: process.env.APP_ENV, nodeEnv: process.env.NODE_ENV, authDisabled: process.env.ADMIN_AUTH_DISABLED });
+for (const item of descriptor.containers) {
+  const actual = JSON.parse(execFileSync('docker', ['inspect', item.id], { encoding: 'utf8' }))[0];
+  verifyContainer(actual, { ...item, owner: descriptor.owner });
+}
+// Imports create real Prisma and AppModule connections, so ownership is proved first.
+const { register } = nodeRequire('tsx/cjs/api');
+const unregister = register({ tsconfig: path.join(root, 'tsconfig.json') });
+const { prisma, resetDatabase, seedBaseData } = nodeRequire(path.join(root, 'tests/helpers/test-db.ts'));
+unregister();
+const { NestFactory } = nodeRequire(path.join(root, 'node_modules/@nestjs/core'));
+const { ValidationPipe } = nodeRequire(path.join(root, 'node_modules/@nestjs/common'));
+const { AppModule } = nodeRequire(path.join(root, 'dist/src/app/app.module.js'));
+const { GlobalExceptionFilter } = nodeRequire(path.join(root, 'dist/src/common/filters/global-exception.filter.js'));
+const { MetricsInterceptor } = nodeRequire(path.join(root, 'dist/src/infra/telemetry/metrics/metrics.interceptor.js'));
+const { DocumentBuilder, SwaggerModule } = nodeRequire(path.join(root, 'node_modules/@nestjs/swagger'));
+const { hash } = nodeRequire(path.join(root, 'node_modules/bcrypt'));
+const { TwoFactorEncryptionService } = nodeRequire(path.join(root, 'dist/src/common/security/two-factor-encryption.service.js'));
+const encryption = new TwoFactorEncryptionService();
+import { randomBytes } from 'node:crypto';
+(async () => {
+  await resetDatabase();
+  const seed = await seedBaseData();
+  const adminPassword = randomBytes(24).toString('hex');
+  const viewerPassword = randomBytes(24).toString('hex');
+  await prisma.user.update({ where: { id: seed.users.adminUserId }, data: { passwordHash: await hash(adminPassword, 12), twoFactorSecret: encryption.encrypt(seed.users.twoFactorSecret) } });
+  await prisma.user.update({ where: { id: seed.users.viewerUserId }, data: { passwordHash: await hash(viewerPassword, 12), twoFactorSecret: encryption.encrypt(seed.users.twoFactorSecret) } });
+  const fixture = { admin: { id: seed.users.adminUserId, email: seed.users.adminEmail, password: adminPassword }, viewer: { id: seed.users.viewerUserId, email: seed.users.viewerEmail, password: viewerPassword }, twoFactorSecret: seed.users.twoFactorSecret, roles: seed.roles };
+  fs.writeFileSync(path.join(evidence, 'private-fixture.json'), JSON.stringify(fixture), { mode: 0o600 });
+  const app = await NestFactory.create(AppModule, { rawBody: true, logger: false });
+  app.enableCors({ origin: [process.env.NEXT_PUBLIC_SITE_URL], credentials: true });
+  app.enableShutdownHooks();
+  app.setGlobalPrefix('api/v1');
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalInterceptors(app.get(MetricsInterceptor));
+  const docs = new DocumentBuilder().setTitle('DistriTools JL API').setDescription('Enterprise backend API').setVersion('1.0.0').addBearerAuth().build();
+  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, docs));
+  await app.listen(Number(process.env.EX08_BROWSER_BACKEND_PORT), '127.0.0.1');
+  fs.writeFileSync(path.join(evidence, 'backend-ready.json'), JSON.stringify({ pid: process.pid, owner: descriptor.owner, host: '127.0.0.1', port: Number(process.env.EX08_BROWSER_BACKEND_PORT), seed: 'fresh synthetic users, passwords, 2FA; own database only' }));
+  const stop = async () => { await app.close(); await prisma.$disconnect(); process.exit(0); };
+  process.once('SIGTERM', stop);
+  process.once('SIGINT', stop);
+})().catch(error => { fs.writeFileSync(path.join(evidence, 'private-bootstrap-error.json'), JSON.stringify({ name: error.name, message: error.message, stack: error.stack }), { mode: 0o600 }); console.error('FAIL isolated QA backend startup (private details omitted)'); process.exitCode = 1; });
