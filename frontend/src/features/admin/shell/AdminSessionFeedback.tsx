@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import type { AdminSessionState } from './useAdminSession';
 
@@ -20,7 +19,8 @@ export function AdminSessionFeedback({ status, onRetry }: { status: Exclude<Admi
       <h2>{message.title}</h2>
       <p>{message.description}</p>
       {status !== 'loading' ? <div className="admin-state-actions">
-        {status === 'auth_required' ? <Link href="/admin/login">Iniciar sesión</Link> : null}
+        {/* A fresh document rechecks the server boundary after local session rejection. */}
+        {status === 'auth_required' ? <a href="/admin/login">Iniciar sesión</a> : null}
         <Button type="button" variant="outline" onClick={onRetry}>Reintentar</Button>
       </div> : null}
     </section>
