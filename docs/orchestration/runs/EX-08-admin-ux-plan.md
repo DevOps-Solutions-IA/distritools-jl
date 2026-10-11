@@ -78,3 +78,7 @@ Require frontend lint/typecheck/test/build, relevant backend/critical E2E, repro
 Keep EX-06 and EX-07 parent BLOCKED_DECISION items, all SEC/GOV obligations, all BLOCKED_PROVIDER statuses, and event-bus held/cutover_pending unchanged. External 99 Envíos, payment, email and WhatsApp providers need separate approved sandbox/production work. EX-08 may present blockers accurately; it does not turn blocked business functionality into a production-ready feature or close EX-09–EX-12.
 
 **Exit:** operator workflows with browser evidence, no dead/fake actions, stable real backend wiring, approved user impact and rollback, full relevant gates and governed merge. Completion of EX-08 does not imply production GO.
+
+
+## Bounded QA reset closure before browser integration
+The separately reviewed test-only PR53 merged 8b9eba627c2c7190284c303d23550cdd14d25b44 after seven exact-head CI38102079752 PASS on 6295637488855fd4e90cd2f6cc9aa13938f7a393,zero behind main,scope6. ROOT315unit/262critical/90E2E/214front/22guards PASS; CI266critical includes4guards. Existing reset limits/assertions/business/helper algorithms are preserved except seven mapper lines for actual Prisma P2010 SQLSTATE. Full evidence and failed attempts: EX-08.QA-test-db-closure.md. This closes only bounded reset recovery. Reproducible browser integration and all domain acceptance remain required; no71-action certificate or production GO. User approved media authority: existing-resource registry plus audited authorized-editor approval; implementation remains pending under separate ownership.

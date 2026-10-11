@@ -45,7 +45,7 @@ Sub-runs: EX-07.1 Admin Operations Access, PII and Export Safety PASS/MERGED via
 ## EX-08 — Admin UX and operator usability — ACTIVE (DOMAIN WAVE NEXT)
 Goal: browser-audit admin routes, eliminate cloned-page feel, improve hierarchy/readiness/alerts/forms/tables/actions, click-test all controls, validate PDF/CSV output.
 Exit: operator workflows have browser evidence and no dead/fake actions.
-User-impact review is mandatory. Runbook: docs/orchestration/runs/EX-08-admin-ux-plan.md. Baseline inventory: 42 admin routes, 20 modules, 71 declared actions (full workflows NOT_TESTED). F0 product/documentary closure is complete; F1/F2/SESSION product PR #51 is merged, and its separate documentary transition requires seven exact-head checks and merge before domain activation. PR #51 product merge220d5f726abdbc9ade64aca39a9dafd050cbce8c, seven exact-head CI38097274208 PASS. Domain CAT/INV/CRM next from live main after separate STATE transition, with exclusive ownership; remaining domains and QA must individually certify71 actions and42 live route workflows. External providers and unresolved commercial policies stay blocked.
+User-impact review is mandatory. Runbook: docs/orchestration/runs/EX-08-admin-ux-plan.md. Baseline inventory: 42 admin routes, 20 modules, 71 declared actions (full workflows NOT_TESTED). F0 and F1/F2/SESSION product/documentary closures are complete (platform product PR51 and documentary PR52). The separate bounded test-reset QA PR53 is merged after seven exact-head checks; its documentary transition preserves EX08 ACTIVE and does not certify domain actions. PR #51 product merge220d5f726abdbc9ade64aca39a9dafd050cbce8c, seven exact-head CI38097274208 PASS. Domain CAT/INV/CRM next from live main after separate STATE transition, with exclusive ownership; remaining domains and QA must individually certify71 actions and42 live route workflows. External providers and unresolved commercial policies stay blocked.
 
 ## EX-09 — Provider readiness framework
 Goal: centralize provider selection, configuration validation, readiness states, mock-vs-real separation, secret masking, sandbox-only external testing controls.
@@ -68,3 +68,7 @@ Exit: explicit GO/NO-GO tied to exact SHA and environment. No production GO whil
 ## Loop policy
 Every execution follows: BASELINE -> IMPLEMENT -> TARGETED TEST -> FULL RELEVANT GATE -> SECURITY -> USER IMPACT -> DIFF REVIEW -> COMMIT -> PR -> INDEPENDENT VALIDATION -> MERGE -> STATE UPDATE.
 Any FAIL loops back to IMPLEMENT with a narrowly scoped corrective sub-run (e.g. EX-04.1, EX-04.2) until exit criteria are met.
+
+
+## EX-08.QA.TEST_DB_RETRY — bounded test helper closure
+PR53 product merged 8b9eba627c2c7190284c303d23550cdd14d25b44, exact head6295637488855fd4e90cd2f6cc9aa13938f7a393, CI38102079752 attempt1 sevenPASS, behind0,scope6. ROOT315 unit/security,262critical,90E2E,214front,22guards/Prisma13/quality/Gitleaks PASS; CI266critical includes4guards. Wrapped40P01/55P03 now reach existing bounded retries; original tests/reset/seeds/auth/workers/business source unchanged. Challenger no introducedP0/P1/P2. Historical failures/SEC/GOV/business/provider/replay fences preserved; parentEX08 and71-action certification remain open. Documentary STATE transition is separate and requires its own seven exact-head checks.
