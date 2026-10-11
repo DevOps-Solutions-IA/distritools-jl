@@ -71,3 +71,6 @@ The filesystem probe child environment preserves the actual incoming `CI` flag, 
 
 
 EX-08.QA browser product PR55 closed with seven actual PASS on35cb0fea8326886ae1e33c8496e21614894e89bd, CI38122289650, behind0/scope23; merge ae9d3aef6cb3e994252c9d00946e49ff46c39cd2 independently matched all23 reviewed hashes. The first failed attempt remains retained. The corresponding STATE transition is a separate documentary PR and must receive the same seven exact-head checks before merge. No branch-protection capability or production authorization is claimed.
+
+
+EX-08.CAT producto PR57 se integró sólo después de siete controles sobre44a4f5edfde42e2a7284855eaa70c1938ff207e6 (CI38126635018),behind0,scope55 y aprobación ROOT/challenger. El HEAD previoef7 también tuvo7PASS, pero fue rechazado porP2; sus controles no se trasladaron al delta posterior. Checkoutreal4f1d8c3 y commitrevisado44a4f5e tienen el mismo árbol Git f1d980ff5d4db6cf2df41ef44872ff49eeef50ad, igual al squash36c6ee31;1080hashes remotos verificados. Actual263critical+4guardias+42isolation+5platformbrowserPASS no certifican automáticamente los71 workflows. Esta transición STATE/matriz13acciones necesita siete nuevos exact-head antes demerge. Sin bypass/protección nueva/force/directmain/GOproductivo.

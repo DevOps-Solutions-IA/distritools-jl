@@ -2,8 +2,8 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
-  "state_base_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
+  "validated_product_sha": "36c6ee31b63d45f71a35ef5bc7acdc410159d1fb",
+  "state_base_sha": "36c6ee31b63d45f71a35ef5bc7acdc410159d1fb",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-11",
   "phase": "internal-hardening",
@@ -40,7 +40,8 @@
     "EX-08.F2",
     "EX-08.SESSION",
     "EX-08.QA.TEST_DB_RETRY",
-    "EX-08.QA.BROWSER"
+    "EX-08.QA.BROWSER",
+    "EX-08.CAT"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -78,9 +79,9 @@
       "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditoría, errores visibles y pruebas de navegador. No rediseño cosmético.",
       "user_impact": "ADMIN_OPERATOR",
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producción o inventar políticas de negocio.",
-      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active.",
+      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 después de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es histórica; EX08padreACTIVE.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "Continuar EX-08 desde main real: aceptar CAT+mediaV3, INV V6+CSV+UI y CRM por hashes/pruebas ROOT/challenger. CONTENT17 y PUBLIC_LEGAL17 congelados: unir deltas y corregir comunicación estática, verificar GUI publicación→cinco rutas públicas/invalidación footer. SALE activo: cancelación real por orderNumber y políticas/permisos existentes; demostrar/remediar ruta duplicada y filtro pago orderId con ownership separado. Después IAM/LOG/CONTROL; certificar cada una de71 acciones y42 rutas. No producción/proveedores reales, cutover ni decisiones/SEC/GOV cerrados por este QA."
+      "next_action": "Continuar EX-08 desde main vivo tras este STATE: catálogo13 A04-A16 cerrado; validar/integrar INVENTORY V6+CSV+UI, CONTENT V7+proyección pública y SALE/CRM con ownership exclusivo. CONTENT ROOT319unit/271critical/90E2E/262front/10browser PASS calificados, candidato no integrado. CRM introducedP1 revocación PII y2P2 correo bajo corrección; SALE P2 contrato BFF refresco bajo corrección; no certificar hasta challenger/gates/merge. Después IAM/LOG/CONTROL y las58 acciones restantes,42 workflows completos aún sin certificado global. Mantener SEC/GOV/proveedores/decisiones/held/cutover_pending/producción NO-GO."
     }
   ],
   "provider_status": {
@@ -113,19 +114,20 @@
     "EX-08.QA PR #50 CI attempt1: auth-rbac logout401!=201. Actual helper/service controlled TOTP boundary reproduces missing token returned without status assertions; original CI verify response was not retained, so unique cause is not established. Unchanged-head retry passed255/255 including guards. Separate bounded test-helper robustness follow-up; no 2FA tolerance, auth policy or test assertion change."
   ],
   "last_transition": {
-    "execution": "EX-08.QA.TEST_DB_RETRY",
-    "status": "MERGED",
-    "pr": 53,
-    "merge_sha": "8b9eba627c2c7190284c303d23550cdd14d25b44",
-    "validation_head_sha": "6295637488855fd4e90cd2f6cc9aa13938f7a393",
-    "workflow_run": 38102079752,
+    "execution": "EX-08.CAT",
+    "pr": 57,
+    "merge_sha": "36c6ee31b63d45f71a35ef5bc7acdc410159d1fb",
+    "validation_head_sha": "44a4f5edfde42e2a7284855eaa70c1938ff207e6",
+    "workflow_run": 38126635018,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "files": 6,
-    "result": "ROOT independently reviewed six exact hashes/full diff and six-file remote scope, all seven same-head checks, zero behind live main and actual GitHub squash result.315 unit/security,266 CIcritical including4guards,214 frontend and ROOT90 originalE2E PASS. Technical/documentary challenger zero introducedP0/P1/P2. All71 complete actions remain NOT_TESTED and EX08 ACTIVE/productionNO-GO. Separate documentary transition required."
+    "scope_files": 55,
+    "report": "docs/orchestration/runs/EX-08.CAT-closure.md",
+    "status": "MERGED",
+    "result": "ROOT source55/protected1025,320unit263critical90E2E266front/22CAT99BFF9nav and independent266front13regressions10browser PASS; actualremote263critical4guards42isolation5browser/1080hashes/samefulltree PASS.13actionsCAT only; separate STATE documentary ownseven pending until integration."
   },
-  "next_action": "Continuar EX-08 desde main real: aceptar CAT+mediaV3, INV V6+CSV+UI y CRM por hashes/pruebas ROOT/challenger. CONTENT17 y PUBLIC_LEGAL17 congelados: unir deltas y corregir comunicación estática, verificar GUI publicación→cinco rutas públicas/invalidación footer. SALE activo: cancelación real por orderNumber y políticas/permisos existentes; demostrar/remediar ruta duplicada y filtro pago orderId con ownership separado. Después IAM/LOG/CONTROL; certificar cada una de71 acciones y42 rutas. No producción/proveedores reales, cutover ni decisiones/SEC/GOV cerrados por este QA.",
+  "next_action": "Continuar EX-08 desde main vivo tras este STATE: catálogo13 A04-A16 cerrado; validar/integrar INVENTORY V6+CSV+UI, CONTENT V7+proyección pública y SALE/CRM con ownership exclusivo. CONTENT ROOT319unit/271critical/90E2E/262front/10browser PASS calificados, candidato no integrado. CRM introducedP1 revocación PII y2P2 correo bajo corrección; SALE P2 contrato BFF refresco bajo corrección; no certificar hasta challenger/gates/merge. Después IAM/LOG/CONTROL y las58 acciones restantes,42 workflows completos aún sin certificado global. Mantener SEC/GOV/proveedores/decisiones/held/cutover_pending/producción NO-GO.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -261,20 +263,20 @@
   "admin_media_authority": {
     "decision": "Registro de recursos existentes + aprobación auditada de un editor autorizado",
     "source": "USER_DECISION explicit response in orchestration session",
-    "status": "APPROVED_IMPLEMENTATION_PENDING",
-    "limits": "Conservar aprobaciones existentes; no aprobación ficticia de referencia nueva, proveedor real ni política inventada. Nueva subtarea de ownership y pruebas reales necesaria."
+    "status": "APPROVED_IMPLEMENTED_VALIDATED",
+    "limits": "26recursos existentes verificados; selección nueva/reemplazada pending; aprobación específica con products.write/hash/version/reason/actor/audit y held. Aprobar no concede permisosSKU/variantes; sin proveedorreal/uploader/política inventada. Evidencia EX-08.CAT-closure.md."
   },
   "last_product_validation": {
-    "execution": "EX-08.QA.BROWSER",
-    "pr": 55,
-    "merge_sha": "ae9d3aef6cb3e994252c9d00946e49ff46c39cd2",
-    "validation_head_sha": "35cb0fea8326886ae1e33c8496e21614894e89bd",
-    "workflow_run": 38122289650,
+    "execution": "EX-08.CAT",
+    "pr": 57,
+    "merge_sha": "36c6ee31b63d45f71a35ef5bc7acdc410159d1fb",
+    "validation_head_sha": "44a4f5edfde42e2a7284855eaa70c1938ff207e6",
+    "workflow_run": 38126635018,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 23,
-    "report": "docs/orchestration/runs/EX-08.QA-browser-closure.md"
+    "scope_files": 55,
+    "report": "docs/orchestration/runs/EX-08.CAT-closure.md"
   },
   "browser_infrastructure_validation": {
     "execution": "EX-08.QA.BROWSER",
@@ -303,5 +305,57 @@
     "production": "NO-GO",
     "actual_actions_checkout_sha": "dac8ae4b4dc36528a60cd7774d08595022a0c6de",
     "actual_checkout_source_binding": "PASS same full Git tree as reviewed35cb0fe and squashae9d3ae;1048uploadedhashes verified"
+  },
+  "catalog_validation": {
+    "execution": "EX-08.CAT",
+    "product_pr": 57,
+    "product_merge_sha": "36c6ee31b63d45f71a35ef5bc7acdc410159d1fb",
+    "validation_head_sha": "44a4f5edfde42e2a7284855eaa70c1938ff207e6",
+    "workflow_run": 38126635018,
+    "seven_exact_head_checks": "PASS",
+    "files": 55,
+    "root_unit_security": 320,
+    "root_full_critical": 263,
+    "root_full_e2e": 90,
+    "root_frontend": 266,
+    "root_catalog_browser_groups": 22,
+    "root_catalog_BFF_requests": 99,
+    "root_navigation_media_groups": 9,
+    "independent_navigation_browser_groups": 10,
+    "new_navigation_regression_tests": 13,
+    "introduced_open_P0_P1_P2": 0,
+    "CI_critical": 263,
+    "CI_environment_guards": 4,
+    "CI_browser_isolation": 42,
+    "CI_platform_browser": 5,
+    "CI_actual_checkout": "4f1d8c3c9160c0d024320a887a5d28e6c0c181e7",
+    "CI_source_hashes_verified": 1080,
+    "CI_full_tree": "f1d980ff5d4db6cf2df41ef44872ff49eeef50ad",
+    "declared_actions_verified": [
+      "A04",
+      "A05",
+      "A06",
+      "A07",
+      "A08",
+      "A09",
+      "A10",
+      "A11",
+      "A12",
+      "A13",
+      "A14",
+      "A15",
+      "A16"
+    ],
+    "declared_action_count_verified": 13,
+    "remaining_declared_actions": 58,
+    "all_42_full_route_workflows": "NOT_TESTED",
+    "gitleaks": "PASS history/relative1080source/diff0; initialabsolutefixtureFAILretained,unchangedignore",
+    "npm_audit_baseline": "PASS regression only; knownHIGH OPEN",
+    "prior_reviewed_head": "ef7d9a22704435c4c69c8538c4012f58571b80a9",
+    "prior_seven_run": 38125112523,
+    "prior_merge_acceptance": "FAIL additionalnavigationP2; immutablefailure/reportretained; correctednewheadpassedindependent+newseven",
+    "limits": "View pagination over overview; product/variant writes sequential with persisted recovery; no backendcursor/inventedtransaction/provider/schema",
+    "report": "docs/orchestration/runs/EX-08.CAT-closure.md",
+    "production": "NO-GO"
   }
 }
