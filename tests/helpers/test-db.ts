@@ -20,6 +20,13 @@ function getPrismaErrorCode(error: unknown): string | null {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     typeof error.code === 'string'
   ) {
+    if (
+      error.code === 'P2010' &&
+      typeof error.meta?.code === 'string' &&
+      /^[0-9A-Z]{5}$/.test(error.meta.code)
+    ) {
+      return error.meta.code;
+    }
     return error.code;
   }
 
