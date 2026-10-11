@@ -345,3 +345,10 @@ Un P2 adicional impedía entrar desde listado/detalle al editor de imágenes sin
 PR57 primerHEADef7 siete CI38125112523 PASS se conservan, pero no autorizan el delta nuevo. Candidato55 requiere revisión independiente y nuevos siete exact-head/behind0; STATE separado posterior.13 acciones CAT tienen evidencia local y ninguna certificación global anticipada. Rollback gobernado desde preimages y parches preservados, sin schema/provider/políticas/históricos alterados. BaselineHIGH y SEC/GOV/held/cutover_pending permanecen, producción NO-GO.
 
 Challenger final independiente cerró el P2 de entrada visible:10 grupos reales,266 frontend y13 regresiones PASS; cero P0/P1/P2 técnicos abiertos. Informe externo immutable REPORT_NAV_DELTA SHA2561a1a4e594fc6af5e616ca185f042034966e5ed51eeec342ac4caf5a3760fce0b. Nuevos siete CI y merge siguen pendientes; producción NO-GO.
+
+
+### EX-08.CAT — producto gobernado integrado
+
+PR57 merged36c6ee31b63d45f71a35ef5bc7acdc410159d1fb, siete exact-head44a4f5edfde42e2a7284855eaa70c1938ff207e6/CI38126635018/behind0/scope55. ROOT verificó55 hashes producto e igualdad completa de árbol con checkoutCI4f1d8c3;1080hashes subidos coinciden.13 acciones A04-A16 tienen GUI/API/persistencia/auditoría/recarga/negativos reales: productos, marcas y categorías; medios se aprueban mediante registro26/hash/version/motivo/actor/audit, sin permiso de variantes añadido. P2 visible-entry corregido,10 navegador independiente/9 ROOT,266FE y13 regresiones PASS.
+
+Esta transición STATE es documental separada y necesita sus propios siete controles; EX08padreACTIVE y58acciones/42workflows completos restantes pendientes, producciónNO-GO. CRM P1+2P2 y SALE P2 son candidatos separados sin aceptación; CONTENT/INV pendientes integración. Límites de paginación/operación parcial, HIGHbaseline/SEC/GOV/provider/business/held/cutover intactos. Rollback: revert gobernado sóloproducto55 y documentación pertinente con sieteCI; sin migración destructiva/datos históricos. Detalle EX-08.CAT-closure.md.
