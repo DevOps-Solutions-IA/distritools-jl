@@ -12,7 +12,7 @@ function probe(makePath) {
   const marker = path.join(fixture, 'docker-contact');
   fs.writeFileSync(path.join(bin, 'docker'), `#!/bin/sh\n/usr/bin/touch '${marker}'\nexit 93\n`, { mode: 0o700 });
   const evidence = makePath(fixture);
-  const env = Object.fromEntries(['PATH', 'HOME', 'USER', 'LANG', 'TMPDIR'].filter(key => process.env[key]).map(key => [key, process.env[key]]));
+  const env = Object.fromEntries(['PATH', 'HOME', 'USER', 'LANG', 'TMPDIR', 'CI'].filter(key => process.env[key]).map(key => [key, process.env[key]]));
   env.PATH = `${bin}:${env.PATH}`; env.EX08_BROWSER_EVIDENCE_DIR = evidence;
   const result = spawnSync(process.execPath, [path.join(root, 'frontend/e2e/run.cjs')], { cwd: root, env, encoding: 'utf8', timeout: 10_000 });
   assert.equal(result.status, 1); // The deliberate Docker sentinel also exits nonzero for safe paths.
