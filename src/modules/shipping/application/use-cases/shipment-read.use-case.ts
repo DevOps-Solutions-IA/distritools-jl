@@ -16,7 +16,7 @@ export class GetShipmentDetailUseCase {
 export class GetShipmentTrackingUseCase {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService, @Inject(SHIPPING_PROVIDER_PORT) private readonly provider: ShippingProviderPort) {}
   async execute(shipmentId: string) {
-    const s = await this.prisma.shipment.findUnique({ where: { id: shipmentId }, include: { events: { orderBy: { occurredAt: 'desc' } } } });
+    const s = await this.prisma.shipment.findUnique({ where: { id: shipmentId }, include: { events: { select: { id: true, status: true, occurredAt: true }, orderBy: [{ occurredAt: 'desc' }, { id: 'desc' }], take: 100 } } });
     if (!s) throw new NotFoundException('Envío no encontrado.');
     if (!s.trackingNumber) return { shipmentId, trackingNumber: null, events: s.events, operationalState: { status: 'pending_guide', message: 'No hay guía externa. Se conserva tracking interno.' } };
     return { shipmentId, providerStatus: await this.provider.getShipmentStatus(s.trackingNumber), events: s.events };
