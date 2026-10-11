@@ -74,3 +74,6 @@ EX-08.QA browser product PR55 closed with seven actual PASS on35cb0fea8326886ae1
 
 
 EX-08.CAT producto PR57 se integró sólo después de siete controles sobre44a4f5edfde42e2a7284855eaa70c1938ff207e6 (CI38126635018),behind0,scope55 y aprobación ROOT/challenger. El HEAD previoef7 también tuvo7PASS, pero fue rechazado porP2; sus controles no se trasladaron al delta posterior. Checkoutreal4f1d8c3 y commitrevisado44a4f5e tienen el mismo árbol Git f1d980ff5d4db6cf2df41ef44872ff49eeef50ad, igual al squash36c6ee31;1080hashes remotos verificados. Actual263critical+4guardias+42isolation+5platformbrowserPASS no certifican automáticamente los71 workflows. Esta transición STATE/matriz13acciones necesita siete nuevos exact-head antes demerge. Sin bypass/protección nueva/force/directmain/GOproductivo.
+
+
+EX-08.SESSION.RECOVERY product PR59 merged ac002cc947da8fdad3f8add786d37394f9b0bd66 after all seven exact-head controls on5ec9f391d908aaf221f9796cbb5c4d745575a6c7,run38133193706,behind0 and reviewed scope8. Actual Actions checkoutbf79decd has identical full tree523d989757829a4a0de7694fcc0e2384b109f60d; ROOT verified1086 source hashes,263critical,4 guards,42 isolation and5 browser cases retry0/errors0/owned cleanup10. This separate documentary candidate requires seven new exact-head controls; manual governance capability limitation and production NO-GO remain.
