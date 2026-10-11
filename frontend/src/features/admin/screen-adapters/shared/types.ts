@@ -17,7 +17,7 @@ export type SectionScreenProps<
 > = {
   moduleKey: AdminModuleKey;
   adminModule: AdminModuleConfig;
-  snapshot: CatalogSnapshot;
+  snapshot: [K] extends [never] ? CatalogSnapshot : CatalogSnapshot | null;
   operations: Pick<AdminOperationalSnapshot, K>;
 };
 export interface SectionActionLink {
@@ -25,7 +25,7 @@ export interface SectionActionLink {
   href: string;
 }
 export interface SectionScreenAdapter {
-  Screen: ComponentType<SectionScreenProps>;
+  Screen: ComponentType<SectionScreenProps> | ComponentType<SectionScreenProps<never>>;
   actions?: SectionActionLink[];
 }
 // Keep the existing result contract, including ok=false, status and error.

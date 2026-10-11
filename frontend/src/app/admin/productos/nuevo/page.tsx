@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 export default async function AdminNewProductPage() {
   const [snapshot, operations] = await Promise.all([
-    getAdminCatalogSnapshot(),
-    getAdminOperationalSnapshot(),
+    getAdminCatalogSnapshot('options'),
+    getAdminOperationalSnapshot(['inventoryWarehouses']),
   ]);
   const warehouses = operations.inventoryWarehouses?.data ?? [];
 

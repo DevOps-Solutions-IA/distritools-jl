@@ -2,12 +2,8 @@ import { cookies } from 'next/headers';
 import { env } from '@/config/env';
 import { isDevAdminAuthDisabled } from '@/lib/admin/dev-auth-bypass';
 
-interface AdminApiResult<T> {
-  ok: boolean;
-  status: number;
-  data: T | null;
-  error: string | null;
-}
+import { adminFailure, adminContractFailure, AdminReadError, type AdminApiResult } from '@/lib/admin/transport/result';
+export { AdminReadError, type AdminApiResult } from '@/lib/admin/transport/result';
 
 interface PaginatedResponse<T> {
   data: T[];
@@ -233,107 +229,74 @@ export async function adminFetch<T>(path: string): Promise<AdminApiResult<T>> {
   const token = await getAdminAccessToken();
   const authDisabled = isDevAdminAuthDisabled();
   if (!token && !authDisabled) {
-    return { ok: false, status: 401, data: null, error: 'Sesión administrativa requerida.' };
+    return adminFailure(401);
   }
 
-  const response = await fetch(`${env.apiBaseUrl}/api/v1${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    cache: 'no-store',
-  });
-  const payload = (await response.json().catch(() => ({}))) as T & { message?: string };
-
-  if (!response.ok) {
-    return {
-      ok: false,
-      status: response.status,
-      data: null,
-      error: payload.message ?? 'No se pudo leer el módulo admin.',
-    };
+  let response: Response;
+  try {
+    response = await fetch(`${env.apiBaseUrl}/api/v1${path}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      cache: 'no-store',
+    });
+  } catch {
+    return adminFailure(0);
   }
-
-  return { ok: true, status: response.status, data: payload, error: null };
+  let payload: unknown;
+  try { payload = await response.json(); }
+  catch { return response.ok ? adminContractFailure(response.status) : adminFailure(response.status); }
+  if (!response.ok) return adminFailure(response.status, payload);
+  if (payload === null || typeof payload !== 'object') return adminContractFailure(response.status);
+  return { ok: true, kind: 'success', status: response.status, data: payload as T, error: null };
 }
 
-async function read<T>(path: string, fallback: T, errors: Record<string, string>, key: string) {
+async function read<T>(path: string): Promise<T> {
   const result = await adminFetch<T>(path);
-  if (!result.ok || !result.data) {
-    errors[key] = result.error ?? `Error ${result.status}`;
-    return fallback;
-  }
+  if (!result.ok) throw new AdminReadError(result);
   return result.data;
 }
 
-export async function getAdminOperationalSnapshot(): Promise<AdminOperationalSnapshot> {
-  const errors: Record<string, string> = {};
-  const emptyPaginated = { data: [], meta: { page: 1, limit: 20, total: 0 } };
+export const operationalEndpoints = {
+  orders: { path: '/admin/orders', query: ['page', 'limit', 'search', 'direction', 'status', 'paymentStatus'] },
+  quotes: { path: '/admin/quotes', query: ['page', 'limit', 'search', 'direction', 'status'] },
+  payments: { path: '/admin/payments', query: ['page', 'limit', 'direction', 'status', 'gateway'] },
+  shipments: { path: '/admin/shipments', query: ['page', 'limit', 'search', 'direction', 'status'] },
+  customers: { path: '/admin/customers', query: ['page', 'limit', 'search', 'direction'] },
+  users: { path: '/admin/users', query: [] },
+  roles: { path: '/admin/roles', query: [] },
+  audit: { path: '/admin/audit', query: ['action', 'entityType', 'entityId', 'limit'] },
+  notifications: { path: '/admin/notifications', query: ['limit'] },
+  shippingCapabilities: { path: '/admin/shipping/capabilities', query: [] },
+  inventoryOverview: { path: '/admin/inventory/overview', query: ['search'] },
+  inventoryWarehouses: { path: '/admin/inventory/warehouses', query: [] },
+  inventoryHistory: { path: '/admin/inventory/history', query: ['variantId', 'sku', 'warehouseId', 'movementType', 'referenceType', 'referenceId'] },
+  inventoryAlerts: { path: '/admin/inventory/alerts', query: [] },
+  inventoryValuation: { path: '/admin/inventory/valuation', query: [] },
+  inventoryReservations: { path: '/admin/inventory/reservations', query: [] },
+  priceHistory: { path: '/admin/prices/history', query: ['variantId'] },
+  legal: { path: '/admin/content/legal', query: [] },
+  footer: { path: '/admin/content/footer', query: [] },
+  settings: { path: '/admin/settings', query: [] },
+} as const;
+export type OperationalKey = keyof typeof operationalEndpoints;
+export type AdminReadQuery = Readonly<Record<string, string | undefined>>;
 
-  const [
-    orders,
-    quotes,
-    payments,
-    shipments,
-    customers,
-    users,
-    roles,
-    audit,
-    notifications,
-    shippingCapabilities,
-    inventoryOverview,
-    inventoryWarehouses,
-    inventoryHistory,
-    inventoryAlerts,
-    inventoryValuation,
-    inventoryReservations,
-    priceHistory,
-    legal,
-    footer,
-    settings,
-  ] = await Promise.all([
-    read('/admin/orders?limit=50', emptyPaginated, errors, 'orders'),
-    read('/admin/quotes?limit=50', emptyPaginated, errors, 'quotes'),
-    read('/admin/payments?limit=50', emptyPaginated, errors, 'payments'),
-    read('/admin/shipments?limit=50', emptyPaginated, errors, 'shipments'),
-    read('/admin/customers?limit=50', emptyPaginated, errors, 'customers'),
-    read('/admin/users', { data: [] }, errors, 'users'),
-    read('/admin/roles', { data: [] }, errors, 'roles'),
-    read('/admin/audit?limit=50', { data: [] }, errors, 'audit'),
-    read('/admin/notifications?limit=50', { data: [] }, errors, 'notifications'),
-    read('/admin/shipping/capabilities', {}, errors, 'shippingCapabilities'),
-    read('/admin/inventory/overview', { data: [], summary: {} }, errors, 'inventoryOverview'),
-    read('/admin/inventory/warehouses', { data: [] }, errors, 'inventoryWarehouses'),
-    read('/admin/inventory/history', { data: [] }, errors, 'inventoryHistory'),
-    read('/admin/inventory/alerts', { data: [] }, errors, 'inventoryAlerts'),
-    read('/admin/inventory/valuation', { data: [] }, errors, 'inventoryValuation'),
-    read('/admin/inventory/reservations', { data: [] }, errors, 'inventoryReservations'),
-    read('/admin/prices/history', { data: [] }, errors, 'priceHistory'),
-    read('/admin/content/legal', { data: [] }, errors, 'legal'),
-    read('/admin/content/footer', {}, errors, 'footer'),
-    read('/admin/settings', {}, errors, 'settings'),
-  ]);
-
-  return {
-    orders,
-    quotes,
-    payments,
-    shipments,
-    customers,
-    users,
-    roles,
-    audit,
-    notifications,
-    shippingCapabilities,
-    inventoryOverview,
-    inventoryWarehouses,
-    inventoryHistory,
-    inventoryAlerts,
-    inventoryValuation,
-    inventoryReservations,
-    priceHistory,
-    legal,
-    footer,
-    settings,
-    errors,
-  };
+export function getAdminOperationalSnapshot(): Promise<AdminOperationalSnapshot>;
+export function getAdminOperationalSnapshot<K extends OperationalKey>(keys: readonly K[], query?: AdminReadQuery): Promise<Pick<AdminOperationalSnapshot, K> & { errors: Record<string, string> }>;
+export async function getAdminOperationalSnapshot(keys: readonly OperationalKey[] = Object.keys(operationalEndpoints) as OperationalKey[], query: AdminReadQuery = {}) {
+  const entries = await Promise.all([...new Set(keys)].map(async (key) => {
+    const endpoint = operationalEndpoints[key];
+    const params = new URLSearchParams();
+    for (const name of endpoint.query) if (query[name]) params.set(name, query[name]!);
+    if (!('limit' in query) && (endpoint.query as readonly string[]).includes('limit')) params.set('limit', '20');
+    const path = `${endpoint.path}${params.size ? `?${params}` : ''}`;
+    const data = await read<AdminOperationalSnapshot[typeof key]>(path);
+    const objectKeys: readonly OperationalKey[] = ['shippingCapabilities', 'inventoryValuation', 'footer', 'settings'];
+    if (!objectKeys.includes(key) && (!data || typeof data !== 'object' || !('data' in data) || !Array.isArray(data.data))) {
+      throw new AdminReadError(adminContractFailure(200));
+    }
+    return [key, data];
+  }));
+  return { ...Object.fromEntries(entries), errors: {} };
 }
 
 export interface AdminSalesSummary {
@@ -612,98 +575,9 @@ export interface AdminDashboardData {
   errors: Record<string, string>;
 }
 
-function emptyDashboard(range: string): AdminDashboardData {
-  const now = new Date().toISOString();
-  return {
-    range: { key: range, label: 'Sin datos', from: now, to: now },
-    refreshedAt: now,
-    readiness: { globalStatus: 'NO_GO', counts: {}, modules: [], blockedModules: [] },
-    kpis: {
-      sales: {
-        totalSalesAmount: '0.00',
-        orderCount: 0,
-        averageOrderValue: '0.00',
-        ordersToday: 0,
-        pendingOrders: 0,
-        confirmedOrders: 0,
-        cancelledOrders: 0,
-        ordersWithoutGuide: 0,
-        ordersWithAlerts: 0,
-      },
-      payments: {
-        pendingPayments: 0,
-        paidPayments: 0,
-        failedPayments: 0,
-        manualReviewPayments: 0,
-        codPendingReconciliation: 0,
-        paymentProviderStatus: 'NO_DATA',
-      },
-      inventory: {
-        activeProducts: 0,
-        activeVariants: 0,
-        sellableProducts: 0,
-        incompleteProducts: 0,
-        outOfStockProducts: 0,
-        lowStockProducts: 0,
-        missingCostProducts: 0,
-        healthyStockProducts: 0,
-        inventoryReadiness: 'NO_DATA',
-      },
-      shipping: {
-        shipmentsCreated: 0,
-        shipmentsPendingGuide: 0,
-        autoShippingFailed: 0,
-        shippingProviderStatus: 'NO_DATA',
-        mockGuidesCount: 0,
-        realGuidesCount: 0,
-        trackingPublicStatus: 'NO_DATA',
-      },
-      customers: {
-        totalCustomers: 0,
-        customersWithOrders: 0,
-        newCustomersInPeriod: 0,
-      },
-      notifications: {
-        queuedNotifications: 0,
-        sentNotifications: 0,
-        failedNotifications: 0,
-        pendingProviderNotifications: 0,
-      },
-      system: {
-        globalReadinessStatus: 'NO_GO',
-        blockedModulesCount: 0,
-        partialModulesCount: 0,
-        readyModulesCount: 0,
-        productionBlockersCount: 0,
-        lastAuditEventsCount: 0,
-      },
-    },
-    charts: {
-      salesByDay: [],
-      ordersByStatus: [],
-      paymentsByStatus: [],
-      inventoryByStatus: [],
-      readinessByStatus: [],
-    },
-    alerts: [],
-    quickActions: [],
-    recentActivity: { orders: [], payments: [], audit: [], failedNotifications: [] },
-    errors: {},
-  };
-}
-
 export async function getAdminDashboardData(range: string = '30d'): Promise<AdminDashboardData> {
-  const errors: Record<string, string> = {};
-  const data = await read<AdminDashboardData | null>(
-    `/admin/dashboard?range=${encodeURIComponent(range)}`,
-    null,
-    errors,
-    'dashboard',
-  );
-  if (!data) {
-    return { ...emptyDashboard(range), errors };
-  }
-  return { ...data, errors };
+  const data = await read<AdminDashboardData>(`/admin/dashboard?range=${encodeURIComponent(range)}`);
+  return { ...data, errors: {} };
 }
 
 export interface AdminReportsData {
@@ -792,76 +666,11 @@ export interface AdminReportsData {
   errors: Record<string, string>;
 }
 
-function emptyReports(range: string): AdminReportsData {
-  const now = new Date().toISOString();
-  const emptyReport = { kpis: {}, chart: [], rows: [], empty: true };
-  return {
-    range: { key: range, label: 'Sin datos', from: now, to: now },
-    filters: { status: null, module: null, paymentStatus: null, shippingStatus: null },
-    refreshedAt: now,
-    summary: {},
-    reports: {
-      sales: emptyReport,
-      orders: emptyReport,
-      payments: emptyReport,
-      inventory: emptyReport,
-      shipping: emptyReport,
-      notifications: emptyReport,
-      readiness: { globalStatus: 'NO_GO', counts: {}, modules: [], chart: [] },
-      audit: emptyReport,
-      blockers: [],
-    },
-    export: {
-      formats: ['csv', 'pdf'],
-      maxRows: 0,
-      standardExportContainsPii: false,
-      piiExportRequires: 'customers.read_sensitive',
-      enabled: false,
-    },
-    errors: {},
-  };
-}
-
 export async function getAdminReportsData(range: string = '30d'): Promise<AdminReportsData> {
-  const errors: Record<string, string> = {};
-  const data = await read<AdminReportsData | null>(
-    `/admin/reports/summary?range=${encodeURIComponent(range)}`,
-    null,
-    errors,
-    'reports',
-  );
-  if (!data) {
-    return { ...emptyReports(range), errors };
-  }
-  return { ...data, errors };
+  const data = await read<AdminReportsData>(`/admin/reports/summary?range=${encodeURIComponent(range)}`);
+  return { ...data, errors: {} };
 }
 
 export async function getAdminCatalogOperationsData(range: string = '30d'): Promise<AdminCatalogData> {
-  const errors: Record<string, string> = {};
-  const fallback: AdminCatalogData = {
-    generatedAt: new Date().toISOString(),
-    range,
-    metrics: {},
-    readiness: {
-      products: 'NO_GO',
-      brands: 'NO_GO',
-      categories: 'NO_GO',
-      inventory: 'NO_GO',
-      prices: 'NO_GO',
-      status: 'NO_GO',
-      blockers: [],
-      warnings: [],
-    },
-    products: [],
-    brands: [],
-    categories: [],
-    prices: [],
-    priceHistory: [],
-  };
-  return read(
-    `/admin/catalog/overview?range=${encodeURIComponent(range)}`,
-    fallback,
-    errors,
-    'catalog',
-  );
+  return read<AdminCatalogData>(`/admin/catalog/overview?range=${encodeURIComponent(range)}`);
 }

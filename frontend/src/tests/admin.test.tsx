@@ -521,6 +521,48 @@ vi.mock('@/lib/admin/server-data', () => ({
   adminFetch: vi.fn().mockResolvedValue({ ok: true, status: 200, data: {}, error: null }),
 }));
 
+// EX-08: shell now verifies the real HTTP session contract asynchronously.
+// This is an explicit component fixture; it does not certify a browser/backend flow.
+const verifiedSessionFixture = {
+  "user": {
+    "id": "77777777-7777-4777-8777-777777777778",
+    "email": "root-admin-fixture@example.test",
+    "role": "super-admin",
+    "permissions": [
+      "audit.read",
+      "catalog.read",
+      "customers.read",
+      "dashboard.read",
+      "footer.read",
+      "inventory.read",
+      "legal.read",
+      "notifications.read",
+      "orders.read",
+      "payments.read",
+      "permissions.read",
+      "quotes.read",
+      "reports.read",
+      "settings.read",
+      "shipping.read",
+      "users.read"
+    ]
+  }
+};
+
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const value = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    if (new URL(value, 'http://admin-fixture.test').pathname === '/api/admin/session') {
+      return new Response(JSON.stringify(verifiedSessionFixture), {
+        status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' },
+      });
+    }
+    throw new Error(`Unexpected fetch in the admin component fixture: ${value}`);
+  }));
+});
+
+afterEach(() => vi.unstubAllGlobals());
+
 describe('admin platform', () => {
   it('login landing renderiza sin sidebar administrativo', () => {
     render(<AdminLoginPage />);
@@ -530,12 +572,13 @@ describe('admin platform', () => {
     expect(screen.queryByRole('navigation', { name: /navegación administrativa/i })).not.toBeInTheDocument();
   });
 
-  it('sidebar premium agrupa módulos y muestra estado activo', () => {
+  it('sidebar premium agrupa módulos y muestra estado activo', async () => {
     render(
       <AdminShell>
         <div>Contenido admin</div>
       </AdminShell>,
     );
+    await screen.findByRole('link', { name: 'Productos' });
 
     expect(screen.getAllByText('Control').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Catálogo').length).toBeGreaterThanOrEqual(1);
@@ -544,6 +587,7 @@ describe('admin platform', () => {
 
   it('productos admin muestra tabla real y acciones operativas', async () => {
     render(await AdminProductsPage({ searchParams: Promise.resolve({}) }));
+    await screen.findByRole('link', { name: 'Productos' });
 
     expect(screen.getAllByText('Taladro percutor TOTAL').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('$ 259.900')).toBeInTheDocument();
@@ -555,6 +599,7 @@ describe('admin platform', () => {
 
   it('formulario de nuevo producto usa datos reales de marca y categoría', async () => {
     render(await AdminNewProductPage());
+    await screen.findByRole('link', { name: 'Productos' });
 
     expect(screen.getByRole('heading', { name: /nuevo producto/i })).toBeInTheDocument();
     expect(screen.getByLabelText('Marca')).toHaveTextContent('TOTAL');
@@ -563,6 +608,7 @@ describe('admin platform', () => {
 
   it('envíos admin marca MOCK99 como mock local y no como guía real', async () => {
     render(await AdminShipmentsPage());
+    await screen.findByRole('link', { name: 'Productos' });
 
     expect(screen.getByText('Mock local/test activo')).toBeInTheDocument();
     expect(screen.getByText('Mock local/test')).toBeInTheDocument();
@@ -573,6 +619,7 @@ describe('admin platform', () => {
 
   it('configuración admin bloquea producción con checklist PASS/FAIL explícito', async () => {
     render(await AdminSettingsPage());
+    await screen.findByRole('link', { name: 'Productos' });
 
     expect(screen.getByText('Producción — Checklist de salida')).toBeInTheDocument();
     expect(screen.getByText('BLOCKED_FOR_PRODUCTION')).toBeInTheDocument();
@@ -582,6 +629,7 @@ describe('admin platform', () => {
 
   it('reportes admin renderiza datos reales, tabs y export protegido', async () => {
     render(await AdminReportsPage({ searchParams: Promise.resolve({ range: '30d', tab: 'sales' }) }));
+    await screen.findByRole('link', { name: 'Productos' });
 
     expect(screen.getByRole('heading', { name: /reportes admin/i })).toBeInTheDocument();
     expect(screen.getAllByText(/ventas/i).length).toBeGreaterThanOrEqual(1);

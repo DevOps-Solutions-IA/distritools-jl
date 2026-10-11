@@ -1,37 +1,40 @@
 import { AdminShell } from '@/components/layout/AdminShell';
+import { getAdminModule, type AdminModuleKey } from '@/lib/admin/operations';
 import {
-  getAdminCatalogSnapshot,
-  getAdminModule,
-  type AdminModuleKey,
-} from '@/lib/admin/operations';
-import { getAdminOperationalSnapshot } from '@/lib/admin/server-data';
+  filterSectionQuery,
+  type SectionSearchParams,
+} from '@/features/admin/platform/query';
+import { AdminReadError } from '@/lib/admin/server-data';
 import { getSectionScreenAdapter } from '@/features/admin/screen-adapters/section-registry';
-import { SectionHeader } from '@/features/admin/screen-adapters/shared/SectionHeader';
-import { CatalogSnapshotSummary } from '@/features/admin/screen-adapters/control/CatalogSnapshotSummary';
-
+import { SectionContextHeader } from '@/features/admin/platform/SectionContextHeader';
+import { renderAdminSection } from '@/features/admin/platform/section-data';
+import { AdminReadFailure } from '@/features/admin/platform/ReadFailure';
 interface AdminSectionPageProps {
   moduleKey: AdminModuleKey;
+  readQuery?: SectionSearchParams;
 }
-
-export async function AdminSectionPage({ moduleKey }: AdminSectionPageProps) {
+export async function AdminSectionPage({
+  moduleKey,
+  readQuery = {},
+}: AdminSectionPageProps) {
   const adminModule = getAdminModule(moduleKey);
-  const [snapshot, operations] = await Promise.all([
-    getAdminCatalogSnapshot(),
-    getAdminOperationalSnapshot(),
-  ]);
-  const { Screen, actions } = getSectionScreenAdapter(moduleKey);
-
+  const { actions } = getSectionScreenAdapter(moduleKey);
+  let content;
+  try {
+    content = await renderAdminSection({
+      moduleKey,
+      adminModule,
+      query: filterSectionQuery(moduleKey, readQuery),
+    });
+  } catch (error) {
+    if (!(error instanceof AdminReadError)) throw error;
+    content = <AdminReadFailure result={error.result} />;
+  }
   return (
     <AdminShell>
       <div className="space-y-6">
-        <SectionHeader adminModule={adminModule} actions={actions} />
-        <Screen
-          moduleKey={moduleKey}
-          adminModule={adminModule}
-          snapshot={snapshot}
-          operations={operations}
-        />
-        <CatalogSnapshotSummary snapshot={snapshot} />
+        <SectionContextHeader adminModule={adminModule} actions={actions} />
+        {content}
       </div>
     </AdminShell>
   );
