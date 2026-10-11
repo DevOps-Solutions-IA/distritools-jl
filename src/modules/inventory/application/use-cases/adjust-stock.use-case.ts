@@ -108,10 +108,13 @@ export class AdjustStockUseCase {
           Math.abs(input.quantityDelta),
         );
 
-        return {
-          item: inventoryEntity.toResponse(),
-          movement: existingMovement,
-        };
+        const replay = { item: inventoryEntity.toResponse(), movement: existingMovement };
+        await this.auditRepository.write({
+          actorUserId: input.actor.sub, action: 'inventory.adjusted',
+          entityType: 'inventory_item', entityId: `${input.variantId}:${input.warehouseId}`,
+          afterData: replay, ipAddress: input.ipAddress, userAgent: input.userAgent,
+        }, tx);
+        return replay;
       }
 
       const updatedItem = await this.inventoryRepository.updateQuantities(
@@ -143,22 +146,16 @@ export class AdjustStockUseCase {
         createdByUserId: input.actor.sub,
       });
 
-      return {
-        item: InventoryItemEntity.fromState(updatedItem).toResponse(),
-        movement,
-      };
+      const result = { item: InventoryItemEntity.fromState(updatedItem).toResponse(), movement };
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub, action: 'inventory.adjusted',
+        entityType: 'inventory_item', entityId: `${input.variantId}:${input.warehouseId}`,
+        afterData: result, ipAddress: input.ipAddress, userAgent: input.userAgent,
+      }, tx);
+      return result;
     });
-
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub,
-      action: 'inventory.adjusted',
-      entityType: 'inventory_item',
-      entityId: `${input.variantId}:${input.warehouseId}`,
-      afterData: result,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
-
-    return result;
+    return input.actor.permissions.includes('inventory.cost.read')
+      ? result
+      : { ...result, item: { ...result.item, costPrice: 'NO_PERMISSION' } };
   }
 }

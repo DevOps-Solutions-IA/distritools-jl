@@ -22,7 +22,7 @@ export class CreateInventoryCountSessionUseCase {
     const notes = input.body.notes ? String(input.body.notes) : null;
     const linesInput = Array.isArray(input.body.lines) ? input.body.lines as Array<Record<string, unknown>> : [];
 
-    const session = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const warehouse = await tx.warehouse.findUnique({ where: { id: warehouseId } });
       if (!warehouse || !warehouse.isActive) throw new NotFoundException('Bodega no encontrada o inactiva.');
       const created = await tx.inventoryCountSession.create({
@@ -43,14 +43,15 @@ export class CreateInventoryCountSessionUseCase {
           };
         }),
       });
-      return created;
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub, action: 'inventory.count_started',
+        entityType: 'inventory_count_session', entityId: created.id, afterData: created,
+        ipAddress: input.ipAddress, userAgent: input.userAgent,
+      }, tx);
+      return tx.inventoryCountSession.findUniqueOrThrow({
+        where: { id: created.id }, include: { warehouse: true, lines: { orderBy: { sku: 'asc' } } },
+      });
     });
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub, action: 'inventory.count_started',
-      entityType: 'inventory_count_session', entityId: session.id, afterData: session,
-      ipAddress: input.ipAddress, userAgent: input.userAgent,
-    });
-    return getSession(this.prisma, session.id);
   }
 }
 

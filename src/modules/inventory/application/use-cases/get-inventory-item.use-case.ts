@@ -32,6 +32,9 @@ export class GetInventoryItemUseCase {
       throw new NotFoundException('Inventory item not found');
     }
 
-    return InventoryItemEntity.fromState(record).toResponse();
+    const response = InventoryItemEntity.fromState(record).toResponse();
+    return input.actor.permissions.includes('inventory.cost.read')
+      ? response
+      : { ...response, costPrice: 'NO_PERMISSION' };
   }
 }

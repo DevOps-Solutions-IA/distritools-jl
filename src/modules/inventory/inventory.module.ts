@@ -1,3 +1,7 @@
+import { INVENTORY_OPERATION_READ_REPOSITORY } from 'src/modules/inventory/domain/repositories/inventory-operation-read.repository';
+import { PrismaInventoryOperationReadRepository } from 'src/modules/inventory/infrastructure/repositories/prisma-inventory-operation-read.repository';
+import { GetInventoryCountSessionsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-count-sessions.use-case';
+import { GetInventoryImportsUseCase } from 'src/modules/inventory/application/use-cases/get-inventory-imports.use-case';
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { AdjustStockUseCase } from 'src/modules/inventory/application/use-cases/adjust-stock.use-case';
@@ -41,7 +45,9 @@ import { StockMovementsModule } from 'src/modules/stock-movements/stock-movement
     GetReservationsUseCase, UpdateInventorySettingsUseCase, ProcessReturnUseCase,
     CreateInventoryCountSessionUseCase, UpdateCountSessionLinesUseCase,
     CloseInventoryCountSessionUseCase, DryRunInventoryImportUseCase,
-    ApplyInventoryImportUseCase, ExportInventoryUseCase,
+    ApplyInventoryImportUseCase, ExportInventoryUseCase, GetInventoryCountSessionsUseCase, GetInventoryImportsUseCase,
+    PrismaInventoryOperationReadRepository,
+    { provide: INVENTORY_OPERATION_READ_REPOSITORY, useExisting: PrismaInventoryOperationReadRepository },
     InventoryPolicyService, PrismaInventoryRepository, PrismaInventoryReferenceRepository,
     { provide: INVENTORY_REPOSITORY, useExisting: PrismaInventoryRepository },
     { provide: INVENTORY_REFERENCE_REPOSITORY, useExisting: PrismaInventoryReferenceRepository },

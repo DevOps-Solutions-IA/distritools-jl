@@ -368,3 +368,12 @@ EX-08.CONTROL audit projection boundary — API_CONTRACT/AUTH_SECURITY/ADMIN_OPE
 
 
 EX-08.CONTROL.AUDIT_BOUNDARY — productPR61 integrated 838d2122190340dae6b4dfb8469c078311b6a90d after seven exactHEAD. Two audit aggregates no longer query/disclose audit data without existingaudit.read; explicit NO_PERMISSION, independent audit.export still audited. ROOT32626490/288frontend and actualCI264/5browser verified; bounded challenger zero introducedP0/P1/P2. No additional action certification:CAT13/58 unchanged, separate CONTROL UI/legacy/IAM pending. Governance rollback only; productionNO-GO.
+
+
+## EX-08.INV — candidato integrado para validacion independiente (2026-10-11)
+
+ADMIN_OPERATOR / API_CONTRACT. Inventario, movimientos, precios, importaciones CSV y exportacion con permisos existentes. Cantidades CSV no finitas, fraccionarias o fuera de int32 se rechazan antes de persistir; costos no autorizados permanecen NO_PERMISSION. Interfaces muestran errores reales y limites de subconjuntos, sin cursor ficticio. No autorizacion productiva ni nuevos proveedores/politicas de stock. Gates de esta integracion NOT_TESTED hasta evidencia ROOT y siete CI exact-head; informes originales FAIL y posteriores PASS conservados.
+
+Validacion ROOT posterior: PASS347unit/security290critical90E2E341frontend,21unit/26critical focales; navegador real nueve acciones A17-A25 y18grupos CSV/cincoanchos. Prisma13+migrate/generate propio, type/lint/backend/Next PASS. Cero cancelados/skips. Seguridad final/challenger72/CI exacthead permanecen NOT_TESTED antes sus ejecuciones; produccion NO-GO.
+
+Addendum posterior ROOT: seguridad history/tree/full72diff0 y audit baseline PASS (HIGH heredados OPEN); challenger final72 PASS acotado/1178 hashes ROOTverificados. Siete fallos after-INSERT reales de escrituras revierten snapshots completos; export read-audit persiste1 pero500sinCSV, calificado explícito. Siete grupos negativos adicionales prueban permisos, uncertain real sin retry falso y recuperación persistida. Siete CI exact-head y transiciónSTATE siguen NOT_TESTED antes sus ejecuciones; producciónNO-GO.
