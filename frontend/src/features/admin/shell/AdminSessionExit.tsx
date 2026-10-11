@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 
 /** A success redirect requires the coordinated BFF's confirmed backend revocation. */
@@ -47,7 +46,7 @@ export function AdminSessionExit({ onSessionExpired }: { onSessionExpired?: () =
   }
 
   return <div>
-    {expired ? <><p role="alert" className="admin-session-exit-error">La sesión finalizó. Inicia sesión nuevamente.</p><Link href="/admin/login" className="admin-session-login">Iniciar sesión</Link></> : <Button type="button" variant="ghost" loading={pending} onClick={logout} className="w-full justify-start">{pending ? 'Saliendo…' : 'Salir'}</Button>}
+    {expired ? <><p role="alert" className="admin-session-exit-error">La sesión finalizó. Inicia sesión nuevamente.</p><a href="/admin/login" className="admin-session-login">Iniciar sesión</a></> : <Button type="button" variant="ghost" loading={pending} onClick={logout} className="w-full justify-start">{pending ? 'Saliendo…' : 'Salir'}</Button>}
     {failed ? <p role="alert" className="admin-session-exit-error">No fue posible cerrar la sesión. Vuelve a intentar.</p> : null}
   </div>;
 }
