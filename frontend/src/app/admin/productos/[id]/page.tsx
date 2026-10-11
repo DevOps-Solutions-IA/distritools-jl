@@ -52,7 +52,7 @@ export default async function AdminProductDetailPage({ params }: PageProps) {
             </div>
             {product ? (
               <div className="flex flex-wrap gap-2">
-                {permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <Link href={`/admin/productos/${product.id}/editar`}><Button>Editar</Button></Link> : null}
+                {permissions.includes('products.write') && permissions.includes('products.read') ? <Link href={`/admin/productos/${product.id}/editar`}><Button>{permissions.includes('variants.read') ? 'Editar' : 'Gestionar imagen'}</Button></Link> : null}
                 <Link href={`/admin/inventario?sku=${encodeURIComponent(product.primarySku ?? '')}`}><Button variant="outline">Ver inventario</Button></Link>
                 {permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <Link href={`/admin/productos/${product.id}/editar?variant=new`}><Button variant="outline">Agregar variante</Button></Link> : null}
                 <Link href="/admin/precios"><Button variant="outline">Ver precios</Button></Link>

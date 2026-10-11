@@ -162,7 +162,7 @@ export async function AdminProductsScreen({ search = '', status = 'all', page = 
                     <div className="grid min-w-[13rem] gap-2">
                       <div className="flex flex-wrap gap-2">
                         <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}`}>Ver</Link>
-                        {permissions.includes('products.write') && permissions.includes('products.read') && permissions.includes('variants.read') ? <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}/editar`}>Editar</Link> : null}
+                        {permissions.includes('products.write') && permissions.includes('products.read') ? <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/productos/${product.id}/editar`}>{permissions.includes('variants.read') ? 'Editar' : 'Gestionar imagen'}</Link> : null}
                         <Link className="text-[var(--color-industrial-yellow)] hover:underline" href={`/admin/inventario?sku=${encodeURIComponent(product.primarySku ?? '')}`}>Inventario</Link>
                       </div>
                       <AdminProductActions productId={product.id} isActive={product.isActive} />
