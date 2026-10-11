@@ -329,3 +329,19 @@ PASS:2defectosdelharness corregidos con evidencia sin cambiar comportamiento de 
 ### EX-08.QA browser — product closure PR55
 
 Product PR55 merged ae9d3aef6cb3e994252c9d00946e49ff46c39cd2 after seven actual exact-head PASS on35cb0fea8326886ae1e33c8496e21614894e89bd (CI38122289650),behind0,scope23,independent ROOT/challenger no introducedP0/P1/P2. CI actually ran262 critical,4 environment guards,42 isolation and5 browser cases; sanitized service/cleanup/source receipts are retained. The first failed head e782a12/run38120629579 remains6/7,39/42 isolation, browserNOT_TESTED. This separate documentary candidate records the validated product ancestor and bounded QA completion; it still requires its own seven checks before merge. No complete domain action is certified, no policy/provider/schema/production change. SEC/GOV/raw audit/architecture/auth debts and held/cutover_pending remain; production NO-GO. Detailed evidence/rollback: EX-08.QA-browser-closure.md.
+
+
+### EX-08.CAT — catálogo y autoridad de medios, candidato gobernado
+
+PASS local ROOT:13 acciones A04-A16 mediante22 grupos de navegador real/99 solicitudes BFF y6 grupos adicionales de medios;320 unit/security,263 critical y90 E2E originales. Crear/editar conserva estados/metadata y comunica persistencia parcial sin repetir escrituras; archivo exige motivo, relaciones tienen paginación de vista y errores/denegaciones visibles. Imagen nueva/reemplazada requiere recurso existente y aprobación específica auditada de editor autorizado; no aprobación ficticia por escribir ruta. Editor sin variants.read puede gestionar imagen con permisos efectivos;320px sin overflow.
+
+Candidato53 desde main fb6f9149d8b8391b97396b67146ce8deb130a783: siete CI,merge y STATE separados pendientes; cero certificado global71. Límites: overview completo sin cursor backend, producto/variante secuenciales con recuperación, HIGH baseline abiertos. Rollback por rechazo previo/revert gobernado sin schema/datos históricos. SEC/GOV/providers/held/cutover/business intactos, producción NO-GO. Detalles y fallos: EX-08.CAT-orchestrator-validation.md.
+
+
+### EX-08.CAT revisión exacta — entrada visible para gestionar imágenes
+
+Un P2 adicional impedía entrar desde listado/detalle al editor de imágenes sin variants.read. Dos enlaces ahora muestran Gestionar imagen con products.read/write, conservando Editar completo y guardias de SKU/variantes.13 regresiones nuevas; ROOT266 frontend/tipos/lint/Next y9 grupos reales de navegador PASS: selección pendiente, aprobación específica auditada/hashed/reload, entradas visibles y revocación actual403 sin cambios parciales. Las seis pruebas originales de medios entraban por URL directa y no demostraban estos enlaces; evidencia corregida explícitamente.
+
+PR57 primerHEADef7 siete CI38125112523 PASS se conservan, pero no autorizan el delta nuevo. Candidato55 requiere revisión independiente y nuevos siete exact-head/behind0; STATE separado posterior.13 acciones CAT tienen evidencia local y ninguna certificación global anticipada. Rollback gobernado desde preimages y parches preservados, sin schema/provider/políticas/históricos alterados. BaselineHIGH y SEC/GOV/held/cutover_pending permanecen, producción NO-GO.
+
+Challenger final independiente cerró el P2 de entrada visible:10 grupos reales,266 frontend y13 regresiones PASS; cero P0/P1/P2 técnicos abiertos. Informe externo immutable REPORT_NAV_DELTA SHA2561a1a4e594fc6af5e616ca185f042034966e5ed51eeec342ac4caf5a3760fce0b. Nuevos siete CI y merge siguen pendientes; producción NO-GO.

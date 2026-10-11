@@ -1,3 +1,4 @@
+import { ADMIN_MEDIA_RESOURCES } from 'src/modules/products/domain/services/admin-media-registry.generated';
 import { after, before, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { seedBrandTaxonomy } from 'src/modules/brands/infrastructure/seeds/brand-taxonomy.seed';
@@ -133,12 +134,20 @@ describe('Catalog modules', async () => {
         description: 'Producto completo validado desde flujo humano de catálogo.',
         isActive: false,
         metadata: {
-          image: { status: 'approved', assetPath: '/products/e2e-completo.jpg', source: 'test' },
+          image: { status: 'pending', assetPath: ADMIN_MEDIA_RESOURCES[0].assetPath },
           shipping: { weightKg: 1.2, lengthCm: 30, widthCm: 20, heightCm: 10 },
           dimensions: { weightKg: 1.2, lengthCm: 30, widthCm: 20, heightCm: 10 },
         },
       });
     assert.equal(product.status, 201);
+    assert.equal(product.body.metadata.image.status, 'pending');
+    const approval = await http.post(`/api/v1/admin/products/${product.body.id}/image-approval`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...ADMIN_MEDIA_RESOURCES[0], expectedUpdatedAt: product.body.updatedAt, reason: 'Editor verifies existing registered E2E resource' });
+    assert.equal(approval.status, 201);
+    assert.equal(approval.body.metadata.image.status, 'approved');
+    assert.equal(approval.body.metadata.image.approval.sha256, ADMIN_MEDIA_RESOURCES[0].sha256);
+    assert.equal(await prisma.auditLog.count({ where: { action: 'product.image_approved', entityId: product.body.id } }), 1);
 
     const variant = await http
       .post('/api/v1/admin/variants')

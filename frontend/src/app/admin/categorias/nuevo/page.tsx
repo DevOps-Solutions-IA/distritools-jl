@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { AdminTaxonomyForm } from '@/components/admin/forms/AdminTaxonomyForm';
 import { AdminShell } from '@/components/layout/AdminShell';
-import { getAdminCatalogOperationsData } from '@/lib/admin/server-data';
+import { catalogCollection, type CatalogCategoryRecord } from '@/features/admin/catalog/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminNewCategoryPage() {
-  const data = await getAdminCatalogOperationsData('30d');
+  const categories = await catalogCollection<CatalogCategoryRecord>('/admin/categories');
   return (
     <AdminShell>
       <div className="space-y-6">
@@ -23,7 +23,7 @@ export default async function AdminNewCategoryPage() {
             Nueva categoría
           </h1>
         </section>
-        <AdminTaxonomyForm kind="category" categories={data.categories} />
+        <AdminTaxonomyForm kind="category" categories={categories} />
       </div>
     </AdminShell>
   );

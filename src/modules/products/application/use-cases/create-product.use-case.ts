@@ -1,3 +1,4 @@
+import { ProductImageApprovalService } from 'src/modules/products/domain/services/product-image-approval.service';
 import { Prisma } from '@prisma/client';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
@@ -37,6 +38,8 @@ export interface CreateProductInput {
 @Injectable()
 export class CreateProductUseCase {
   constructor(
+    @Inject(ProductImageApprovalService)
+    private readonly media: ProductImageApprovalService,
     @Inject(PrismaService)
     private readonly prisma: PrismaService,
     @Inject(PRODUCT_REPOSITORY)
@@ -107,7 +110,7 @@ export class CreateProductUseCase {
       name: this.productPolicyService.normalizeName(input.name),
       slug,
       description: input.description?.trim() || null,
-      metadata: input.metadata ?? null,
+      metadata: this.media.prepare(input.metadata),
       isActive: input.isActive ?? true,
     };
     const envelope = {
@@ -128,19 +131,19 @@ export class CreateProductUseCase {
         },
         include: { brand: { select: { id: true, name: true, slug: true } }, category: { select: { id: true, name: true, slug: true } } },
       });
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub,
+        action: 'product.created',
+        entityType: 'product',
+        entityId: product.id,
+        afterData: product,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
       const event = await this.outbox.captureHeld(tx as PrismaTransactionClient, envelope);
       return { product, event };
     });
 
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub,
-      action: 'product.created',
-      entityType: 'product',
-      entityId: product.id,
-      afterData: product,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
 
     await this.domainEventPublisher.publish(event, event.route);
 

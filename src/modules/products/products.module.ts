@@ -1,3 +1,5 @@
+import { ProductImageApprovalService } from 'src/modules/products/domain/services/product-image-approval.service';
+import { ApproveProductImageUseCase } from 'src/modules/products/application/use-cases/approve-product-image.use-case';
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { ProductsController } from 'src/modules/products/infrastructure/http/controllers/products.controller';
@@ -21,6 +23,8 @@ import { PrismaProductRepository } from 'src/modules/products/infrastructure/rep
   controllers: [ProductsController, CatalogController],
   providers: [
     ProductPolicyService,
+    ProductImageApprovalService,
+    ApproveProductImageUseCase,
     ArchiveProductUseCase,
     CreateProductUseCase,
     EvaluateProductSellabilityUseCase,

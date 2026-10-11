@@ -6,13 +6,16 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useCatalogPermissions } from '@/features/admin/catalog/useCatalogPermissions';
+import { catalogRequest, CatalogRequestError } from '@/features/admin/catalog/request';
 
 const taxonomySchema = z.object({
   name: z.string().min(2, 'Nombre requerido.').max(120),
   slug: z.string().min(2, 'Slug requerido.').max(140),
   description: z.string().max(500).optional(),
   isActive: z.boolean(),
-  parentId: z.string().nullable().optional(),
+  parentId: z.string().uuid().nullable().optional(),
+  sortOrder: z.coerce.number().int().nonnegative(),
 });
 
 function slugify(value: string) {
@@ -39,6 +42,7 @@ export function AdminTaxonomyForm({
     description?: string | null;
     isActive?: boolean;
     parentId?: string | null;
+    sortOrder?: number;
   } | null;
   categories?: Array<{ id: string; name: string; parentId?: string | null }>;
 }) {
@@ -48,6 +52,11 @@ export function AdminTaxonomyForm({
   const [description, setDescription] = useState(initial?.description ?? '');
   const [isActive, setIsActive] = useState(initial?.isActive ?? true);
   const [parentId, setParentId] = useState(initial?.parentId ?? '');
+  const [sortOrder, setSortOrder] = useState(String(initial?.sortOrder ?? 0));
+  const [status, setStatus] = useState<string | null>(null);
+  const [uncertain, setUncertain] = useState(false);
+  const { can, pending, retry } = useCatalogPermissions('taxonomy-' + kind);
+  const allowed = can(kind === 'brand' ? 'brands.write' : 'categories.write');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -64,7 +73,8 @@ export function AdminTaxonomyForm({
       slug,
       description,
       isActive,
-      parentId: kind === 'category' ? parentId || null : undefined,
+      sortOrder,
+    parentId: kind === 'category' ? parentId || null : undefined,
     });
 
     if (!parsed.success) {
@@ -72,22 +82,28 @@ export function AdminTaxonomyForm({
       return;
     }
 
-    setIsSubmitting(true);
-    const response = await fetch(endpoint, {
-      method: mode === 'edit' ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(parsed.data),
-    });
-    const payload = await response.json().catch(() => ({}));
-    setIsSubmitting(false);
+    if (!allowed || isSubmitting || uncertain) return;
+    const { parentId: parsedParent, sortOrder: parsedOrder, isActive: parsedActivity, ...identity } = parsed.data;
+    const body = mode === 'create'
+      ? { ...identity, isActive: parsedActivity, ...(kind === 'category' ? { parentId: parsedParent, sortOrder: parsedOrder } : {}) }
+      : { ...identity, ...(kind === 'category' ? { isActive: parsedActivity } : {}) };
+    await run(endpoint, body, mode === 'edit' ? 'PATCH' : 'POST', mode === 'edit' ? `Datos de ${label} guardados.` : `${label === 'marca' ? 'Marca' : 'Categoría'} creada.`);
+  }
 
-    if (!response.ok) {
-      setError(payload.message ?? `No fue posible crear la ${label}.`);
-      return;
-    }
-
-    router.push(kind === 'brand' ? `/admin/marcas${mode === 'edit' && initial ? `/${initial.id}` : ''}` : `/admin/categorias${mode === 'edit' && initial ? `/${initial.id}` : ''}`);
-    router.refresh();
+  async function run(path: string, body: unknown, method: 'PATCH' | 'POST', message: string) {
+    if (!allowed || isSubmitting || uncertain) return;
+    setError(null); setStatus(null); setIsSubmitting(true);
+    try {
+      const payload = await catalogRequest(path, method, body);
+      if (typeof payload.id !== 'string') throw new CatalogRequestError('No fue posible confirmar el registro guardado. Recarga antes de repetir.', true);
+      setStatus(message);
+      if (mode === 'create') router.push(`/admin/${kind === 'brand' ? 'marcas' : 'categorias'}/${payload.id}`);
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'No fue posible confirmar la operación.');
+      if (caught instanceof CatalogRequestError && caught.status === 401) retry();
+      if (caught instanceof CatalogRequestError && caught.uncertain) setUncertain(true);
+    } finally { setIsSubmitting(false); }
   }
 
   return (
@@ -137,7 +153,8 @@ export function AdminTaxonomyForm({
           </select>
         </label>
       ) : null}
-      <label className="flex items-center gap-3 text-sm font-semibold text-[var(--color-off-white)]">
+      {kind === 'category' ? <Input label="Orden en la jerarquía" type="number" min="0" step="1" value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} /> : null}
+      {kind !== 'brand' || mode === 'create' ? <label className="flex items-center gap-3 text-sm font-semibold text-[var(--color-off-white)]">
         <input
           type="checkbox"
           checked={isActive}
@@ -145,12 +162,21 @@ export function AdminTaxonomyForm({
           className="h-5 w-5 rounded border-[var(--color-border)]"
         />
         Activa
-      </label>
-      {error ? <p className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
+      </label> : <p className="text-sm text-[var(--color-text-secondary)]">Estado actual: {initial?.isActive ? 'activa' : 'inactiva'}</p>}
+      {error ? <p role="alert" className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p> : null}
+      {status ? <p role="status" className="text-sm text-green-200">{status}</p> : null}
+      {!pending && !allowed ? <p role="status">Sin permiso para modificar esta {label}.</p> : null}
+      {uncertain ? <Button type="button" variant="outline" onClick={() => { router.refresh(); router.push(`/admin/${kind === 'brand' ? 'marcas' : 'categorias'}/${initial?.id ?? ''}`); }}>Revisar estado persistido</Button> : null}
       <div className="flex flex-wrap gap-3">
-        <Button type="submit" loading={isSubmitting}>
+        <Button type="submit" loading={isSubmitting} disabled={!allowed || uncertain}>
           {mode === 'edit' ? 'Guardar' : 'Crear'} {label}
         </Button>
+        {kind === 'brand' && mode === 'edit' && initial ? <Button type="button" variant="outline" disabled={!allowed || isSubmitting || uncertain} onClick={() => run(`${endpoint}/${initial.isActive ? 'deactivate' : 'activate'}`, undefined, 'PATCH', 'Estado de marca guardado.')}>{initial.isActive ? 'Desactivar marca' : 'Activar marca'}</Button> : null}
+        {kind === 'category' && mode === 'edit' && initial ? <Button type="button" variant="outline" disabled={!allowed || isSubmitting || uncertain} onClick={() => {
+          const order = Number(sortOrder);
+          if (!Number.isInteger(order) || order < 0) { setError('El orden debe ser un entero no negativo.'); return; }
+          void run(`${endpoint}/tree`, { parentId: parentId || null, sortOrder: order }, 'PATCH', 'Jerarquía guardada.');
+        }}>Guardar jerarquía</Button> : null}
         <Button type="button" variant="outline" onClick={() => router.back()}>
           Volver
         </Button>

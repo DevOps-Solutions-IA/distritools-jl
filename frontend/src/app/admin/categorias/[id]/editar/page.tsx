@@ -3,15 +3,15 @@ import Link from 'next/link';
 import { AdminTaxonomyForm } from '@/components/admin/forms/AdminTaxonomyForm';
 import { AdminShell } from '@/components/layout/AdminShell';
 import { Button } from '@/components/ui/Button';
-import { getAdminCatalogOperationsData } from '@/lib/admin/server-data';
+import { catalogRead, catalogCollection, type CatalogCategoryRecord } from '@/features/admin/catalog/server';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Editar categoría admin | DistriTools JL', robots: { index: false, follow: false } };
 
 export default async function AdminCategoryEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const data = await getAdminCatalogOperationsData('30d');
-  const category = data.categories.find((item) => item.id === id) ?? null;
+
+  const [category, categories] = await Promise.all([catalogRead<CatalogCategoryRecord>(`/admin/categories/${id}`), catalogCollection<CatalogCategoryRecord>('/admin/categories')]);
   return (
     <AdminShell>
       <div className="space-y-6">
@@ -23,8 +23,8 @@ export default async function AdminCategoryEditPage({ params }: { params: Promis
           <AdminTaxonomyForm
             kind="category"
             mode="edit"
-            initial={{ ...category, isActive: category.status === 'active' }}
-            categories={data.categories}
+            initial={category}
+            categories={categories}
           />
         ) : <Link href="/admin/categorias"><Button variant="outline">Volver</Button></Link>}
       </div>
