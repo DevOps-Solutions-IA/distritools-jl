@@ -388,3 +388,14 @@ API_CONTRACT / AUTH_SECURITY. Both tracking response branches now use the existi
 
 
 EX-08.LOG.TRACKING_EVENT_BOUNDARY productPR65 `d31dc21340574a07d50b3db2ee733d0ca1c2212a` seven exact `4150009d2d11baa26ad86b98257963cad49556fd`/CI38145037795,behind0/scope6; ROOT1151remotehash/treeequal/291critical/5browser/cleanup10 PASS. Safe3eventfields/latest100/ties/historypreserved; actualproviderStatus/createsync NOT_TESTED. No extra actioncert22/49 unchanged,parentEX08ACTIVE. SeparateSTATE requires ownseven; productionNO-GO/SEC/GOV/providers/businessfences unchanged.
+
+
+## 2026-10-11 — EX-08.SALE, candidato local validado
+
+ADMIN_OPERATOR / INVENTORY_ORDER / CHECKOUT_PAYMENT / AUTH_SECURITY: pedidos y pagos conectan lecturas autenticadas, filtros, paginación, detalle y auditoría por permisos. Cancelación canónica libera reserva y audita; COD bloquea antes de leer y persiste referencia/auditoría en una transacción, con duplicados idempotentes. Respuestas de otra operación, otro recurso o estado incoherente producen resultado incierto, sin confirmación falsa ni reenvío automático; el operador verifica mediante recarga.
+
+PASS ROOT357unit/security,302critical,90E2E originales,433frontend y53 grupos reales de navegador con149 aserciones originales y dos nuevas de unicidad, cinco fallos posteriores a commit y COD positivo sobre pedido no cancelado; cero errores JavaScript/solicitudes externas. Las20 capturas cubren cuatro rutas en cinco anchos. La moneda del pago se valida con Intl.NumberFormat para evitar RangeError ante respuestas inválidas, sin conversión ni lista comercial de monedas. Los FAIL previos del entorno, Next y metadata del runner están preservados; no se debilitaron pruebas. Auditorías contra baseline PASS, HIGH heredados abiertos. Detalle: EX-08.SALE-orchestrator-validation.md y recibos externos vinculados a hashes de fuente.
+
+Riesgos/límites: el refresh proveedor sigue BLOCKED_PROVIDER; la conciliación del webhook externo tras cancelación sigue BLOCKED_DECISION. La regresión COD heredada no aprueba política nueva, no altera pedido/reserva ni emite order.paid. Pedidos mantienen el orden previo por fecha; typecheck adicional de tests conserva deuda SuperTest/helper. A26/A27/A28/A35/A36 permanecen pendientes de producto y transición documental con siete CI exact-head propios;42 workflows completos no certificados. EX-08 ACTIVE, producción NO-GO; SEC/GOV/proveedores/held/cutover/históricos protegidos.
+
+Rollback: antes de integrar conservar candidato y preimages; después PR gobernado que revierta el producto con siete CI, evaluando que restaurar COD sin transacción reintroduce defectos. Sin schema nuevo, reset, clean, force, borrado de evidencia ni cambios en producción.
