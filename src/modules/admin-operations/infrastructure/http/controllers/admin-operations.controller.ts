@@ -25,6 +25,7 @@ import {
   ShipmentStatus,
 } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
+import { isUUID } from 'class-validator';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
@@ -1023,48 +1024,6 @@ export class AdminOperationsController {
     };
   }
 
-  @Permissions('orders.cancel')
-  @Post('orders/:orderId/cancel')
-  async cancelOrderById(
-    @Param('orderId') orderId: string,
-    @Body() body: OrderStatusBody,
-    @CurrentUserDecorator() actor: CurrentUser,
-    @Ip() ipAddress: string,
-    @Headers('user-agent') userAgent?: string,
-  ) {
-    const current = await this.prisma.order.findUnique({ where: { id: orderId } });
-    if (!current) {
-      throw new NotFoundException('Pedido no encontrado.');
-    }
-
-    if (!ORDER_TRANSITIONS[current.status].includes('cancelled')) {
-      throw new BadRequestException('Este pedido no puede cancelarse desde su estado actual.');
-    }
-
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'cancelled',
-        shippingNotes: body.reason
-          ? `${current.shippingNotes ?? ''}\nCancelación: ${body.reason}`.trim()
-          : current.shippingNotes,
-      },
-    });
-
-    await this.audit(
-      actor,
-      'order.cancelled',
-      'order',
-      orderId,
-      { status: current.status },
-      { status: updated.status, reason: body.reason ?? null },
-      ipAddress,
-      userAgent,
-    );
-
-    return { id: updated.id, orderNumber: updated.orderNumber, status: updated.status };
-  }
-
   @Permissions('orders.notes.write')
   @Post('orders/:orderId/internal-note')
   async addInternalOrderNote(
@@ -1556,14 +1515,19 @@ export class AdminOperationsController {
   async listPayments(@Query() query: PaginationQuery & {
     status?: PaymentStatus;
     gateway?: string;
+    orderId?: string;
   }, @CurrentUserDecorator() actor: CurrentUser) {
     const { page, limit, skip } = this.pagination(query);
+    if (query.orderId !== undefined && (typeof query.orderId !== 'string' || !isUUID(query.orderId))) {
+      throw new BadRequestException('orderId debe ser un UUID válido.');
+    }
+    const where: Prisma.PaymentWhereInput = { status: query.status, gateway: query.gateway, orderId: query.orderId };
     const [total, payments] = await Promise.all([
       this.prisma.payment.count({
-        where: { status: query.status, gateway: query.gateway },
+        where,
       }),
       this.prisma.payment.findMany({
-        where: { status: query.status, gateway: query.gateway },
+        where,
         select: {
           id: true,
           orderId: true,
@@ -1576,7 +1540,7 @@ export class AdminOperationsController {
           updatedAt: true,
           order: { select: { orderNumber: true } },
         },
-        orderBy: { createdAt: this.direction(query.direction) },
+        orderBy: [{ createdAt: this.direction(query.direction) }, { id: this.direction(query.direction) }],
         skip,
         take: limit,
       }),
@@ -1608,39 +1572,44 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
-    if (!payment) {
-      throw new NotFoundException('Pago no encontrado.');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      // Lock before reading: duplicate calls observe the latest committed status.
+      await tx.$queryRaw`SELECT id FROM payments WHERE id = ${paymentId}::uuid FOR UPDATE`;
+      const payment = await tx.payment.findUnique({ where: { id: paymentId } });
+      if (!payment) {
+        throw new NotFoundException('Pago no encontrado.');
+      }
 
-    if (payment.gateway !== 'cash_on_delivery') {
-      throw new BadRequestException('Solo se puede conciliar pago contra entrega en este flujo.');
-    }
+      if (payment.gateway !== 'cash_on_delivery') {
+        throw new BadRequestException('Solo se puede conciliar pago contra entrega en este flujo.');
+      }
 
-    if (payment.status === 'approved') {
-      return { id: payment.id, status: payment.status, alreadyReconciled: true };
-    }
+      if (payment.status === 'approved') {
+        return { id: payment.id, status: payment.status, alreadyReconciled: true };
+      }
 
-    const updated = await this.prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        status: 'approved',
-        gatewayReference: body.reference ?? payment.gatewayReference,
-      },
-    });
+      const updated = await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: 'approved',
+          gatewayReference: body.reference ?? payment.gatewayReference,
+        },
+      });
 
-    await this.audit(
-      actor,
-      'payment.cod_reconciled',
-      'payment',
-      paymentId,
-      { status: payment.status },
-      { status: updated.status, note: body.note ?? null },
-      ipAddress,
-      userAgent,
-    );
+      await this.audit(
+        actor,
+        'payment.cod_reconciled',
+        'payment',
+        paymentId,
+        { status: payment.status },
+        { status: updated.status, note: body.note ?? null },
+        ipAddress,
+        userAgent,
+        tx,
+      );
 
-    return { id: updated.id, status: updated.status, updatedAt: updated.updatedAt };
+      return { id: updated.id, status: updated.status, updatedAt: updated.updatedAt };
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
   }
 
   @Permissions('payments.write')
