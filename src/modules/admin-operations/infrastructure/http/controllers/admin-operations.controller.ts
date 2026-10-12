@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  ConflictException,
   Get,
   Headers,
   Inject,
@@ -25,7 +26,7 @@ import {
   ShipmentStatus,
 } from '@prisma/client';
 import { v7 as uuidv7 } from 'uuid';
-import { isUUID } from 'class-validator';
+import { isEmail, isUUID } from 'class-validator';
 import { CurrentUserDecorator } from 'src/common/decorators/current-user.decorator';
 import { Permissions } from 'src/common/decorators/permissions.decorator';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
@@ -2010,30 +2011,46 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT "id" FROM "customers" WHERE "id" = ${customerId}::uuid FOR UPDATE`;
-      const current = await tx.customer.findUnique({ where: { id: customerId } });
-      if (!current) {
-        throw new NotFoundException('Cliente no encontrado.');
+    if (body.email !== undefined && typeof body.email !== 'string') {
+      throw new BadRequestException('email debe ser un correo válido.');
+    }
+    const email = this.normalizeEmail(body.email) || null;
+    if (email && !isEmail(email)) {
+      throw new BadRequestException('email debe ser un correo válido.');
+    }
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT "id" FROM "customers" WHERE "id" = ${customerId}::uuid FOR UPDATE`;
+        const current = await tx.customer.findUnique({ where: { id: customerId } });
+        if (!current) {
+          throw new NotFoundException('Cliente no encontrado.');
+        }
+        const updated = await tx.customer.update({
+          where: { id: customerId },
+          data: {
+            fullName: body.fullName?.trim() ?? current.fullName,
+            email: email ?? current.email,
+            phone: body.phone?.trim() ?? current.phone,
+            defaultAddress: body.defaultAddress?.trim() ?? current.defaultAddress,
+            city: body.city?.trim() ?? current.city,
+            department: body.department?.trim() ?? current.department,
+            country: body.country?.trim() ?? current.country,
+            marketingConsent: body.marketingConsent ?? current.marketingConsent,
+            dataTreatmentConsent: body.dataTreatmentConsent ?? current.dataTreatmentConsent,
+          },
+        });
+        await this.audit(actor, 'customer.updated', 'customer', customerId, this.publicCustomer(current), this.publicCustomer(updated), ipAddress, userAgent, tx);
+        return this.publicCustomer(updated);
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const target = error.meta?.target;
+        if (Array.isArray(target) && target.length === 1 && target[0] === 'email') {
+          throw new ConflictException('El correo ya está registrado.');
+        }
       }
-      const email = this.normalizeEmail(body.email);
-      const updated = await tx.customer.update({
-        where: { id: customerId },
-        data: {
-          fullName: body.fullName?.trim() ?? current.fullName,
-          email: email ?? current.email,
-          phone: body.phone?.trim() ?? current.phone,
-          defaultAddress: body.defaultAddress?.trim() ?? current.defaultAddress,
-          city: body.city?.trim() ?? current.city,
-          department: body.department?.trim() ?? current.department,
-          country: body.country?.trim() ?? current.country,
-          marketingConsent: body.marketingConsent ?? current.marketingConsent,
-          dataTreatmentConsent: body.dataTreatmentConsent ?? current.dataTreatmentConsent,
-        },
-      });
-      await this.audit(actor, 'customer.updated', 'customer', customerId, this.publicCustomer(current), this.publicCustomer(updated), ipAddress, userAgent, tx);
-      return this.publicCustomer(updated);
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+      throw error;
+    }
   }
 
   @Permissions('customers.read')

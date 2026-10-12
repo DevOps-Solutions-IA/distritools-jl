@@ -1,12 +1,13 @@
-import Link from 'next/link';
-import { Badge } from '@/components/ui/Badge';
-import { AdminTable } from '../shared/AdminTable';
-import { OperationalNotice } from '../shared/OperationalNotice';
-import type { SectionScreenAdapter, SectionScreenProps } from '../shared/types';
+import { money, quoteStatus } from "@/features/admin/quotes/display";
+import Link from "next/link";
+import { Badge } from "@/components/ui/Badge";
+import { AdminTable } from "../shared/AdminTable";
+import { OperationalNotice } from "../shared/OperationalNotice";
+import type { SectionScreenAdapter, SectionScreenProps } from "../shared/types";
 
 export function CotizacionesScreen({
   operations,
-}: SectionScreenProps<'quotes'>) {
+}: SectionScreenProps<"quotes">) {
   return (
     <section className="space-y-4">
       <OperationalNotice
@@ -19,8 +20,8 @@ export function CotizacionesScreen({
         rows={operations.quotes.data}
         columns={[
           {
-            key: 'quote',
-            label: 'Cotización',
+            key: "quote",
+            label: "Cotización",
             render: (quote) => (
               <span className="font-semibold text-[var(--color-off-white)]">
                 {quote.quoteNumber}
@@ -28,21 +29,24 @@ export function CotizacionesScreen({
             ),
           },
           {
-            key: 'status',
-            label: 'Estado',
+            key: "status",
+            label: "Estado",
             render: (quote) => (
               <Badge
                 variant={
-                  quote.status === 'converted_to_order' ? 'success' : 'warning'
+                  quote.status === "converted_to_order" ? "info" : "warning"
                 }
               >
-                {quote.status}
+                {quoteStatus(
+                  quote.status,
+                  "order" in quote ? quote.order : null,
+                )}
               </Badge>
             ),
           },
           {
-            key: 'customer',
-            label: 'Cliente',
+            key: "customer",
+            label: "Cliente",
             render: (quote) => (
               <div>
                 <p>{quote.customer.fullName}</p>
@@ -51,21 +55,18 @@ export function CotizacionesScreen({
             ),
           },
           {
-            key: 'items',
-            label: 'Items',
+            key: "items",
+            label: "Items",
             render: (quote) => quote.items.length,
           },
           {
-            key: 'total',
-            label: 'Subtotal',
-            render: (quote) =>
-              quote.subtotal
-                ? `$ ${Number(quote.subtotal).toLocaleString('es-CO')}`
-                : 'Sin precio',
+            key: "total",
+            label: "Subtotal",
+            render: (quote) => money(quote.subtotal),
           },
           {
-            key: 'actions',
-            label: 'Acciones',
+            key: "actions",
+            label: "Acciones",
             render: (quote) => (
               <Link
                 className="text-[var(--color-industrial-yellow)] hover:underline"
@@ -83,7 +84,7 @@ export function CotizacionesScreen({
 
 export function ClientesScreen({
   operations,
-}: SectionScreenProps<'customers'>) {
+}: SectionScreenProps<"customers">) {
   return (
     <AdminTable
       title="Clientes"
@@ -91,8 +92,8 @@ export function ClientesScreen({
       rows={operations.customers.data}
       columns={[
         {
-          key: 'name',
-          label: 'Cliente',
+          key: "name",
+          label: "Cliente",
           render: (customer) => (
             <span className="font-semibold text-[var(--color-off-white)]">
               {customer.fullName}
@@ -100,29 +101,28 @@ export function ClientesScreen({
           ),
         },
         {
-          key: 'email',
-          label: 'Email',
-          render: (customer) => customer.email ?? 'No disponible',
+          key: "email",
+          label: "Email",
+          render: (customer) => customer.email ?? "No disponible",
         },
         {
-          key: 'phone',
-          label: 'Teléfono',
-          render: (customer) => customer.phone ?? 'No disponible',
+          key: "phone",
+          label: "Teléfono",
+          render: (customer) => customer.phone ?? "No disponible",
         },
         {
-          key: 'orders',
-          label: 'Pedidos',
+          key: "orders",
+          label: "Pedidos",
           render: (customer) => customer.ordersCount,
         },
         {
-          key: 'spent',
-          label: 'Total',
-          render: (customer) =>
-            `$ ${Number(customer.totalSpent).toLocaleString('es-CO')}`,
+          key: "spent",
+          label: "Total",
+          render: (customer) => money(customer.totalSpent),
         },
         {
-          key: 'actions',
-          label: 'Acciones',
+          key: "actions",
+          label: "Acciones",
           render: (customer) => (
             <Link
               className="text-[var(--color-industrial-yellow)] hover:underline"
@@ -140,4 +140,4 @@ export function ClientesScreen({
 export const crmSectionAdapters = {
   cotizaciones: { Screen: CotizacionesScreen },
   clientes: { Screen: ClientesScreen },
-} satisfies Record<'cotizaciones' | 'clientes', SectionScreenAdapter>;
+} satisfies Record<"cotizaciones" | "clientes", SectionScreenAdapter>;
