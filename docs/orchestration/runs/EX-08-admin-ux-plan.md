@@ -104,3 +104,6 @@ EX-08.INV productoPR63 closed e0eaf2949101aed8e3a2ccb45909c8d046222007 after exa
 
 
 EX-08.LOG.TRACKING_EVENT_BOUNDARY productPR65 `d31dc21340574a07d50b3db2ee733d0ca1c2212a` seven exact `4150009d2d11baa26ad86b98257963cad49556fd`/CI38145037795,behind0/scope6; ROOT1151remotehash/treeequal/291critical/5browser/cleanup10 PASS. Safe3eventfields/latest100/ties/historypreserved; actualproviderStatus/createsync NOT_TESTED. No extra actioncert22/49 unchanged,parentEX08ACTIVE. SeparateSTATE requires ownseven; productionNO-GO/SEC/GOV/providers/businessfences unchanged.
+
+
+EX-08.SALE productPR67 `2f6b989216b3144bc3485741dec46500fca2ea14` seven exact `d1c26262855ebce0d14e3b0d13eb80987d8072d2`/CI38188477609 attempt1,behind0/scope34; ROOT1180remotehash/fulltreeequal/302critical/5CIbrowser/cleanup10 PASS. LocalNext standard+53SALEbrowser/151assertions/20responsive+5faultcaptures/SQL6 actualPASS;357unit433FE92focus90E2E. Five boundedactionsA26,A27,A28,A35,A36 certified: CAT13+INV9+SALE5=27verified/44pending; A37 BLOCKED_PROVIDER, CODpositive noncancelled only/postcancelpolicy BLOCKED_DECISION,42fullworkflowsNOT_TESTED. OriginalFAILs/TSCdebt/inheritedHIGH/SEC/GOV/providers/business/held/cutover/history remain; separateSTATE candidate requires its ownseven; EX08ACTIVE/productionNO-GO.
