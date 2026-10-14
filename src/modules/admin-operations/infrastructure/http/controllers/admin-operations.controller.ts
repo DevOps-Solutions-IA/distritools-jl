@@ -2982,54 +2982,57 @@ export class AdminOperationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent?: string,
   ) {
-    const sanitized = this.sanitizeSettings(body as Record<string, unknown>);
-    for (const [category, values] of Object.entries(sanitized)) {
-      if (!values || typeof values !== 'object' || Array.isArray(values)) continue;
-      for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
-        const normalizedKey = `${category}.${key}`;
-        const isSecret = normalizedKey.toLowerCase().includes('secret') ||
-          normalizedKey.toLowerCase().includes('token') ||
-          normalizedKey.toLowerCase().includes('private') ||
-          normalizedKey.toLowerCase().includes('key');
-        await this.prisma.adminSetting.upsert({
-          where: { key: normalizedKey },
-          create: {
-            id: uuidv7(),
-            key: normalizedKey,
-            category: category as AdminSettingCategory,
-            valueJson: isSecret ? { configured: false } : value as Prisma.InputJsonValue,
-            isSecret,
-            isEditableFromAdmin: !isSecret,
-            updatedById: actor.sub,
-          },
-          update: {
-            valueJson: isSecret ? { configured: true } : value as Prisma.InputJsonValue,
-            isSecret,
-            isEditableFromAdmin: !isSecret,
-            updatedById: actor.sub,
-          },
-        });
+    return this.prisma.$transaction(async (tx) => {
+      const sanitized = this.sanitizeSettings(body as Record<string, unknown>);
+      for (const [category, values] of Object.entries(sanitized).sort(([left], [right]) => left.localeCompare(right))) {
+        if (!values || typeof values !== 'object' || Array.isArray(values)) continue;
+        for (const [key, value] of Object.entries(values as Record<string, unknown>).sort(([left], [right]) => left.localeCompare(right))) {
+          const normalizedKey = `${category}.${key}`;
+          const isSecret = normalizedKey.toLowerCase().includes('secret') ||
+            normalizedKey.toLowerCase().includes('token') ||
+            normalizedKey.toLowerCase().includes('private') ||
+            normalizedKey.toLowerCase().includes('key');
+          await tx.adminSetting.upsert({
+            where: { key: normalizedKey },
+            create: {
+              id: uuidv7(),
+              key: normalizedKey,
+              category: category as AdminSettingCategory,
+              valueJson: isSecret ? { configured: false } : value as Prisma.InputJsonValue,
+              isSecret,
+              isEditableFromAdmin: !isSecret,
+              updatedById: actor.sub,
+            },
+            update: {
+              valueJson: isSecret ? { configured: true } : value as Prisma.InputJsonValue,
+              isSecret,
+              isEditableFromAdmin: !isSecret,
+              updatedById: actor.sub,
+            },
+          });
+        }
       }
-    }
-    await this.audit(
-      actor,
-      'settings.updated',
-      'settings',
-      'runtime',
-      null,
-      sanitized,
-      ipAddress,
-      userAgent,
-    );
+      await this.audit(
+        actor,
+        'settings.updated',
+        'settings',
+        'runtime',
+        null,
+        sanitized,
+        ipAddress,
+        userAgent,
+        tx,
+      );
 
-    return {
-      updated: true,
-      acceptedForReview: true,
-      settings: sanitized,
-      operationalState: {
-        status: 'requires_secure_secret_flow',
-        message: 'No se escribieron variables sensibles desde el frontend.',
-      },
-    };
+      return {
+        updated: true,
+        acceptedForReview: true,
+        settings: sanitized,
+        operationalState: {
+          status: 'requires_secure_secret_flow',
+          message: 'No se escribieron variables sensibles desde el frontend.',
+        },
+      };
+    });
   }
 }

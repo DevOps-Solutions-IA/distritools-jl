@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 export interface PermissionCatalogEntry {
   id: string;
   name: string;
@@ -7,8 +8,8 @@ export interface PermissionCatalogEntry {
 }
 
 export interface PermissionRepository {
-  findBySlugs(slugs: string[]): Promise<PermissionCatalogEntry[]>;
-  listAll(): Promise<PermissionCatalogEntry[]>;
+  findBySlugs(slugs: string[], tx?: Prisma.TransactionClient): Promise<PermissionCatalogEntry[]>;
+  listAll(tx?: Prisma.TransactionClient): Promise<PermissionCatalogEntry[]>;
 }
 
 export const PERMISSION_REPOSITORY = Symbol('PERMISSION_REPOSITORY');

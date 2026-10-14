@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import { RoleUserAssignmentRepository } from 'src/modules/roles/domain/repositories/role-user-assignment.repository';
 
@@ -6,10 +7,10 @@ import { RoleUserAssignmentRepository } from 'src/modules/roles/domain/repositor
 export class PrismaRoleUserAssignmentRepository
   implements RoleUserAssignmentRepository
 {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async findUserById(userId: string) {
-    const user = await this.prisma.user.findUnique({
+  async findUserById(userId: string, tx?: Prisma.TransactionClient) {
+    const user = await (tx ?? this.prisma).user.findUnique({
       where: { id: userId },
       include: { role: true },
     });
@@ -32,8 +33,8 @@ export class PrismaRoleUserAssignmentRepository
     };
   }
 
-  async assignRole(userId: string, roleId: string) {
-    const user = await this.prisma.user.update({
+  async assignRole(userId: string, roleId: string, tx?: Prisma.TransactionClient) {
+    const user = await (tx ?? this.prisma).user.update({
       where: { id: userId },
       data: { roleId },
       include: { role: true },

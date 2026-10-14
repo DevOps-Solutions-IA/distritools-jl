@@ -1,3 +1,5 @@
+import { IAM_UNIT_OF_WORK } from 'src/modules/users/application/ports/iam-unit-of-work.port';
+import { IamPrismaUnitOfWork } from 'src/modules/users/infrastructure/transactions/iam-prisma-unit-of-work';
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { AssignPermissionsToRoleUseCase } from 'src/modules/permissions/application/use-cases/assign-permissions-to-role.use-case';
@@ -21,6 +23,7 @@ import { PrismaRolePermissionRepository } from 'src/modules/permissions/infrastr
   imports: [AuthModule],
   controllers: [PermissionsController],
   providers: [
+    { provide: IAM_UNIT_OF_WORK, useClass: IamPrismaUnitOfWork },
     AssignPermissionsToRoleUseCase,
     GetPermissionsMatrixUseCase,
     PermissionMatrixService,
