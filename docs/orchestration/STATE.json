@@ -2,10 +2,10 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "d950b86f619909f174e0d82fd37f1dfbc6bef1da",
-  "state_base_sha": "d950b86f619909f174e0d82fd37f1dfbc6bef1da",
+  "validated_product_sha": "f832a0fb810b2c307ba10fcd0a21c014e6d7cc91",
+  "state_base_sha": "f832a0fb810b2c307ba10fcd0a21c014e6d7cc91",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
-  "updated_at": "2026-10-11",
+  "updated_at": "2026-10-14",
   "phase": "internal-hardening",
   "active_execution": "EX-08",
   "completed_executions": [
@@ -47,21 +47,22 @@
     "EX-08.INV",
     "EX-08.LOG.TRACKING_EVENT_BOUNDARY",
     "EX-08.SALE",
-    "EX-08.CRM.TECHNICAL_BOUNDARY"
+    "EX-08.CRM.TECHNICAL_BOUNDARY",
+    "EX-08.IAM.TECHNICAL_BOUNDARY"
   ],
   "baseline": {
     "git_canonical": "PASS",
-    "gitleaks": "PASS fullhistory/tree1205/fullcontext32filebounddiff0/exact-headsecret-scan",
+    "gitleaks": "PASS history/tree1241/fullcontext67filebounddiff0/exact-headsecret-scan",
     "prisma_validate": "PASS",
     "backend_typecheck": "PASS",
     "backend_lint": "PASS",
-    "backend_build": "PASS (EX-08.PLATFORM PR #51 exact-head CI and independent typecheck/lint/build)",
+    "backend_build": "PASS ROOT and PR71 backend-quality exact-head",
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
-    "frontend_build": "PASS (EX-08.PLATFORM PR #51 exact-head CI and independent real Next production build; 42 admin route paths preserved)",
-    "frontend_tests": "341/341 PASS ROOT and PR63 frontend-quality on exactHEAD",
-    "backend_unit_tests": "361/361PASS ROOT/productPR69 exact-head",
-    "critical_e2e": "ROOT307critical90originalE2E; CI307critical+4guards42isolation5platformbrowserPASS, nofail/cancel/skip",
+    "frontend_build": "PASS realstandardNext16 ROOT and PR71 frontend-quality/critical browser exact-head",
+    "frontend_tests": "642/642PASS ROOT/productPR71 exact-head",
+    "backend_unit_tests": "373/373PASS ROOT and productPR71 exact-head",
+    "critical_e2e": "ROOT373critical90originalE2E; CI373critical+4guards42isolation5platformbrowserPASS/nofailcancel skip",
     "architecture_check": "DEBT_DETECTED (optional architecture command FAIL:165 identical base/candidate findings, ARCH-001136/00219/0039/0051; regression delta PASS, no debt closure)"
   },
   "security": {
@@ -85,9 +86,9 @@
       "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditor\u00eda, errores visibles y pruebas de navegador. No redise\u00f1o cosm\u00e9tico.",
       "user_impact": "ADMIN_OPERATOR",
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producci\u00f3n o inventar pol\u00edticas de negocio.",
-      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed.",
+      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "Continue EX-08 only after this separate CRM technical-boundary documentaryseven: compose preserved IAM62 from current officialmain with frontend26+atomicity/settings29+lastsuperadmin15/8overlaps, replace only controllerupdateSettings preservingCRM/SALE, approved409 last-active guard retains14canonical IAM users/roles/permissions while commercialeditable. Reproduce/resolve historical3settingsFAIL with fresh disposableDB/fullcritical/E2E/realNext/browser12actions/challenger/product+STATEsevens. A31 realquote-to-order/A34 customerCSV require Product/Privacy decisions and remain unfulfilled; fullCRM/EX08notclosed. OtherCONTENT/LOG/CONTROL candidates pending; SEC/GOV/providers/commercial/held/cutover/history and productionNO-GO unchanged."
+      "next_action": "Continue EX-08 only after this separate IAM technical-boundary documentaryseven: rebind preserved LEGACY auditcounter4 from currentofficialmain; actualP1 preimage58c63a0 remains and must receive fullROOTunit/security/critical/E2E/Prisma/quality/security/challenger then ownproduct+STATEsevens. Next CONTENT39V2 compatible38paths plus append-onlyimpact from updatedmain; preserve SESSION closure and oldV7/FAILs. LOG30 requires oneawait hunk preserving16IAM fixturelines; CONTROL16 navigation must align tracking.read whenLOGintegrates, backendprojection2 alreadycloseddo notcopy/repeat. A59realsecrets/BLOCKED_PROVIDER, CLI-MFAdebt, A31actualquote-order/A34customerCSV and all commercial/provider/SEC/GOV/held/cutover/history fences remain, EX08ACTIVE/productionNO-GO."
     }
   ],
   "provider_status": {
@@ -120,20 +121,20 @@
     "EX-08.QA PR #50 CI attempt1: auth-rbac logout401!=201. Actual helper/service controlled TOTP boundary reproduces missing token returned without status assertions; original CI verify response was not retained, so unique cause is not established. Unchanged-head retry passed255/255 including guards. Separate bounded test-helper robustness follow-up; no 2FA tolerance, auth policy or test assertion change."
   ],
   "last_transition": {
-    "execution": "EX-08.CRM.TECHNICAL_BOUNDARY",
-    "pr": 69,
-    "merge_sha": "d950b86f619909f174e0d82fd37f1dfbc6bef1da",
-    "validation_head_sha": "b6a3bb498f183dfda56b08deb484106ec66eac11",
-    "workflow_run": 38202033281,
-    "workflow_attempt": 1,
+    "execution": "EX-08.IAM.TECHNICAL_BOUNDARY",
+    "pr": 71,
+    "merge_sha": "f832a0fb810b2c307ba10fcd0a21c014e6d7cc91",
+    "validation_head_sha": "a53766d2f2e8fc0c65673aaefc1b903464407441",
+    "workflow_run": 38614036444,
+    "workflow_attempt": 2,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 32,
-    "report": "docs/orchestration/runs/EX-08.CRM-technical-boundary-closure.md",
+    "scope_files": 67,
+    "report": "docs/orchestration/runs/EX-08.IAM-technical-boundary-closure.md",
     "status": "MERGED",
-    "result": "Bounded technicalCRM4actionsonly; A31/A34remainBLOCKED_DECISION/unfulfilled, fullCRMnotclosed; documentaryrequiresownseven."
+    "result": "BoundedIAM11actions only; A59 realsecrets unfulfilled/BLOCKED_PROVIDER, fullIAMnotclosed; documentaryrequiresownseven."
   },
-  "next_action": "Continue EX-08 only after this separate CRM technical-boundary documentaryseven: compose preserved IAM62 from current officialmain with frontend26+atomicity/settings29+lastsuperadmin15/8overlaps, replace only controllerupdateSettings preservingCRM/SALE, approved409 last-active guard retains14canonical IAM users/roles/permissions while commercialeditable. Reproduce/resolve historical3settingsFAIL with fresh disposableDB/fullcritical/E2E/realNext/browser12actions/challenger/product+STATEsevens. A31 realquote-to-order/A34 customerCSV require Product/Privacy decisions and remain unfulfilled; fullCRM/EX08notclosed. OtherCONTENT/LOG/CONTROL candidates pending; SEC/GOV/providers/commercial/held/cutover/history and productionNO-GO unchanged.",
+  "next_action": "Continue EX-08 only after this separate IAM technical-boundary documentaryseven: rebind preserved LEGACY auditcounter4 from currentofficialmain; actualP1 preimage58c63a0 remains and must receive fullROOTunit/security/critical/E2E/Prisma/quality/security/challenger then ownproduct+STATEsevens. Next CONTENT39V2 compatible38paths plus append-onlyimpact from updatedmain; preserve SESSION closure and oldV7/FAILs. LOG30 requires oneawait hunk preserving16IAM fixturelines; CONTROL16 navigation must align tracking.read whenLOGintegrates, backendprojection2 alreadycloseddo notcopy/repeat. A59realsecrets/BLOCKED_PROVIDER, CLI-MFAdebt, A31actualquote-order/A34customerCSV and all commercial/provider/SEC/GOV/held/cutover/history fences remain, EX08ACTIVE/productionNO-GO.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -273,16 +274,16 @@
     "limits": "26recursos existentes verificados; selecci\u00f3n nueva/reemplazada pending; aprobaci\u00f3n espec\u00edfica con products.write/hash/version/reason/actor/audit y held. Aprobar no concede permisosSKU/variantes; sin proveedorreal/uploader/pol\u00edtica inventada. Evidencia EX-08.CAT-closure.md."
   },
   "last_product_validation": {
-    "execution": "EX-08.CRM.TECHNICAL_BOUNDARY",
-    "pr": 69,
-    "merge_sha": "d950b86f619909f174e0d82fd37f1dfbc6bef1da",
-    "validation_head_sha": "b6a3bb498f183dfda56b08deb484106ec66eac11",
-    "workflow_run": 38202033281,
-    "workflow_attempt": 1,
+    "execution": "EX-08.IAM.TECHNICAL_BOUNDARY",
+    "pr": 71,
+    "merge_sha": "f832a0fb810b2c307ba10fcd0a21c014e6d7cc91",
+    "validation_head_sha": "a53766d2f2e8fc0c65673aaefc1b903464407441",
+    "workflow_run": 38614036444,
+    "workflow_attempt": 2,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 32,
-    "report": "docs/orchestration/runs/EX-08.CRM-technical-boundary-closure.md"
+    "scope_files": 67,
+    "report": "docs/orchestration/runs/EX-08.IAM-technical-boundary-closure.md"
   },
   "browser_infrastructure_validation": {
     "execution": "EX-08.QA.BROWSER",
@@ -496,13 +497,14 @@
   },
   "admin_action_validation": {
     "total_declared": 71,
-    "total_verified": 31,
-    "total_pending": 40,
+    "total_verified": 42,
+    "total_pending": 29,
     "domains": {
       "CAT": 13,
       "INV": 9,
       "SALE": 5,
-      "CRM": 4
+      "CRM": 4,
+      "IAM": 11
     },
     "verified_actions": [
       "A04",
@@ -535,10 +537,21 @@
       "A29",
       "A30",
       "A32",
-      "A33"
+      "A33",
+      "A57",
+      "A58",
+      "A60",
+      "A61",
+      "A62",
+      "A63",
+      "A64",
+      "A65",
+      "A66",
+      "A67",
+      "A68"
     ],
-    "current_evidence": "docs/orchestration/runs/EX-08.CRM-technical-boundary-closure.md",
-    "historical_domain_records": "CAT13+INV9+SALE5+CRM4=31verified/40pending; A31 conversion/A34 export BLOCKED_DECISION unfulfilled, fullCRM notclosed; previous27/44 snapshots historical. A37 providerblocked,42fullworkflowsNOT_TESTED.",
+    "current_evidence": "docs/orchestration/runs/EX-08.IAM-technical-boundary-closure.md",
+    "historical_domain_records": "CAT13+INV9+SALE5+CRM4+IAM11=42verified/29pending; A59BLOCKED_PROVIDER, A31/A34BLOCKED_DECISION literalobligationsunfulfilled. Prior31/40 snapshots historical;42fullrouteworkflowsNOT_TESTED.",
     "all_42_full_route_workflows": "NOT_TESTED",
     "production": "NO-GO"
   },
@@ -697,6 +710,105 @@
     "npm_audit": "PASS fingerprintregression only raw1/1/1/0; inheritedHIGH/SECOPEN",
     "preserved_failures": "CRM actualattempts1/2/3:29/24,29/24,41/12 FAIL with39/39/94 artifacts, builds/cleanup retained; allRED/V1/harness/typecheck retained",
     "limits": "timeline50/consents100/orderspage20, masked financial/PII,currentRBAC, native401 canonicalselfGET, no retryautomatic;42completeworkflowsNOT_TESTED",
+    "production": "NO-GO"
+  },
+  "iam_validation": {
+    "execution": "EX-08.IAM.TECHNICAL_BOUNDARY",
+    "pr": 71,
+    "merge_sha": "f832a0fb810b2c307ba10fcd0a21c014e6d7cc91",
+    "validation_head_sha": "a53766d2f2e8fc0c65673aaefc1b903464407441",
+    "workflow_run": 38614036444,
+    "workflow_attempt": 2,
+    "seven_exact_head_checks": "PASS",
+    "behind_at_acceptance": 0,
+    "scope_files": 67,
+    "report": "docs/orchestration/runs/EX-08.IAM-technical-boundary-closure.md",
+    "status": "TECHNICAL_BOUNDARY_ONLY",
+    "full_IAM": "BLOCKED_PROVIDER A59 unfulfilled; secureCLI MFA provision debt explicit",
+    "verified_actions": [
+      "A57",
+      "A58",
+      "A60",
+      "A61",
+      "A62",
+      "A63",
+      "A64",
+      "A65",
+      "A66",
+      "A67",
+      "A68"
+    ],
+    "blocked_actions": {
+      "A59": {
+        "status": "BLOCKED_PROVIDER",
+        "literal_obligation": "Validar secretos",
+        "actual": "ProviderNONE localconfigurationvalidation only; no realcredentialtest",
+        "owner": "Provider/Operations/account owner",
+        "required": "Explicit authorized sandboxcredentials and realprovidercontract validation, never fake success"
+      }
+    },
+    "approved_last_superadmin_policy": {
+      "status": "USER_DECISION",
+      "HTTP": 409,
+      "canonical_role": "super-admin",
+      "required_IAM_grants": 14,
+      "commercial_permissions": "editable",
+      "transactional_denial_audit": "commit before409; auditfailure500+rollback"
+    },
+    "MFA_provisioning": "DEBT_DETECTED newusers require existingsecureCLI enrollment; actuallogin401 until provisioned, no fictitious UI action",
+    "public_name": "PersistedAdminSetting for administrative review/reload/audit; ENV and storefrontpublication unchanged",
+    "ROOT_unit_security": 373,
+    "ROOT_full_critical": 373,
+    "ROOT_full_e2e": 90,
+    "ROOT_frontend": 642,
+    "ROOT_focused_frontend": 101,
+    "ROOT_contract_negatives": [
+      46,
+      56,
+      61,
+      17
+    ],
+    "ROOT_real_Next": "PASS standard Next16 build/next start actualattempt3",
+    "ROOT_nominal_actions_PASS": 11,
+    "ROOT_adversarial_groups": 67,
+    "ROOT_browser_assertions": 869,
+    "ROOT_node_assert": 652,
+    "ROOT_playwright_matchers": 217,
+    "ROOT_response_events": 89,
+    "ROOT_direct_HTTP": 127,
+    "ROOT_BFF_backend_records": 112,
+    "traffic_counts_overlap": "Categories may overlap; never sum as unique requests",
+    "ROOT_screenshots": 32,
+    "ROOT_widths": [
+      320,
+      375,
+      768,
+      1024,
+      1440
+    ],
+    "ROOT_Prismagenerate": "PASS own18",
+    "ROOT_migrations": 13,
+    "ROOT_guards": 22,
+    "ROOT_browser_safety": 42,
+    "ROOT_durable_SQL_audit_recheck": 7,
+    "ROOT_final_canonical_active": 1,
+    "ROOT_DBconnections_after": 0,
+    "backend_gate_rebinding": "Actual Oct12 373/373/90; Oct14 source555+compiled780+ownPrisma18 exact after frontend-only correction; no backendrerunclaim",
+    "CI_actual_checkout": "33579163698f1766b87bcc2ec543a914c80d4f9e",
+    "CI_source_hashes_verified": 1241,
+    "CI_full_tree": "72b32bd0bc2318cc978507304d630f54e98f40be",
+    "CI_critical": 373,
+    "CI_original_browser": 5,
+    "CI_retry": 0,
+    "CI_errors": 0,
+    "CI_owned_cleanup": 10,
+    "independent_challenger": "PASS bounded final67 no introducedIAM openP0/P1/P2; inheritedLEGACY counterP1 outsideIAM OPEN",
+    "challenger_report_SHA256": "9d675b2b3fcef7af621c05d5f83846e8c7434896bb3651d5a90f9a63aa49e145",
+    "gitleaks": "PASS history/tree1241/67 complete filebounddiff0/exact-head secret-scan; no ignore/rule changes",
+    "npm_audit": "PASS fingerprintregression only raw1/1/1/0; inheritedHIGH/SECOPEN",
+    "preserved_failures": "Actual wholebrowserattempt1/2 FAIL103/125 artefacts+2039buildfiles each; QAfreshcookie/manualnativeCTA prerequisites fixed preservingassertions; originalsettings348/351 source21 assertions preserved then373criticalPASS; CIattempt1 allseven notstartedbilling block retained, userrequestedactualattempt2 sevenPASS",
+    "legacy_audit_counter_P1": "DEBT_DETECTED OPEN outsideIAM; exactmainpreimage58c63a0... stillpresent, independentfourfilefix unit6 RED4FAIL/2PASS\u2192GREEN6PASS, fullROOTgates/currentmainrebind/separateintegration pending",
+    "limits": "Backendboundedreadlimits displayed, no inventedpagination, no unsubmittedPII/passwordHash/secrets, no mutationretry, registeredsettingsnotpublicpublication,42completeworkflowsNOT_TESTED",
     "production": "NO-GO"
   }
 }
