@@ -57,6 +57,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci
+      - name: Generate Prisma client for backend unit tests
+        run: npm run prisma:generate
       - name: Run backend unit and security tests
         run: NODE_PATH=. node --import tsx --test --test-concurrency=1 tests/unit/*.unit.test.ts tests/unit/security/*.unit.test.ts
 
