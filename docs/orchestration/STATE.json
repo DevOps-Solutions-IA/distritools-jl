@@ -2,8 +2,8 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "f0206222e18250fe5276e39e13fd5bccfe2c208b",
-  "state_base_sha": "f0206222e18250fe5276e39e13fd5bccfe2c208b",
+  "validated_product_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
+  "state_base_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
   "updated_at": "2026-10-14",
   "phase": "internal-hardening",
@@ -49,7 +49,8 @@
     "EX-08.SALE",
     "EX-08.CRM.TECHNICAL_BOUNDARY",
     "EX-08.IAM.TECHNICAL_BOUNDARY",
-    "EX-08.CONTROL.LEGACY_AUDIT_COUNT"
+    "EX-08.CONTROL.LEGACY_AUDIT_COUNT",
+    "EX-08.QA.PRISMA_CI_BOOTSTRAP"
   ],
   "baseline": {
     "git_canonical": "PASS",
@@ -87,9 +88,9 @@
       "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditor\u00eda, errores visibles y pruebas de navegador. No redise\u00f1o cosm\u00e9tico.",
       "user_impact": "ADMIN_OPERATOR",
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producci\u00f3n o inventar pol\u00edticas de negocio.",
-      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration. LEGACY auditcount P1 technicalcorrection productPR73 independently merged with379/374/90 and ownseven/source1246/treeequal;42/29 unchanged and no fullCONTROL/action certification. Prior IAM/projection debt/pending narratives are acceptance-time history, current resolution recorded in legacy_audit_count_validation; separate CI bootstrap pending.",
+      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration. LEGACY auditcount P1 technicalcorrection productPR73 independently merged with379/374/90 and ownseven/source1246/treeequal;42/29 unchanged and no fullCONTROL/action certification. Prior IAM/projection debt/pending narratives are acceptance-time history, current resolution recorded in legacy_audit_count_validation; separate CI bootstrap pending. CI explicitPrisma generation productPR75 independently merged with current379unit and actualseven/source1249/treeequal;42/29unchanged. Original CI72 failure and unknown unique trigger preserved; dedicated infrastructure correction only.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "After this separate LEGACY documentaryownseven: current-main rebind independently prepared CIPrisma bootstrap twofilecandidate (explicit unit generation+report), preserve allruntime/tests/source and prove actual379unit then ownproduct/STATE exactsevens; no mixed authorization/infrastructurePR. Then CONTENT39V2 controlled38paths plus append-onlyUSERimpact, full currentmain gates/challenger/ownproduct+docs sevens. LOG30 needs only oneawait seam preserving16IAM fixturelines; CONTROL16 aligns tracking.read afterLOG, backendprojection2alreadyclosed do notcopy/repeat. A59realcredentials/BLOCKED_PROVIDER, CLI-MFAdebt, A31/A34/commercial/SEC/GOV/HIGH/held/cutover/history remain explicit; full42NOT_TESTED/EX08ACTIVE/productionNO-GO."
+      "next_action": "After separate CIPrisma documentaryownseven: compose preservedCONTENT38 exactpostimages from currentofficialmain plus ROOT currentimpact/report, preserve original39/130artifacts/V7raw-overwrite limitation; fullcurrent backend/FE/Prisma isolatedPGRedis/realNext/browser/persistence/audit/failure/independentchallenger then ownproduct+doc exactsevens. LOG30 requires oneawait seam preserving16IAMfixturelines; CONTROL16 aligns tracking.read afterLOG and skipsalreadyclosedbackendprojection2. A59realcredentials/BLOCKED_PROVIDER, CLI-MFAdebt, A58reviewonly, A31/A34/commercial/SEC/GOV/HIGH/held/cutover/history remain; official42/29/full42NOT_TESTED/EX08ACTIVE/productionNO-GO."
     }
   ],
   "provider_status": {
@@ -122,20 +123,20 @@
     "EX-08.QA PR #50 CI attempt1: auth-rbac logout401!=201. Actual helper/service controlled TOTP boundary reproduces missing token returned without status assertions; original CI verify response was not retained, so unique cause is not established. Unchanged-head retry passed255/255 including guards. Separate bounded test-helper robustness follow-up; no 2FA tolerance, auth policy or test assertion change."
   ],
   "last_transition": {
-    "execution": "EX-08.CONTROL.LEGACY_AUDIT_COUNT",
-    "pr": 73,
-    "merge_sha": "f0206222e18250fe5276e39e13fd5bccfe2c208b",
-    "validation_head_sha": "b90b9eff1a775aeec4666920e9ebcad3c86f2b3f",
-    "workflow_run": 38626540348,
+    "execution": "EX-08.QA.PRISMA_CI_BOOTSTRAP",
+    "pr": 75,
+    "merge_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
+    "validation_head_sha": "798cee7e0ce4805cad550c52301acad3c829e08b",
+    "workflow_run": 38635022305,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 6,
-    "report": "docs/orchestration/runs/EX-08.CONTROL-legacy-audit-count-closure.md",
+    "scope_files": 3,
+    "report": "docs/orchestration/runs/EX-08.QA-prisma-ci-bootstrap-closure.md",
     "status": "MERGED",
-    "result": "Audit-counter P1 corrected; no new declared action certified; official42/29 unchanged, separate documentary ownseven mandatory."
+    "result": "Explicit generation before original unit/security command; no new declared action certified; official42/29 unchanged; separate documentary ownseven mandatory."
   },
-  "next_action": "After this separate LEGACY documentaryownseven: current-main rebind independently prepared CIPrisma bootstrap twofilecandidate (explicit unit generation+report), preserve allruntime/tests/source and prove actual379unit then ownproduct/STATE exactsevens; no mixed authorization/infrastructurePR. Then CONTENT39V2 controlled38paths plus append-onlyUSERimpact, full currentmain gates/challenger/ownproduct+docs sevens. LOG30 needs only oneawait seam preserving16IAM fixturelines; CONTROL16 aligns tracking.read afterLOG, backendprojection2alreadyclosed do notcopy/repeat. A59realcredentials/BLOCKED_PROVIDER, CLI-MFAdebt, A31/A34/commercial/SEC/GOV/HIGH/held/cutover/history remain explicit; full42NOT_TESTED/EX08ACTIVE/productionNO-GO.",
+  "next_action": "After separate CIPrisma documentaryownseven: compose preservedCONTENT38 exactpostimages from currentofficialmain plus ROOT currentimpact/report, preserve original39/130artifacts/V7raw-overwrite limitation; fullcurrent backend/FE/Prisma isolatedPGRedis/realNext/browser/persistence/audit/failure/independentchallenger then ownproduct+doc exactsevens. LOG30 requires oneawait seam preserving16IAMfixturelines; CONTROL16 aligns tracking.read afterLOG and skipsalreadyclosedbackendprojection2. A59realcredentials/BLOCKED_PROVIDER, CLI-MFAdebt, A58reviewonly, A31/A34/commercial/SEC/GOV/HIGH/held/cutover/history remain; official42/29/full42NOT_TESTED/EX08ACTIVE/productionNO-GO.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -275,16 +276,16 @@
     "limits": "26recursos existentes verificados; selecci\u00f3n nueva/reemplazada pending; aprobaci\u00f3n espec\u00edfica con products.write/hash/version/reason/actor/audit y held. Aprobar no concede permisosSKU/variantes; sin proveedorreal/uploader/pol\u00edtica inventada. Evidencia EX-08.CAT-closure.md."
   },
   "last_product_validation": {
-    "execution": "EX-08.CONTROL.LEGACY_AUDIT_COUNT",
-    "pr": 73,
-    "merge_sha": "f0206222e18250fe5276e39e13fd5bccfe2c208b",
-    "validation_head_sha": "b90b9eff1a775aeec4666920e9ebcad3c86f2b3f",
-    "workflow_run": 38626540348,
+    "execution": "EX-08.QA.PRISMA_CI_BOOTSTRAP",
+    "pr": 75,
+    "merge_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
+    "validation_head_sha": "798cee7e0ce4805cad550c52301acad3c829e08b",
+    "workflow_run": 38635022305,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 6,
-    "report": "docs/orchestration/runs/EX-08.CONTROL-legacy-audit-count-closure.md"
+    "scope_files": 3,
+    "report": "docs/orchestration/runs/EX-08.QA-prisma-ci-bootstrap-closure.md"
   },
   "browser_infrastructure_validation": {
     "execution": "EX-08.QA.BROWSER",
@@ -870,6 +871,60 @@
     "owned_cleanup": "PASS dbconnections0/onlytwoownedPGRedisSTOPPED; data/volumes/history/artifacts retained",
     "declared_action_increment": 0,
     "full_CONTROL": "NOT_TESTED preservedCONTROL16/LOG30 pending their ownintegration",
+    "all42_full_workflows": "NOT_TESTED",
+    "production": "NO-GO"
+  },
+  "prisma_ci_bootstrap_validation": {
+    "execution": "EX-08.QA.PRISMA_CI_BOOTSTRAP",
+    "pr": 75,
+    "merge_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
+    "validation_head_sha": "798cee7e0ce4805cad550c52301acad3c829e08b",
+    "workflow_run": 38635022305,
+    "workflow_attempt": 1,
+    "seven_exact_head_checks": "PASS",
+    "behind_at_acceptance": 0,
+    "scope_files": 3,
+    "report": "docs/orchestration/runs/EX-08.QA-prisma-ci-bootstrap-closure.md",
+    "status": "PASS bounded CI precondition correction",
+    "workflow_delta": "Only explicit npm run prisma:generate after npm ci and before original backend unit/security test command; other six jobs/pins/permissions/security guards/tests unchanged",
+    "original_failure": "PR72 attempt1 original head99623c6 358tests/282PASS73FAIL3cancelled; unchanged-source retry373PASS retained, unique remote trigger NOT_VERIFIED",
+    "controlled_vendor_reproduction": "Real Prisma6.19 postinstall childCLI P1012exit1 but parent0 and defaultclient missing5exports; explicit invalid-schema CLI exits1/failclosed; positive generation without DATABASE_URL succeeds",
+    "ROOT_current_unit_security": 379,
+    "ROOT_cold_own_packages": 15432,
+    "ROOT_own_generated_client": 18,
+    "ROOT_real_exports": 5,
+    "ROOT_DB_calls": 0,
+    "ROOT_inherited_runtime_binding": "545 backend/447frontend inputs and780retainedcompiled/13actual priorgate receipts byteexact; prior374critical90E2E642FE not claimed as fresh local reruns",
+    "CI_actual_checkout": "ce8b2a76563cc447bedb02af5a4f7f216aeb9f62",
+    "CI_source_hashes_verified": 1249,
+    "CI_full_tree": "67aee8ecd76189f3414492a5b5f30bc828d8123d",
+    "CI_unit_security": 379,
+    "CI_frontend": 642,
+    "CI_critical": 374,
+    "CI_environment_guards": 4,
+    "CI_browser_isolation": 42,
+    "CI_original_browser": 5,
+    "CI_retry": 0,
+    "CI_errors": 0,
+    "CI_owned_cleanup": 10,
+    "CI_actual_execution_attempts": {
+      "backend-quality": 1,
+      "backend-unit-security": 1,
+      "critical-integration": 1,
+      "dependency-security": 1,
+      "frontend-quality": 1,
+      "production-readiness-guard": 1,
+      "secret-scan": 1
+    },
+    "CI_explicit_generation": "PASS actual successful ordered step in backend-unit-security job",
+    "independent_challenger": "PASS finalcurrent3 review, prior11negativeworkflowcontrols/5actualexports/ownedinvalidschemaexit1; no introduced scopedP0/P1/P2",
+    "challenger_report_SHA256": "070dcbcf8509a4302f001cb25db1541c33a2a68ce07bf514454adf68c4ee5d59",
+    "gitleaks": "PASS fullhistory/tree1249/all3completefilebounddiff0 and exactheadsecret-scan; no ignores/rules changed",
+    "npm_audit": "PASS fingerprintregression only backend4HIGH/2MODERATE/1LOW, runtime4HIGH/2MODERATE; frontend5devHIGH/runtime0; CRITICAL0/HIGHOPEN",
+    "actionlint": "Local NOT_TESTED noexistingbinary; actual product backend-quality pinned actionlint required and PASS",
+    "preserved_failures": "All original PR72 attempts/vendor cold RED failures/author and review reader preparation errors retained without weakening tests/assertions/skips",
+    "user_impact": "NONE_EXPECTED API/UI; CI generation failure becomes explicit before tests, only runner time/engine availability risk",
+    "declared_action_increment": 0,
     "all42_full_workflows": "NOT_TESTED",
     "production": "NO-GO"
   }
