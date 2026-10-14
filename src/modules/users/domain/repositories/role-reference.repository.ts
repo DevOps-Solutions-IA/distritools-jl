@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 export interface RoleReference {
   id: string;
   name: string;
@@ -5,7 +6,7 @@ export interface RoleReference {
 }
 
 export interface RoleReferenceRepository {
-  findById(id: string): Promise<RoleReference | null>;
+  findById(id: string, tx?: Prisma.TransactionClient): Promise<RoleReference | null>;
 }
 
 export const ROLE_REFERENCE_REPOSITORY = Symbol('ROLE_REFERENCE_REPOSITORY');

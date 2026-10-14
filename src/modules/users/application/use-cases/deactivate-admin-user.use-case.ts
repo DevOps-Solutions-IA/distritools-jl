@@ -1,5 +1,5 @@
+import { IAM_UNIT_OF_WORK, IamUnitOfWork } from 'src/modules/users/application/ports/iam-unit-of-work.port';
 import {
-  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
@@ -30,40 +30,40 @@ export class DeactivateAdminUserUseCase {
     private readonly adminUserRepository: AdminUserRepository,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
+    @Inject(IAM_UNIT_OF_WORK)
+    private readonly unitOfWork: IamUnitOfWork,
   ) {}
 
   async execute(input: DeactivateAdminUserInput) {
     assertHasPermissions(input.actor.permissions, ['users.deactivate']);
 
-    if (input.actor.sub === input.userId) {
-      throw new ConflictException('Admins cannot deactivate themselves');
-    }
+    return this.unitOfWork.run(async (tx) => {
+      const existingRecord = await this.adminUserRepository.findById(input.userId, tx);
 
-    const existingRecord = await this.adminUserRepository.findById(input.userId);
+      if (!existingRecord) {
+        throw new NotFoundException('Admin user not found');
+      }
 
-    if (!existingRecord) {
-      throw new NotFoundException('Admin user not found');
-    }
+      const existingUser = AdminUserEntity.fromState(existingRecord);
+      existingUser.ensureActiveTransitionAllowed(false);
 
-    const existingUser = AdminUserEntity.fromState(existingRecord);
-    existingUser.ensureActiveTransitionAllowed(false);
+      const updatedUser = await this.adminUserRepository.update({
+        id: input.userId,
+        isActive: false,
+      }, tx);
 
-    const updatedUser = await this.adminUserRepository.update({
-      id: input.userId,
-      isActive: false,
-    });
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub,
+        action: 'users.admin.deactivated',
+        entityType: 'user',
+        entityId: updatedUser.id,
+        beforeData: existingRecord,
+        afterData: updatedUser,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
 
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub,
-      action: 'users.admin.deactivated',
-      entityType: 'user',
-      entityId: updatedUser.id,
-      beforeData: existingRecord,
-      afterData: updatedUser,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
-
-    return updatedUser;
+      return updatedUser;
+    }, { userId: input.userId, authorization: { actorUserId: input.actor.sub, requiredPermissions: ['users.deactivate'] }, protection: { operation: 'users.admin.deactivated', entityType: 'user', entityId: input.userId, userId: input.userId, selfDeactivate: input.actor.sub === input.userId, ipAddress: input.ipAddress, userAgent: input.userAgent } });
   }
 }

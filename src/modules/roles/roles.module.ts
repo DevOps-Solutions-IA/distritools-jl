@@ -1,3 +1,5 @@
+import { IAM_UNIT_OF_WORK } from 'src/modules/users/application/ports/iam-unit-of-work.port';
+import { IamPrismaUnitOfWork } from 'src/modules/users/infrastructure/transactions/iam-prisma-unit-of-work';
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { AssignRoleToUserUseCase } from 'src/modules/roles/application/use-cases/assign-role-to-user.use-case';
@@ -18,6 +20,7 @@ import { PrismaRoleUserAssignmentRepository } from 'src/modules/roles/infrastruc
   imports: [AuthModule],
   controllers: [RolesController],
   providers: [
+    { provide: IAM_UNIT_OF_WORK, useClass: IamPrismaUnitOfWork },
     CreateRoleUseCase,
     UpdateRoleUseCase,
     AssignRoleToUserUseCase,

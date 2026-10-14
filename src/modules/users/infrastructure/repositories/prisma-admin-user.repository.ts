@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   AdminUserRepository,
@@ -8,10 +9,10 @@ import {
 
 @Injectable()
 export class PrismaAdminUserRepository implements AdminUserRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async findById(id: string) {
-    const user = await this.prisma.user.findUnique({
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    const user = await (tx ?? this.prisma).user.findUnique({
       where: { id },
       include: { role: true },
     });
@@ -34,8 +35,8 @@ export class PrismaAdminUserRepository implements AdminUserRepository {
     };
   }
 
-  async findByEmail(email: string) {
-    const user = await this.prisma.user.findUnique({
+  async findByEmail(email: string, tx?: Prisma.TransactionClient) {
+    const user = await (tx ?? this.prisma).user.findUnique({
       where: { email },
       include: { role: true },
     });
@@ -58,8 +59,8 @@ export class PrismaAdminUserRepository implements AdminUserRepository {
     };
   }
 
-  async create(data: CreateAdminUserRecord) {
-    const user = await this.prisma.user.create({
+  async create(data: CreateAdminUserRecord, tx?: Prisma.TransactionClient) {
+    const user = await (tx ?? this.prisma).user.create({
       data: {
         id: data.id,
         fullName: data.fullName,
@@ -85,8 +86,8 @@ export class PrismaAdminUserRepository implements AdminUserRepository {
     };
   }
 
-  async update(data: UpdateAdminUserRecord) {
-    const user = await this.prisma.user.update({
+  async update(data: UpdateAdminUserRecord, tx?: Prisma.TransactionClient) {
+    const user = await (tx ?? this.prisma).user.update({
       where: { id: data.id },
       data: {
         fullName: data.fullName,

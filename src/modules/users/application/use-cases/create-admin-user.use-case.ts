@@ -1,3 +1,4 @@
+import { IAM_UNIT_OF_WORK, IamUnitOfWork } from 'src/modules/users/application/ports/iam-unit-of-work.port';
 import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { CurrentUser } from 'src/common/interfaces/current-user.interface';
@@ -38,44 +39,50 @@ export class CreateAdminUserUseCase {
     private readonly roleReferenceRepository: RoleReferenceRepository,
     @Inject(AUDIT_REPOSITORY)
     private readonly auditRepository: AuditRepository,
+    @Inject(PasswordHashingService)
     private readonly passwordHashingService: PasswordHashingService,
+    @Inject(UserPolicyService)
     private readonly userPolicyService: UserPolicyService,
+    @Inject(IAM_UNIT_OF_WORK)
+    private readonly unitOfWork: IamUnitOfWork,
   ) {}
 
   async execute(input: CreateAdminUserInput) {
     assertHasPermissions(input.actor.permissions, ['users.create']);
 
-    const normalizedEmail = input.email.trim().toLowerCase();
-    const [existingUser, role] = await Promise.all([
-      this.adminUserRepository.findByEmail(normalizedEmail),
-      this.roleReferenceRepository.findById(input.roleId),
-    ]);
+    return this.unitOfWork.run(async (tx) => {
+      const normalizedEmail = input.email.trim().toLowerCase();
+      const [existingUser, role] = await Promise.all([
+        this.adminUserRepository.findByEmail(normalizedEmail, tx),
+        this.roleReferenceRepository.findById(input.roleId, tx),
+      ]);
 
-    this.userPolicyService.ensureEmailIsAvailable(
-      existingUser ? AdminUserEntity.fromState(existingUser) : null,
-      normalizedEmail,
-    );
-    this.userPolicyService.ensureRoleExists(role);
+      this.userPolicyService.ensureEmailIsAvailable(
+        existingUser ? AdminUserEntity.fromState(existingUser) : null,
+        normalizedEmail,
+      );
+      this.userPolicyService.ensureRoleExists(role);
 
-    const user = await this.adminUserRepository.create({
-      id: uuidv7(),
-      fullName: input.fullName.trim(),
-      email: normalizedEmail,
-      passwordHash: await this.passwordHashingService.hash(input.password),
-      phone: input.phone?.trim() || null,
-      roleId: input.roleId,
-    });
+      const user = await this.adminUserRepository.create({
+        id: uuidv7(),
+        fullName: input.fullName.trim(),
+        email: normalizedEmail,
+        passwordHash: await this.passwordHashingService.hash(input.password),
+        phone: input.phone?.trim() || null,
+        roleId: input.roleId,
+      }, tx);
 
-    await this.auditRepository.write({
-      actorUserId: input.actor.sub,
-      action: 'users.admin.created',
-      entityType: 'user',
-      entityId: user.id,
-      afterData: user,
-      ipAddress: input.ipAddress,
-      userAgent: input.userAgent,
-    });
+      await this.auditRepository.write({
+        actorUserId: input.actor.sub,
+        action: 'users.admin.created',
+        entityType: 'user',
+        entityId: user.id,
+        afterData: user,
+        ipAddress: input.ipAddress,
+        userAgent: input.userAgent,
+      }, tx);
 
-    return user;
+      return user;
+    }, { uniqueKey: `iam-email:${input.email.trim().toLowerCase()}`, authorization: { actorUserId: input.actor.sub, requiredPermissions: ['users.create'] } });
   }
 }

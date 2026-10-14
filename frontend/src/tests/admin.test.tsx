@@ -525,6 +525,22 @@ vi.mock('@/lib/admin/server-data', async (importOriginal) => ({
     else if (endpoint === '/admin/brands') data = { data: [{ id: '11111111-1111-4111-8111-111111111111', name: 'TOTAL', slug: 'total', isActive: true }] };
     else if (endpoint === '/admin/categories') data = { data: [{ id: '22222222-2222-4222-8222-222222222222', name: 'Perforación', slug: 'perforacion', parentId: null, isActive: true }] };
     else if (endpoint === '/admin/inventory/warehouses') data = { data: [] };
+    else if (endpoint === '/admin/settings') data = {
+      persisted: [],
+      general: { storeName: 'DistriTools JL', currency: 'COP' },
+      productionReadiness: {
+        status: 'BLOCKED_FOR_PRODUCTION',
+        checks: [
+          { key: 'admin_auth_enabled', label: 'ADMIN_AUTH_DISABLED=false', status: 'fail', message: 'Login admin desactivado; bloquea producción.' },
+          { key: 'no_mock_shipping', label: 'Mock 99 Envíos desactivado en producción', status: 'fail', message: 'mock_99envios no puede operar como producción.' },
+        ],
+      },
+    };
+    else if (endpoint === '/admin/settings/providers') data = {
+      payments: { provider: 'none', pseProvider: 'none', ready: false, configured: { wompi: false, payu: false } },
+      shipping: { provider: 'mock_99envios', ready: true, configured: { ninetyNineEnvios: false }, mode: 'mock_99envios', env: 'sandbox' },
+      notifications: { provider: 'none', ready: false, configured: { email: false, whatsapp: false } },
+    };
     else throw new Error(`Unexpected server read in the admin component fixture: ${endpoint}`);
     return { ok: true, kind: 'success', status: 200, data, error: null };
   }),

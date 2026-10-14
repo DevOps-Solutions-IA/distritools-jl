@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   ReplaceRolePermissionsInput,
@@ -7,11 +8,11 @@ import {
 
 @Injectable()
 export class PrismaRolePermissionRepository implements RolePermissionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
-  async replaceForRole(input: ReplaceRolePermissionsInput): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      await tx.rolePermission.deleteMany({
+  async replaceForRole(input: ReplaceRolePermissionsInput, tx?: Prisma.TransactionClient): Promise<void> {
+    const replace = async (client: Prisma.TransactionClient) => {
+      await client.rolePermission.deleteMany({
         where: { roleId: input.roleId },
       });
 
@@ -19,18 +20,20 @@ export class PrismaRolePermissionRepository implements RolePermissionRepository 
         return;
       }
 
-      await tx.rolePermission.createMany({
+      await client.rolePermission.createMany({
         data: input.permissionIds.map((permissionId) => ({
           id: crypto.randomUUID(),
           roleId: input.roleId,
           permissionId,
         })),
       });
-    });
+    };
+    if (tx) await replace(tx);
+    else await this.prisma.$transaction(replace);
   }
 
-  async getMatrix() {
-    const roles = await this.prisma.role.findMany({
+  async getMatrix(tx?: Prisma.TransactionClient) {
+    const roles = await (tx ?? this.prisma).role.findMany({
       include: {
         rolePermissions: {
           include: {

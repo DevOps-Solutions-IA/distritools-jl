@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { RoleState } from 'src/modules/roles/domain/entities/role.entity';
 
 export interface CreateRoleRecord {
@@ -15,10 +16,10 @@ export interface UpdateRoleRecord {
 }
 
 export interface RoleRepository {
-  findById(id: string): Promise<RoleState | null>;
-  findBySlug(slug: string): Promise<RoleState | null>;
-  create(data: CreateRoleRecord): Promise<RoleState>;
-  update(data: UpdateRoleRecord): Promise<RoleState>;
+  findById(id: string, tx?: Prisma.TransactionClient): Promise<RoleState | null>;
+  findBySlug(slug: string, tx?: Prisma.TransactionClient): Promise<RoleState | null>;
+  create(data: CreateRoleRecord, tx?: Prisma.TransactionClient): Promise<RoleState>;
+  update(data: UpdateRoleRecord, tx?: Prisma.TransactionClient): Promise<RoleState>;
 }
 
 export const ROLE_REPOSITORY = Symbol('ROLE_REPOSITORY');

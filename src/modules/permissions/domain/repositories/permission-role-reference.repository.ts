@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 export interface PermissionRoleReference {
   id: string;
   name: string;
@@ -5,7 +6,7 @@ export interface PermissionRoleReference {
 }
 
 export interface PermissionRoleReferenceRepository {
-  findRoleById(roleId: string): Promise<PermissionRoleReference | null>;
+  findRoleById(roleId: string, tx?: Prisma.TransactionClient): Promise<PermissionRoleReference | null>;
 }
 
 export const PERMISSION_ROLE_REFERENCE_REPOSITORY = Symbol(
