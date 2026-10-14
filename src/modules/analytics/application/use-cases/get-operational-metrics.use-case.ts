@@ -27,6 +27,7 @@ export class GetOperationalMetricsUseCase {
 
   async execute(actor: CurrentUser) {
     assertHasPermissions(actor.permissions, ['dashboard.read']);
+    const auditAllowed = actor.permissions.includes('audit.read');
 
     const [
       orderStatusCounts,
@@ -72,7 +73,7 @@ export class GetOperationalMetricsUseCase {
       }),
       this.prisma.shipment.findMany(),
       this.prisma.stockMovement.count(),
-      this.prisma.auditLog.count(),
+      auditAllowed ? this.prisma.auditLog.count() : Promise.resolve('NO_PERMISSION' as const),
     ]);
 
     const activeProducts = products.filter((product) => product.isActive);
@@ -204,6 +205,7 @@ export class GetOperationalMetricsUseCase {
         customersCount,
         stockMovementsCount,
         auditEventsCount: auditCount,
+        auditAccessStatus: auditAllowed ? 'GRANTED' : 'NO_PERMISSION',
       },
       catalogHealth: {
         totalProducts: products.length,
