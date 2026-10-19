@@ -232,7 +232,14 @@ export class GetAdminReportsUseCase {
         take: 80,
       }) : Promise.resolve([]),
       tx.shipment.findMany({
-        where: { createdAt: { gte: from, lte: to } },
+        where: {
+          createdAt: { gte: from, lte: to },
+          ...(query.shippingStatus ? { status: query.shippingStatus as ShipmentStatus } : {}),
+          ...(query.status || query.paymentStatus ? { order: {
+            ...(query.status ? { status: query.status as OrderStatus } : {}),
+            ...(query.paymentStatus ? { payments: { some: { status: query.paymentStatus as PaymentStatus } } } : {}),
+          } } : {}),
+        },
         select: {
           id: true, createdAt: true, status: true, provider: true, trackingNumber: true,
           providerShipmentId: true, order: { select: { orderNumber: true } },
@@ -263,14 +270,15 @@ export class GetAdminReportsUseCase {
       return true;
     });
     const payments = filteredOrders.flatMap((order) =>
-      order.payments.map((payment) => ({ ...payment, orderNumber: order.orderNumber })),
+      order.payments.filter((payment) => !query.paymentStatus || payment.status === query.paymentStatus)
+        .map((payment) => ({ ...payment, orderNumber: order.orderNumber })),
     );
     const readiness = this.buildReadiness();
     const inventory = this.buildInventoryReport(products);
     const sales = this.buildSalesReport(filteredOrders, actor.permissions, products);
     const ordersReport = this.buildOrdersReport(filteredOrders, actor.permissions);
     const paymentsReport = this.buildPaymentsReport(payments, actor.permissions);
-    const shipping = this.buildShippingReport(filteredOrders, shipments);
+    const shipping = this.buildShippingReport(filteredOrders, shipments, query.shippingStatus);
     const notifications = this.buildNotificationsReport(notificationsByStatus, notificationsFailed);
     const auditReport = this.buildAuditReport(audit, auditAllowed);
     const blockers = readiness.modules
@@ -467,8 +475,8 @@ export class GetAdminReportsUseCase {
       rows: orders.slice(0, 80).map((order) => ({
         orderNumber: order.orderNumber,
         status: order.status,
-        paymentStatus: order.payments[0]?.status ?? 'pending',
-        shippingStatus: order.shipments[0]?.status ?? 'pending_provider',
+        paymentStatus: order.payments[0]?.status ?? 'NO_DATA',
+        shippingStatus: order.shipments[0]?.status ?? 'NO_DATA',
         total: financialAllowed ? this.money(Number(order.grandTotal)) : 'NO_PERMISSION',
         createdAt: order.createdAt.toISOString(),
         href: `/admin/pedidos?search=${encodeURIComponent(order.orderNumber)}`,
@@ -495,7 +503,7 @@ export class GetAdminReportsUseCase {
         codPendingReconciliation: payments.filter(
           (payment) => payment.gateway === 'cash_on_delivery' && payment.status === PaymentStatus.pending,
         ).length,
-        providerStatus: process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true' ? 'READY' : 'BLOCKED_PROVIDER',
+        providerStatus: 'BLOCKED_PROVIDER',
       },
       chart: this.countValues(payments.map((payment) => payment.status)),
       rows: payments.slice(0, 80).map((payment) => ({
@@ -511,7 +519,11 @@ export class GetAdminReportsUseCase {
 
   private buildInventoryReport(products: ProductForReports[]) {
     const rows = products.flatMap((product) =>
-      product.variants.map((variant) => {
+      product.variants.length === 0 ? [{
+        product: product.name, sku: 'NO_DATA', brand: product.brand?.name ?? 'Sin marca',
+        category: product.category?.name ?? 'Sin categoría', availableStock: 0, status: 'PARTIAL',
+        reasons: [...(!product.isActive ? ['Producto inactivo'] : []), 'Sin variantes'], missingCost: false,
+      }] : product.variants.map((variant) => {
         const availableStock = variant.inventoryItems.reduce(
           (sum, item) => sum + Math.max(item.onHandQty - item.reservedQty - item.committedQty, 0),
           0,
@@ -542,7 +554,8 @@ export class GetAdminReportsUseCase {
 
     return {
       kpis: {
-        variants: rows.length,
+        variants: products.reduce((total, product) => total + product.variants.length, 0),
+        productsWithoutVariants: products.filter((product) => product.variants.length === 0).length,
         nonSellableProducts: rows.filter((row) => row.reasons.length > 0).length,
         outOfStockProducts: rows.filter((row) => row.availableStock <= 0).length,
         lowStockProducts: rows.filter((row) => row.availableStock > 0 && row.availableStock <= 2).length,
@@ -561,11 +574,13 @@ export class GetAdminReportsUseCase {
     };
   }
 
-  private buildShippingReport(orders: OrderForReports[], shipments: ShipmentForReports[]) {
+  private buildShippingReport(orders: OrderForReports[], shipments: ShipmentForReports[], shippingStatus?: string) {
     const ordersWithoutGuide = orders.filter((order) =>
       !([OrderStatus.cancelled, OrderStatus.refunded, OrderStatus.delivered] as OrderStatus[]).includes(order.status) &&
       !order.shipments.some((shipment) => shipment.trackingNumber || shipment.providerShipmentId),
     );
+    // Missing-guide orders are derived operational work, not persisted shipment states.
+    const visibleOrdersWithoutGuide = shippingStatus ? [] : ordersWithoutGuide;
     const issueStatuses = [ShipmentStatus.delivery_failed, ShipmentStatus.returned, ShipmentStatus.cancelled] as ShipmentStatus[];
     return {
       kpis: {
@@ -581,12 +596,13 @@ export class GetAdminReportsUseCase {
       },
       chart: this.countValues(shipments.map((shipment) => shipment.status)),
       rows: [
-        ...ordersWithoutGuide.map((order) => ({
+        ...visibleOrdersWithoutGuide.map((order) => ({
           orderNumber: order.orderNumber,
           provider: 'pending',
           guideSource: 'pending',
           trackingNumber: 'Pendiente',
-          status: 'pending_guide',
+          status: 'NO_GUIDE_RECORDED',
+          recordType: 'DERIVED_ORDER_WITHOUT_GUIDE',
           createdAt: order.createdAt.toISOString(),
           href: `/admin/envios?search=${encodeURIComponent(order.orderNumber)}`,
         })),
@@ -600,7 +616,7 @@ export class GetAdminReportsUseCase {
           href: `/admin/envios?search=${encodeURIComponent(shipment.order.orderNumber)}`,
         })),
       ].slice(0, 80),
-      empty: shipments.length === 0 && ordersWithoutGuide.length === 0,
+      empty: shipments.length === 0 && visibleOrdersWithoutGuide.length === 0,
     };
   }
 
@@ -614,7 +630,7 @@ export class GetAdminReportsUseCase {
         queuedNotifications: counts.queued ?? 0,
         sentNotifications: counts.sent ?? 0,
         failedNotifications: counts.failed ?? 0,
-        providerStatus: process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' ? 'READY' : 'BLOCKED_PROVIDER',
+        providerStatus: 'BLOCKED_PROVIDER',
       },
       chart: Object.entries(counts).map(([label, value]) => ({ label, value })),
       rows: failedNotifications.map((notification) => ({
@@ -663,8 +679,8 @@ export class GetAdminReportsUseCase {
       process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD &&
       process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE,
     );
-    const paymentsReady = process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true';
-    const emailReady = process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' &&
+    const paymentsConfigured = process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true';
+    const emailConfigured = process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' &&
       Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY);
     const stableDomain = Boolean(process.env.PUBLIC_APP_URL) &&
       !String(process.env.PUBLIC_APP_URL).includes('trycloudflare');
@@ -675,9 +691,9 @@ export class GetAdminReportsUseCase {
       this.module('catalog', 'Catálogo', 'GO_WITH_RISKS', ['Precios avanzados parciales.'], 'Productos vendibles dependen de precio/stock.', 'Cerrar precios.', '/admin/productos'),
       this.module('inventory', 'Inventario', 'READY', [], 'Stock y kardex operativos.', 'Mantener conteos.', '/admin/inventario'),
       this.module('orders', 'Pedidos', 'READY', [], 'Ordenes operativas.', 'Cerrar fulfillment avanzado.', '/admin/pedidos'),
-      this.module('payments', 'Pagos', paymentsReady ? 'READY' : 'BLOCKED_PROVIDER', paymentsReady ? [] : ['PSE/pagos reales pendientes.'], 'No hay pagos online reales.', 'Configurar provider real.', '/admin/pagos'),
+      this.module('payments', 'Pagos', 'BLOCKED_PROVIDER', [paymentsConfigured ? 'Configuración declarada; operación del proveedor no verificada.' : 'PSE/pagos reales pendientes.'], 'No hay pagos online reales.', 'Configurar provider real.', '/admin/pagos'),
       this.module('shipping', 'Envíos', has99Credentials && shippingProvider === '99envios' ? 'GO_WITH_RISKS' : shippingProvider === 'mock_99envios' ? 'MOCK_ONLY' : 'BLOCKED_PROVIDER', ['99 Envíos real/sandbox pendiente.'], 'Guías reales bloqueadas.', 'Probar credenciales 99 Envíos.', '/admin/envios'),
-      this.module('notifications', 'Notificaciones', emailReady ? 'READY' : 'BLOCKED_PROVIDER', emailReady ? [] : ['Email productivo pendiente.'], 'Correos reales bloqueados.', 'Configurar provider email.', '/admin/notificaciones'),
+      this.module('notifications', 'Notificaciones', 'BLOCKED_PROVIDER', [emailConfigured ? 'Configuración declarada; operación de notificaciones no verificada.' : 'Email productivo pendiente.'], 'Correos reales bloqueados.', 'Configurar provider email.', '/admin/notificaciones'),
       this.module('settings', 'Configuración', appEnv === 'production' && !authDisabled && stableDomain ? 'GO_WITH_RISKS' : 'BLOCKED_CONFIGURATION', ['Producción bloqueada por entorno/dominio/providers.'], 'No se puede salir a producción.', 'Completar readiness.', '/admin/configuracion'),
       this.module('security', 'Seguridad', authDisabled && appEnv === 'production' ? 'NO_GO' : 'READY', authDisabled && appEnv === 'production' ? ['ADMIN_AUTH_DISABLED activo en producción.'] : [], 'Acceso admin protegido.', 'Mantener RBAC.', '/admin/roles'),
     ];
@@ -901,6 +917,9 @@ export class GetAdminReportsUseCase {
   }
 
   private validateQuery(query: ReportQuery & { type?: string; format?: string; includePii?: boolean }) {
+    if (query.module !== undefined && typeof query.module !== 'string') {
+      throw new BadRequestException('Entidad de auditoría no permitida.');
+    }
     if (query.range !== undefined && !['today', '7d', '30d', 'month'].includes(query.range)) {
       throw new BadRequestException('Rango de reporte no permitido.');
     }

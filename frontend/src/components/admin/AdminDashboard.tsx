@@ -3,6 +3,10 @@ import { AdminReadFailure } from '@/features/admin/platform/ReadFailure';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { KpiCard } from '@/components/ui/KpiCard';
+import { controlAction, metric } from '@/features/admin/control/presentation';
+import { ControlLink, ControlNavigation } from '@/features/admin/control/Navigation';
+import styles from '@/features/admin/control/control.module.css';
+import { assertDashboard } from '@/features/admin/control/contracts';
 import {
   type AdminDashboardAlert,
   type AdminDashboardChartPoint,
@@ -19,12 +23,11 @@ const rangeOptions = [
 ];
 
 function money(value: string | number | null | undefined) {
-  const amount = Number(value ?? 0);
-  return `$ ${amount.toLocaleString('es-CO', { maximumFractionDigits: 0 })}`;
+  return metric(value, true);
 }
 
 function numberLabel(value: string | number | null | undefined) {
-  return Number(value ?? 0).toLocaleString('es-CO');
+  return metric(value);
 }
 
 function dateLabel(value: string) {
@@ -49,7 +52,7 @@ function alertVariant(severity: AdminDashboardAlert['severity']) {
 }
 
 function maxValue(points: AdminDashboardChartPoint[]) {
-  return Math.max(...points.map((point) => Number(point.value ?? point.amount ?? point.orders ?? 0)), 1);
+  return Math.max(...points.map((point) => Number(point.value ?? point.amount ?? point.orders)).filter(Number.isFinite), 1);
 }
 
 function MiniBarChart({
@@ -61,7 +64,7 @@ function MiniBarChart({
   title: string;
   points: AdminDashboardChartPoint[];
   valueKey?: 'value' | 'amount' | 'orders';
-  format?: (value: number) => string;
+  format?: (value: string | number | null | undefined) => string;
 }) {
   const max = maxValue(points);
   return (
@@ -72,20 +75,20 @@ function MiniBarChart({
       </div>
       <div className="mt-4 space-y-3">
         {points.length ? points.slice(-8).map((point) => {
-          const rawValue = Number(point[valueKey] ?? 0);
+          const rawValue = Number(point[valueKey]);
           const label = point.label ?? point.date ?? 'Sin etiqueta';
           return (
             <div key={`${label}-${rawValue}`} className="space-y-1">
               <div className="flex items-center justify-between gap-3 text-xs">
                 <span className="truncate text-[var(--color-text-secondary)]">{label}</span>
-                <span className="font-semibold text-[var(--color-off-white)]">{format(rawValue)}</span>
+                <span className="font-semibold text-[var(--color-off-white)]">{format(point[valueKey])}</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/8">
+              {Number.isFinite(rawValue) ? <div className="h-2 overflow-hidden rounded-full bg-white/8">
                 <div
                   className="h-full rounded-full bg-[var(--color-industrial-yellow)]"
                   style={{ width: `${Math.max((rawValue / max) * 100, rawValue > 0 ? 6 : 0)}%` }}
                 />
-              </div>
+              </div> : null}
             </div>
           );
         }) : (
@@ -103,9 +106,9 @@ function ReadinessCompact({ modules, counts }: { modules: AdminDashboardModuleRe
     <section className="rounded-[1.35rem] border border-[var(--color-border)] bg-[#0d0d0d] p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold text-[var(--color-off-white)]">Readiness</h2>
-        <Link className="text-sm font-semibold text-[var(--color-industrial-yellow)]" href="/admin/configuracion">
+        <ControlLink className="text-sm font-semibold text-[var(--color-industrial-yellow)]" href="/admin/configuracion">
           Ver configuración
-        </Link>
+        </ControlLink>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         {Object.entries(counts).map(([status, count]) => (
@@ -116,14 +119,14 @@ function ReadinessCompact({ modules, counts }: { modules: AdminDashboardModuleRe
       </div>
       <div className="mt-4 grid gap-2">
         {modules.slice(0, 10).map((module) => (
-          <Link
+          <ControlLink
             key={module.key}
             href={module.href}
             className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 transition hover:border-[var(--color-industrial-yellow)]"
           >
             <span className="text-sm font-semibold text-[var(--color-off-white)]">{module.label}</span>
             <Badge variant={statusVariant(module.status)}>{module.status}</Badge>
-          </Link>
+          </ControlLink>
         ))}
       </div>
     </section>
@@ -134,7 +137,7 @@ function AlertsPanel({ alerts }: { alerts: AdminDashboardAlert[] }) {
   return (
     <section className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-[var(--color-off-white)]">Alertas críticas</h2>
+        <h2 id="control-alerts-heading" tabIndex={-1} className="text-base font-semibold text-[var(--color-off-white)]">Alertas críticas</h2>
         <Badge variant={alerts.some((alert) => alert.severity === 'critical') ? 'danger' : 'warning'}>
           {alerts.length}
         </Badge>
@@ -149,9 +152,9 @@ function AlertsPanel({ alerts }: { alerts: AdminDashboardAlert[] }) {
               </div>
               <Badge variant={alertVariant(alert.severity)}>{alert.status}</Badge>
             </div>
-            <Link className="mt-3 inline-flex text-sm font-semibold text-[var(--color-industrial-yellow)]" href={alert.href}>
-              {alert.actionLabel}
-            </Link>
+            <ControlLink className="mt-3 inline-flex text-sm font-semibold text-[var(--color-industrial-yellow)]" href={controlAction(alert.href, alert.actionLabel).href}>
+              {controlAction(alert.href, alert.actionLabel).label}
+            </ControlLink>
           </div>
         )) : (
           <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-sm text-[var(--color-text-secondary)]">
@@ -170,13 +173,13 @@ function QuickActions({ actions }: { actions: AdminDashboardData['quickActions']
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {actions.map((action) => (
           action.status === 'enabled' ? (
-            <Link
+            <ControlLink
               key={action.label}
-              href={action.href}
+              href={controlAction(action.href, action.label).href}
               className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm font-semibold text-[var(--color-off-white)] transition hover:border-[var(--color-industrial-yellow)]"
             >
-              {action.label}
-            </Link>
+              {controlAction(action.href, action.label).label}
+            </ControlLink>
           ) : (
             <div
               key={action.label}
@@ -193,7 +196,10 @@ function QuickActions({ actions }: { actions: AdminDashboardData['quickActions']
   );
 }
 
+function persistedStatus(value: string) { return value === 'NO_DATA' ? 'Sin registro persistido' : value; }
+
 function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }) {
+  const auditDenied = (data as typeof data & { auditAccessStatus?: 'GRANTED' | 'NO_PERMISSION' }).auditAccessStatus === 'NO_PERMISSION';
   const rows = [
     {
       title: 'Pedidos recientes',
@@ -201,7 +207,7 @@ function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }
       items: data.orders.map((order) => ({
         key: order.orderNumber,
         main: order.orderNumber,
-        meta: `${order.status} · ${order.paymentStatus} · ${order.shippingStatus}`,
+        meta: `${order.status} · ${persistedStatus(order.paymentStatus)} · ${persistedStatus(order.shippingStatus)}`,
         value: money(order.total),
         href: order.href,
       })),
@@ -220,7 +226,8 @@ function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }
     {
       title: 'Auditoría reciente',
       empty: 'Sin auditoría reciente.',
-      items: data.audit.map((entry) => ({
+      denied: auditDenied,
+      items: (auditDenied ? [] : data.audit).map((entry) => ({
         key: `${entry.module}-${entry.action}-${entry.createdAt}`,
         main: entry.action,
         meta: `${entry.module} · ${entry.actor}`,
@@ -247,13 +254,13 @@ function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }
         <div key={group.title} className="rounded-[1.35rem] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-[var(--color-off-white)]">{group.title}</h2>
-            <Badge variant="neutral">{group.items.length}</Badge>
+            <Badge variant="neutral">{group.denied ? 'Sin permiso' : group.items.length}</Badge>
           </div>
           <div className="mt-4 space-y-2">
-            {group.items.length ? group.items.map((item) => (
-              <Link
+            {group.denied ? <p role="alert" className="text-sm text-[var(--color-text-secondary)]">Requiere audit.read para consultar la auditoría reciente.</p> : group.items.length ? group.items.map((item) => (
+              <ControlLink
                 key={item.key}
-                href={item.href}
+                href={controlAction(item.href, item.main).href}
                 className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm transition hover:border-[var(--color-industrial-yellow)]"
               >
                 <span>
@@ -261,7 +268,7 @@ function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }
                   <span className="block max-w-[24rem] truncate text-xs text-[var(--color-text-secondary)]">{item.meta}</span>
                 </span>
                 <span className="shrink-0 text-xs font-semibold text-[var(--color-industrial-yellow)]">{item.value}</span>
-              </Link>
+              </ControlLink>
             )) : (
               <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-5 text-sm text-[var(--color-text-secondary)]">
                 {group.empty}
@@ -276,10 +283,10 @@ function RecentActivity({ data }: { data: AdminDashboardData['recentActivity'] }
 
 export async function AdminDashboard({ range = '30d' }: { range?: string } = {}) {
   let dashboard: AdminDashboardData;
-  try { dashboard = await getAdminDashboardData(range); }
+  try { dashboard = await getAdminDashboardData(range); assertDashboard(dashboard); }
   catch (error) {
     if (!(error instanceof AdminReadError)) throw error;
-    return <section className="space-y-4"><h1 className="text-2xl font-semibold">Centro operativo</h1><AdminReadFailure result={error.result} /><p className="text-sm text-[var(--color-text-secondary)]">Las ventas del periodo, alertas críticas y readiness no están disponibles hasta recuperar la lectura administrativa.</p></section>;
+    return <section className={`${styles.root} space-y-4`}><h1 className="text-2xl font-semibold">Centro operativo</h1><AdminReadFailure result={error.result} /><p className="text-sm text-[var(--color-text-secondary)]">Las ventas del periodo, alertas críticas y readiness no están disponibles hasta recuperar la lectura administrativa.</p><Link href={`/admin/dashboard?range=${encodeURIComponent(range)}`} className="text-[var(--color-industrial-yellow)]">Reintentar lectura</Link></section>;
   }
   const activeRange = dashboard.range.key;
   const kpis = dashboard.kpis;
@@ -296,8 +303,8 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
     },
     {
       title: 'Pagos pendientes',
-      value: numberLabel(kpis.payments.pendingPayments + kpis.payments.codPendingReconciliation),
-      context: kpis.payments.paymentProviderStatus,
+      value: numberLabel(kpis.payments.pendingPayments),
+      context: `${numberLabel(kpis.payments.codPendingReconciliation)} COD incluidos · ${kpis.payments.paymentProviderStatus}`,
       trend: kpis.payments.paymentProviderStatus,
     },
     {
@@ -320,7 +327,7 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
   ];
 
   return (
-    <div className="space-y-5">
+    <ControlNavigation context="dashboard"><div className={`${styles.root} space-y-5`}>
       <section className="rounded-[1.75rem] border border-[var(--color-border)] bg-[linear-gradient(180deg,#111111_0%,#0b0b0b_100%)] p-5 shadow-elevated">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -333,6 +340,13 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
             <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
               {dashboard.range.label} · actualizado {dateLabel(dashboard.refreshedAt)}
             </p>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Fuente: pedidos, pagos, envíos y auditoría · {dateLabel(dashboard.range.from)} – {dateLabel(dashboard.range.to)}</p>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Inventario y notificaciones: estado actual. Ventas: valor de pedidos de todos los estados del periodo.</p>
+            <nav aria-label="Acciones del dashboard" className="mt-4 flex flex-wrap gap-3 text-sm font-semibold text-[var(--color-industrial-yellow)]">
+              <a href="#control-alerts-heading" className="rounded-lg border border-white/20 px-3 py-2 focus-visible:outline-2">Revisar alertas</a>
+              <ControlLink href={`/admin/reportes?range=${encodeURIComponent(activeRange)}`} className="rounded-lg border border-white/20 px-3 py-2 focus-visible:outline-2">Abrir reportes</ControlLink>
+              <ControlLink href="/admin/productos" className="rounded-lg border border-white/20 px-3 py-2 focus-visible:outline-2">Auditar catálogo</ControlLink>
+            </nav>
           </div>
           <div className="flex flex-wrap items-center gap-2" aria-label="Selector de rango">
             {rangeOptions.map((option) => (
@@ -374,7 +388,7 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {primaryKpis.map((kpi) => (
-          <KpiCard key={kpi.title} {...kpi} />
+          <div key={kpi.title} data-control-kpi><KpiCard {...kpi} /></div>
         ))}
       </section>
 
@@ -391,14 +405,14 @@ export async function AdminDashboard({ range = '30d' }: { range?: string } = {})
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <AlertsPanel alerts={dashboard.alerts} />
+        <AlertsPanel alerts={dashboard.alerts.map(alert => alert.module === 'Pagos' && alert.actionLabel === 'Ver pagos' ? { ...alert, message: `${kpis.payments.pendingPayments} pagos pendientes por conciliar (incluye COD).` } : alert)} />
         <div className="grid gap-4">
           <ReadinessCompact modules={dashboard.readiness.modules} counts={dashboard.readiness.counts} />
-          <QuickActions actions={dashboard.quickActions} />
+          <QuickActions actions={dashboard.quickActions.filter(action => !['Revisar alertas', 'Abrir reportes', 'Auditar catálogo'].includes(action.label))} />
         </div>
       </section>
 
       <RecentActivity data={dashboard.recentActivity} />
-    </div>
+    </div></ControlNavigation>
   );
 }

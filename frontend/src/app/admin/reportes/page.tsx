@@ -1,11 +1,12 @@
 import { AdminReports } from '@/components/admin/AdminReports';
+import type { ControlReportQuery } from '@/components/admin/AdminReports';
 import { AdminShell } from '@/components/layout/AdminShell';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Reportes admin | DistriTools JL', robots: { index: false, follow: false } };
 
 interface AdminReportsPageProps {
-  searchParams?: Promise<{ range?: string; tab?: string }>;
+  searchParams?: Promise<ControlReportQuery>;
 }
 
 export default async function AdminReportsPage({ searchParams }: AdminReportsPageProps) {
@@ -13,6 +14,7 @@ export default async function AdminReportsPage({ searchParams }: AdminReportsPag
   return (
     <AdminShell>
       {await AdminReports({
+        ...resolvedSearchParams,
         range: resolvedSearchParams?.range ?? '30d',
         tab: resolvedSearchParams?.tab ?? 'sales',
       })}
