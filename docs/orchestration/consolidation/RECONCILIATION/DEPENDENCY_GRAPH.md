@@ -1,12 +1,12 @@
 # ROOT-02 dependency graph and bounded integration order
 
-Current reconciliation: main `a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be`; LOG QA_LOCAL_PASS / PROMOTION_PENDING on sealed source1302. Historical snapshot below remains evidence; current status and exact certificate hashes are in the QA matrix. Original QA leases released; separate PR81 ownership and promotion gates remain. No certified local QA is rerun.
+Current reconciliation after authorized PR80: main `ebbf77ed04fd03fdc2529628f54214acda514888`; LOG QA_LOCAL_PASS / PROMOTION_PENDING on sealed source1302. Historical snapshot below remains evidence; current status and exact certificate hashes are in the QA matrix. Original QA leases released; separate PR81 ownership and promotion gates remain. No certified local QA is rerun.
 
 Evidence snapshot: 2026-10-19 18:02:05 UTC, main `aa619fc9f9b2ff6fd1a3cdf69fa19c42a69774d5`. Read with [QA matrix](../INTEGRATION/QA_MATRIX.md). Static evidence lives at `/home/wundah/distritoolsjl-root02-evidence-20261019/B/RECONCILIATION_STATIC_SNAPSHOT.json`. This is a proposed integration map, not a lease, test result, merge authorization or action certification.
 
 ```mermaid
 flowchart TD
-  M[Main after LEGAL24 a5ef8f0: official 49 / pending 22] --> Q[ROOT-01 frozen LOG31 plus Redis fixture: 32 paths]
+  M[Main after documentary PR80 ebbf77e: official 49 / pending 22] --> Q[ROOT-01 frozen LOG31 plus Redis fixture: 32 paths]
   Q --> U[Completed backend383 / frontend771 / build / safety receipts]
   Q --> C[Certified critical385 and original E2E90 PASS]
   Q --> B[Single V2 harness certification PASS; historical failures retained]
