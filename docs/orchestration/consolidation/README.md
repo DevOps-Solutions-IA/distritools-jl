@@ -10,7 +10,7 @@ PR79 LEGAL24 is merged at `a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be` after final
 
 LOG is QA_LOCAL_PASS / PROMOTION_PENDING: sealed backend383/frontend771/critical385/originalE2E90/browser18+7 PASS; no local QA rerun. Original failed attempts remain retained. Separate PR81 is open under its own executor; this documentary update does not integrate it or certify actions. See QA_MATRIX and STATE `log_local_qa_validation` for precise input hashes and promotion gates.
 
-PR80 is reconciled against the new main and requires seven CI checks on its new HEAD plus final director approval before merge. Administrative49/71 and production NO-GO remain. Inventory CSVs retain their original time-bound snapshot rather than rewriting historical evidence as a live product result.
+PR80 was director-approved and merged at `ebbf77ed04fd03fdc2529628f54214acda514888`; seven source-head checks passed on `5cbc8f7212719d11b165cebd7b50c652bd4a523b`, and post-main run 39309806432 is PASS. See the [single merge receipt](INTEGRATION/PR80_MERGE_VERIFICATION.md). This follow-up records that integration and awaits its own review, exact-head CI and separate merge approval. ROOT-02 consolidation remains ACTIVE; no duplicate closure or action credit. Inventory CSVs retain their original snapshot; administrative49/71, NO_PUBLICAR and production NO-GO remain.
 
 ## Review map
 
