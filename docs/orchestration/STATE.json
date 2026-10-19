@@ -2,10 +2,10 @@
   "project": "DistriTools JL",
   "repository": "DevOps-Solutions-IA/distritools-jl",
   "canonical_branch": "main",
-  "validated_product_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
-  "state_base_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
+  "validated_product_sha": "e8249f7937421ae21008a80cc514dfd0b7fa23e7",
+  "state_base_sha": "e8249f7937421ae21008a80cc514dfd0b7fa23e7",
   "state_sha_semantics": "validated_product_sha is the latest product/security merge independently validated by the orchestrator. It must be an ancestor of current main; it is not expected to equal the commit containing STATE.json.",
-  "updated_at": "2026-10-14",
+  "updated_at": "2026-10-19",
   "phase": "internal-hardening",
   "active_execution": "EX-08",
   "completed_executions": [
@@ -50,11 +50,12 @@
     "EX-08.CRM.TECHNICAL_BOUNDARY",
     "EX-08.IAM.TECHNICAL_BOUNDARY",
     "EX-08.CONTROL.LEGACY_AUDIT_COUNT",
-    "EX-08.QA.PRISMA_CI_BOOTSTRAP"
+    "EX-08.QA.PRISMA_CI_BOOTSTRAP",
+    "EX-08.CONTENT"
   ],
   "baseline": {
     "git_canonical": "PASS",
-    "gitleaks": "PASS history/tree1246/all6completefilebounddiff0/currentproduct exact-headsecret-scan",
+    "gitleaks": "PASS canonical product history/tree1278/all45completefilebounddiff and product/main exact-head secret-scan; historical strict synthetic-fixture FAIL and archival documentary FAIL161/124/2 preserved, no waiver",
     "prisma_validate": "PASS",
     "backend_typecheck": "PASS",
     "backend_lint": "PASS",
@@ -62,10 +63,10 @@
     "frontend_typecheck": "PASS",
     "frontend_lint": "PASS",
     "frontend_build": "PASS actualproduct CIstandardNext frontend-quality/criticalbrowser; no newlocalFE rerun",
-    "frontend_tests": "642/642PASS product frontend-quality exact-head; localFEunchangedbaseline",
-    "backend_unit_tests": "379/379PASS ROOT and currentproduct exact-head",
-    "critical_e2e": "ROOT374critical90originalE2E; CI374critical+4guards42isolation5originalplatformbrowserPASS/nofailcancel skip",
-    "architecture_check": "DEBT_DETECTED (optional architecture command FAIL:165 identical base/candidate findings, ARCH-001136/00219/0039/0051; regression delta PASS, no debt closure)"
+    "frontend_tests": "733/733 PASS corrected product QA and exact-head product/main frontend-quality",
+    "backend_unit_tests": "383/383 PASS corrected product QA and exact-head product/main backend-unit-security",
+    "critical_e2e": "ROOT384 full critical and90 original E2E; product/main CI384 critical plus4 environment guards,42 isolation and5 original platform browser PASS; no failed/cancelled/skipped critical cases. Corrected local Beta157 single37-group execution is separate and not rerun/accumulated by CI.",
+    "architecture_check": "DEBT_DETECTED: ARCHITECTURE_GLOBAL FAIL167 rawexit1; ARCH-001138/00219/0039/0051. Original scanner and full finding identities/multiplicity stdout/stderr byte-identical to preproduct main d87c712; ARCHITECTURE_DIFFERENTIAL PASS0added0removed. The two introduced ARCH-001 were removed from169. No scanner/CI suppression, severity assessment or broad debt acceptance. Earlier STATE165 baseline is historical."
   },
   "security": {
     "frontend_critical": 0,
@@ -88,9 +89,9 @@
       "objective": "Panel administrativo empresarial: auditar 42 rutas y 71 acciones declaradas; flujos reales por dominio con backend, RBAC, auditor\u00eda, errores visibles y pruebas de navegador. No redise\u00f1o cosm\u00e9tico.",
       "user_impact": "ADMIN_OPERATOR",
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producci\u00f3n o inventar pol\u00edticas de negocio.",
-      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration. LEGACY auditcount P1 technicalcorrection productPR73 independently merged with379/374/90 and ownseven/source1246/treeequal;42/29 unchanged and no fullCONTROL/action certification. Prior IAM/projection debt/pending narratives are acceptance-time history, current resolution recorded in legacy_audit_count_validation; separate CI bootstrap pending. CI explicitPrisma generation productPR75 independently merged with current379unit and actualseven/source1249/treeequal;42/29unchanged. Original CI72 failure and unknown unique trigger preserved; dedicated infrastructure correction only.",
+      "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration. LEGACY auditcount P1 technicalcorrection productPR73 independently merged with379/374/90 and ownseven/source1246/treeequal;42/29 unchanged and no fullCONTROL/action certification. Prior IAM/projection debt/pending narratives are acceptance-time history, current resolution recorded in legacy_audit_count_validation; separate CI bootstrap pending. CI explicitPrisma generation productPR75 independently merged with current379unit and actualseven/source1249/treeequal;42/29unchanged. Original CI72 failure and unknown unique trigger preserved; dedicated infrastructure correction only. CONTENT productPR77 independently accepted and squash merged e8249f79 after seven exact9d3257eb/run39203533162 attempt1; new-main39204902568 ownseven also PASS. Seven CONTENT actions A50-A56 accepted; this documentary transition records49verified/22pending after its ownseven/director merge. The previous42/29 and unresolved external-merge authorization narrative are historical: the director receipt20261019 confirms the official product merge. LEGAL effectiveness remains unapproved.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "After separate CIPrisma documentaryownseven: compose preservedCONTENT38 exactpostimages from currentofficialmain plus ROOT currentimpact/report, preserve original39/130artifacts/V7raw-overwrite limitation; fullcurrent backend/FE/Prisma isolatedPGRedis/realNext/browser/persistence/audit/failure/independentchallenger then ownproduct+doc exactsevens. LOG30 requires oneawait seam preserving16IAMfixturelines; CONTROL16 aligns tracking.read afterLOG and skipsalreadyclosedbackendprojection2. A59realcredentials/BLOCKED_PROVIDER, CLI-MFAdebt, A58reviewonly, A31/A34/commercial/SEC/GOV/HIGH/held/cutover/history remain; official42/29/full42NOT_TESTED/EX08ACTIVE/productionNO-GO."
+      "next_action": "After this separate CONTENT documentary PR receives its own seven exact-head CI and director merge: read live main/STATE, confirm previous LOG/CONTROL owner disposition and assign new exclusive executor leases. Rehash preserved LOG30 and compose only its one-await seam while preserving all16 current IAM fixture lines; after LOG closure prepare CONTROL16 with the authorized tracking.read alignment, excluding already merged audit/legacy/tracking projections. Each composition needs actual gates, independent challenger and separate product/documentary seven-check PRs. Envia blueprint and operational multiagent materials form independent documentation queues, not provider implementation or an EX10 transition. LEGAL24 remains DRAFT/NO_PUBLICAR, human approval and T01-T08 backlog pending. Official49/22 takes effect only after this documentary merge; all42 full route workflows NOT_TESTED; EX08 ACTIVE; SEC/GOV/HIGH/business/providers/held/cutover/history and production NO-GO unchanged."
     }
   ],
   "provider_status": {
@@ -105,7 +106,7 @@
     "Production event-bus cutover remains intentionally deferred after EX-04 PASS: EX-04.5 readiness and mixed-version cutover_pending fence are merged, but order.paid notification disposition is owned by EX-07, inventory.low_stock_detected producer disposition is owned by EX-06, and no cutover may occur until those gaps close, old binaries are absent, and release authorization is explicit.",
     "Production providers must remain fail-closed",
     "EX-01.4 residual backend advisories: 4 HIGH nodes in Prisma config/deepmerge-ts/effect and 2 MODERATE nodes in Swagger/js-yaml; address only in separate approved compatibility work. Frontend has 5 dev-tooling HIGH nodes with no safe patched braces path",
-    "GitHub branch protection/rulesets unavailable on current private-repo plan; manual PR + 7/7 exact-head governance is active until provider capability is upgraded.",
+    "GOV-BRANCH-PROTECTION-001 remains OPEN and release-blocking: GitHub now exposes main protection with strict seven checks/admin enforcement/no force or deletion, but requires0 PR approvals. Historical provider403 is superseded as current capability; director approval is still mandatory and enforcement/bypass/organizational disposition remains unverified. No inferred risk acceptance.",
     "EX-05.1 security runtime hardening is merged; organizational approval of maximum token lifetimes and the 2FA challenge/legacy seed rollout plan remain mandatory before production GO. Multi-replica auth throttling and trusted-proxy topology are still deployment-boundary debt.",
     "EX-06 inventory.low_stock_detected producer remains BLOCKED_DECISION: Product/Inventory Operations must define authoritative threshold crossing (minStock vs reorderPoint), transition/dedup/re-arm semantics, event payload, producer owner and notification timing. No producer or cutover is authorized.",
     "EX-06 payment reconciliation remains BLOCKED_DECISION: when cancellation wins before an approved external webhook, the order reservation is released and the payment/receipt remains pending and retryable. Product/Payments/Finance must authorize held/reconciliation versus reversal/refund/compensation and safe operator workflow; no fake approval or arbitrary terminal state.",
@@ -123,20 +124,22 @@
     "EX-08.QA PR #50 CI attempt1: auth-rbac logout401!=201. Actual helper/service controlled TOTP boundary reproduces missing token returned without status assertions; original CI verify response was not retained, so unique cause is not established. Unchanged-head retry passed255/255 including guards. Separate bounded test-helper robustness follow-up; no 2FA tolerance, auth policy or test assertion change."
   ],
   "last_transition": {
-    "execution": "EX-08.QA.PRISMA_CI_BOOTSTRAP",
-    "pr": 75,
-    "merge_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
-    "validation_head_sha": "798cee7e0ce4805cad550c52301acad3c829e08b",
-    "workflow_run": 38635022305,
+    "execution": "EX-08.CONTENT",
+    "pr": 77,
+    "merge_sha": "e8249f7937421ae21008a80cc514dfd0b7fa23e7",
+    "validation_head_sha": "9d3257eb8f2d09278dd01045fdc9ce890d9a393c",
+    "workflow_run": 39203533162,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
+    "new_main_workflow_run": 39204902568,
+    "new_main_seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 3,
-    "report": "docs/orchestration/runs/EX-08.QA-prisma-ci-bootstrap-closure.md",
+    "scope_files": 45,
+    "report": "docs/orchestration/runs/EX-08.CONTENT-closure.md",
     "status": "MERGED",
-    "result": "Explicit generation before original unit/security command; no new declared action certified; official42/29 unchanged; separate documentary ownseven mandatory."
+    "result": "Director verified squash product45; seven A50-A56 accepted. This separate documentary PR records49/71 only after its own seven exact-head checks and director merge. No legal effectiveness or production GO."
   },
-  "next_action": "After separate CIPrisma documentaryownseven: compose preservedCONTENT38 exactpostimages from currentofficialmain plus ROOT currentimpact/report, preserve original39/130artifacts/V7raw-overwrite limitation; fullcurrent backend/FE/Prisma isolatedPGRedis/realNext/browser/persistence/audit/failure/independentchallenger then ownproduct+doc exactsevens. LOG30 requires oneawait seam preserving16IAMfixturelines; CONTROL16 aligns tracking.read afterLOG and skipsalreadyclosedbackendprojection2. A59realcredentials/BLOCKED_PROVIDER, CLI-MFAdebt, A58reviewonly, A31/A34/commercial/SEC/GOV/HIGH/held/cutover/history remain; official42/29/full42NOT_TESTED/EX08ACTIVE/productionNO-GO.",
+  "next_action": "After this separate CONTENT documentary PR receives its own seven exact-head CI and director merge: read live main/STATE, confirm previous LOG/CONTROL owner disposition and assign new exclusive executor leases. Rehash preserved LOG30 and compose only its one-await seam while preserving all16 current IAM fixture lines; after LOG closure prepare CONTROL16 with the authorized tracking.read alignment, excluding already merged audit/legacy/tracking projections. Each composition needs actual gates, independent challenger and separate product/documentary seven-check PRs. Envia blueprint and operational multiagent materials form independent documentation queues, not provider implementation or an EX10 transition. LEGAL24 remains DRAFT/NO_PUBLICAR, human approval and T01-T08 backlog pending. Official49/22 takes effect only after this documentary merge; all42 full route workflows NOT_TESTED; EX08 ACTIVE; SEC/GOV/HIGH/business/providers/held/cutover/history and production NO-GO unchanged.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -196,13 +199,18 @@
     {
       "id": "GOV-BRANCH-PROTECTION-001",
       "severity": "P0_GOVERNANCE",
-      "status": "BLOCKED_PROVIDER",
+      "status": "OPEN",
       "release_blocking": true,
       "scope": "github-main-governance",
-      "reason": "GitHub branch protection and repository rulesets both return HTTP 403: upgrade to GitHub Pro/Team-capable private-repo plan or make repository public.",
-      "current_fallback": "Orchestrator-only manual policy: changes reach main only through PR after all seven stable CI checks pass on the exact head SHA; no force push/direct push by operating protocol.",
+      "reason": "Current read-only GitHub metadata: main protected, seven exact required contexts strict=true, administrators enforced, force push/deletion disabled; protection/rulesets HTTP200, rulesets empty. Required PR approvals=0 and last-push approval=false. Director/orchestrator human acceptance remains a manual obligation; enforcement/bypass effectiveness, activation actor/time and release disposition are NOT_TESTED/NOT_VERIFIED. Configuration availability does not close GOV or accept risk.",
+      "current_fallback": "Continue director-controlled PR review and seven exact-head checks, zero behind, no direct/force main push or autonomous merge. No settings changed by this transition. Repository/account administrator must review the remaining governance obligation before EX12 GO.",
       "owner": "repository/account administrator",
-      "must_close_before": "EX-12 GO or explicit documented governance risk acceptance"
+      "must_close_before": "EX-12 GO or explicit documented governance risk acceptance",
+      "historical_provider_status": {
+        "status": "BLOCKED_PROVIDER",
+        "reason": "GitHub branch protection and repository rulesets both return HTTP 403: upgrade to GitHub Pro/Team-capable private-repo plan or make repository public.",
+        "qualification": "Historical HTTP403; superseded as current provider capability"
+      }
     }
   ],
   "supplemental_product_validation": {
@@ -276,16 +284,18 @@
     "limits": "26recursos existentes verificados; selecci\u00f3n nueva/reemplazada pending; aprobaci\u00f3n espec\u00edfica con products.write/hash/version/reason/actor/audit y held. Aprobar no concede permisosSKU/variantes; sin proveedorreal/uploader/pol\u00edtica inventada. Evidencia EX-08.CAT-closure.md."
   },
   "last_product_validation": {
-    "execution": "EX-08.QA.PRISMA_CI_BOOTSTRAP",
-    "pr": 75,
-    "merge_sha": "7ef52fd714f0cc6c5ded1282486bfe42810f5c6d",
-    "validation_head_sha": "798cee7e0ce4805cad550c52301acad3c829e08b",
-    "workflow_run": 38635022305,
+    "execution": "EX-08.CONTENT",
+    "pr": 77,
+    "merge_sha": "e8249f7937421ae21008a80cc514dfd0b7fa23e7",
+    "validation_head_sha": "9d3257eb8f2d09278dd01045fdc9ce890d9a393c",
+    "workflow_run": 39203533162,
     "workflow_attempt": 1,
     "seven_exact_head_checks": "PASS",
+    "main_workflow_run": 39204902568,
+    "main_seven_exact_head_checks": "PASS",
     "behind_at_acceptance": 0,
-    "scope_files": 3,
-    "report": "docs/orchestration/runs/EX-08.QA-prisma-ci-bootstrap-closure.md"
+    "scope_files": 45,
+    "report": "docs/orchestration/runs/EX-08.CONTENT-closure.md"
   },
   "browser_infrastructure_validation": {
     "execution": "EX-08.QA.BROWSER",
@@ -500,14 +510,15 @@
   },
   "admin_action_validation": {
     "total_declared": 71,
-    "total_verified": 42,
-    "total_pending": 29,
+    "total_verified": 49,
+    "total_pending": 22,
     "domains": {
       "CAT": 13,
       "INV": 9,
       "SALE": 5,
       "CRM": 4,
-      "IAM": 11
+      "IAM": 11,
+      "CONTENT": 7
     },
     "verified_actions": [
       "A04",
@@ -551,12 +562,45 @@
       "A65",
       "A66",
       "A67",
-      "A68"
+      "A68",
+      "A50",
+      "A51",
+      "A52",
+      "A53",
+      "A54",
+      "A55",
+      "A56"
     ],
-    "current_evidence": "docs/orchestration/runs/EX-08.IAM-technical-boundary-closure.md",
-    "historical_domain_records": "CAT13+INV9+SALE5+CRM4+IAM11=42verified/29pending; A59BLOCKED_PROVIDER, A31/A34BLOCKED_DECISION literalobligationsunfulfilled. Prior31/40 snapshots historical;42fullrouteworkflowsNOT_TESTED.",
+    "current_evidence": "docs/orchestration/runs/EX-08.CONTENT-closure.md",
+    "historical_domain_records": "CAT13+INV9+SALE5+CRM4+IAM11=42verified/29pending; A59BLOCKED_PROVIDER, A31/A34BLOCKED_DECISION literalobligationsunfulfilled. Prior31/40 snapshots historical;42fullrouteworkflowsNOT_TESTED.; CONTENT7 A50-A56 accepted after productPR77/e8249f79 and its mainseven39204902568. CAT13+INV9+SALE5+CRM4+IAM11+CONTENT7=49verified/22pending after separate documentary ownseven/director merge. Earlier42/29 is preserved acceptance-time history.",
     "all_42_full_route_workflows": "NOT_TESTED",
-    "production": "NO-GO"
+    "production": "NO-GO",
+    "previous_evidence": "docs/orchestration/runs/EX-08.IAM-technical-boundary-closure.md",
+    "pending_actions": [
+      "A01",
+      "A02",
+      "A03",
+      "A31",
+      "A34",
+      "A37",
+      "A38",
+      "A39",
+      "A40",
+      "A41",
+      "A42",
+      "A43",
+      "A44",
+      "A45",
+      "A46",
+      "A47",
+      "A48",
+      "A49",
+      "A59",
+      "A69",
+      "A70",
+      "A71"
+    ],
+    "counter_transition_semantics": "This branch is the proposed49/22 documentary transition. Canonical main remains42/29 until its own seven exact-head checks and director merge; no self-referential STATE commit SHA is stored."
   },
   "tracking_event_boundary_validation": {
     "execution": "EX-08.LOG.TRACKING_EVENT_BOUNDARY",
@@ -927,5 +971,90 @@
     "declared_action_increment": 0,
     "all42_full_workflows": "NOT_TESTED",
     "production": "NO-GO"
+  },
+  "content_validation": {
+    "execution": "EX-08.CONTENT",
+    "product_pr": 77,
+    "product_merge_sha": "e8249f7937421ae21008a80cc514dfd0b7fa23e7",
+    "validation_head_sha": "9d3257eb8f2d09278dd01045fdc9ce890d9a393c",
+    "product_workflow_run": 39203533162,
+    "product_workflow_attempt": 1,
+    "product_seven_exact_head_checks": "PASS",
+    "main_workflow_run": 39204902568,
+    "main_seven_exact_head_checks": "PASS",
+    "source_manifest_sha256": "9f1bbd08785442d6a4784662e6b90c8004c4e660aefcff0ce5cf7c3eeaa7436b",
+    "qa_evidence_manifest_sha256": "a6950e35085a9b881c82fbb9c5a0e16fdb1f813f73086f108ad133c9a28ed96e",
+    "source_files_verified": 1278,
+    "product_scope": {
+      "files": 45,
+      "modified": 17,
+      "added": 28,
+      "additions": 4549,
+      "deletions": 66
+    },
+    "verified_actions": [
+      "A50",
+      "A51",
+      "A52",
+      "A53",
+      "A54",
+      "A55",
+      "A56"
+    ],
+    "declared_action_increment": 7,
+    "ROOT_unit_security": 383,
+    "ROOT_full_critical": 384,
+    "ROOT_full_e2e": 90,
+    "ROOT_frontend": 733,
+    "ROOT_focused_unit": 4,
+    "ROOT_real_Nest_HTTP": 6,
+    "ROOT_migrations_disposable": 13,
+    "ROOT_types_lint_backend_Next_build_readiness": "PASS sealed corrected QA",
+    "corrected_Beta157_native": 3,
+    "corrected_Beta157_complete_browser": 37,
+    "corrected_BROWSER_execution": "One fresh run20original+17supplementary; all37PASS, no historical accumulation",
+    "RSC_complete_captures": 6,
+    "after_real_INSERT_rollback_cases": 2,
+    "RBAC_SESSION_SQL_AUDIT": "PASS; sameJWT revoke,401/403, SQL persistence and audit, rollback",
+    "CI_unit_security": 383,
+    "CI_frontend": 733,
+    "CI_full_critical": 384,
+    "CI_environment_guards": 4,
+    "CI_browser_isolation": 42,
+    "CI_original_platform_browser": 5,
+    "CI_qualification": "PR/main actual checks are distinct from accepted local CONTENT37; documentary PR needs its own seven",
+    "Stable155": "FAIL CDP no-store/delayed EOF preserved; native full HTTP body PASS does not make CDP PASS",
+    "Canary_Beta_history": "Historical candidates/evidence retained separately, not combined with corrected37",
+    "ARCHITECTURE_GLOBAL": "FAIL167 rawexit1",
+    "ARCHITECTURE_DIFFERENTIAL": "PASS0added0removed; exact identities and streams",
+    "architecture_debt_acceptance": false,
+    "independent_challenger": "PASS exact45/1278 source+commit blobs, no newly introduced scopedP0/P1/P2; not global debt closure",
+    "independent_review_manifest_sha256": "4b0f75842315f83bbf71a7126a30ceea894ae66c82356a04c8e95b7e7a7338ce",
+    "product_gitleaks": "PASS canonical history/tree/all45completepostimage/filebounddiff; old strictfixture/harness FAIL retained",
+    "archival_documentary_gitleaks": "FAIL161/FAIL124 and external handoffFAIL2 retained/contextually classified; no waiver/globalPASS",
+    "npm_audit": "Regression fingerprint PASS only; raw1/1/1/0, backend4H2M1L full/4H2M runtime,frontend5toolingH/runtime0; HIGH/SEC OPEN",
+    "synthetic_QA_incident": "Affected isolated Redis lease retired; never reuse credential/lease. Exposure outside authorized session NOT_VERIFIED; no value/private log in PR.",
+    "legal_effectiveness": "NOT_APPROVED; LEGAL24 DRAFT/NO_PUBLICAR, real counsel/business/signature/identity pending; T01-T08 backlog OPEN",
+    "report": "docs/orchestration/runs/EX-08.CONTENT-closure.md",
+    "full_42_route_workflows": "NOT_TESTED",
+    "limits": "CMS workflow acceptance does not approve legal policy texts, privacy consent, providers or EX09-EX12. LEGAL24/Envia/multiagent documentation queues and LOG/CONTROL implementations are separate scopes.",
+    "director_receipt_sha256": "0c7e60586599365bb90d3633dc793b88f8614eeedf8e85a2d572852bf46f8d59",
+    "production": "NO-GO"
+  },
+  "legal_documentation_status": {
+    "status": "DRAFT / NO_PUBLICAR",
+    "human_review": "PENDING counsel/business; no effective legal policy publication",
+    "technical_backlog": [
+      "T01",
+      "T02",
+      "T03",
+      "T04",
+      "T05",
+      "T06",
+      "T07",
+      "T08"
+    ],
+    "publication_authorized": false,
+    "internal_documentation_incorporation": "Separate scope/security review required; not part of this transition"
   }
 }
