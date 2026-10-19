@@ -1,8 +1,9 @@
 'use client';
 
 import { z } from 'zod';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/Button';
 import {
   saveFooterGroups,
   validateFooterGroups,
@@ -12,8 +13,20 @@ import {
 
 export function FooterRouteEditor({
   revision,
+  disabled = false,
+  onSaved,
+  onDirtyChange,
+  onBusyChange,
+  validateGroups = validateFooterGroups,
+  saveGroups = saveFooterGroups,
 }: {
   revision?: FooterRevisionInput;
+  disabled?: boolean;
+  onSaved?: (value: unknown) => Promise<void>;
+  onDirtyChange?: (dirty: boolean) => void;
+  onBusyChange?: (busy: boolean) => void;
+  validateGroups?: (groups: FooterGroup[]) => Promise<unknown>;
+  saveGroups?: (groups: FooterGroup[], id?: string) => Promise<unknown>;
 }) {
   const router = useRouter();
   const parsed = z
@@ -36,9 +49,21 @@ export function FooterRouteEditor({
       : [{ title: '', links: [{ label: '', href: '', isVisible: true }] }];
   const [groups, setGroups] = useState<FooterGroup[]>(initial);
   const [error, setError] = useState<string | null>(null);
+  const [errorKind, setErrorKind] = useState('validation_error');
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const draftId = revision?.status === 'draft' ? revision.id : undefined;
+  const validationSequence = useRef(0);
+  const draftId =
+    revision?.status === 'draft' || revision?.status === 'pending_legal_review'
+      ? revision.id
+      : undefined;
+  function changeGroups(change: (current: FooterGroup[]) => FooterGroup[]) {
+    validationSequence.current += 1;
+    setError(null);
+    setNotice(null);
+    onDirtyChange?.(true);
+    setGroups(change);
+  }
   function update(
     group: number,
     link: number | null,
@@ -47,7 +72,7 @@ export function FooterRouteEditor({
   ) {
     setError(null);
     setNotice(null);
-    setGroups((current) =>
+    changeGroups((current) =>
       current.map((entry, index) =>
         index !== group
           ? entry
@@ -62,38 +87,68 @@ export function FooterRouteEditor({
       ),
     );
   }
-  async function validate() {
-    setBusy(true);
+  async function validate(blocking = true) {
+    const sequence = ++validationSequence.current;
+    if (blocking) {
+      setBusy(true);
+      onBusyChange?.(true);
+    }
     setError(null);
     setNotice(null);
     try {
-      await validateFooterGroups(groups);
+      await validateGroups(groups);
+      if (sequence !== validationSequence.current) return;
       setNotice(
         'Los destinos están disponibles. Se validarán nuevamente al guardar y publicar.',
       );
     } catch (failure) {
+      if (sequence !== validationSequence.current) return;
+      setErrorKind(
+        failure &&
+          typeof failure === 'object' &&
+          'kind' in failure &&
+          typeof failure.kind === 'string'
+          ? failure.kind
+          : 'validation_error',
+      );
       setError(
         failure instanceof Error
           ? failure.message
           : 'No fue posible validar los destinos.',
       );
     } finally {
-      setBusy(false);
+      if (blocking) {
+        setBusy(false);
+        onBusyChange?.(false);
+      }
     }
   }
   async function save(event: React.FormEvent) {
     event.preventDefault();
+    validationSequence.current += 1;
     setBusy(true);
+    onBusyChange?.(true);
     setError(null);
     setNotice(null);
     try {
-      await validateFooterGroups(groups);
-      await saveFooterGroups(groups, draftId);
-      setNotice(
-        'Borrador guardado. Requiere revisión y aprobación antes de publicarse.',
-      );
+      await validateGroups(groups);
+      const result = await saveGroups(groups, draftId);
+      await onSaved?.(result);
+      onDirtyChange?.(false);
+      if (!onSaved)
+        setNotice(
+          'Borrador guardado. Requiere revisión y aprobación antes de publicarse.',
+        );
       router.refresh();
     } catch (failure) {
+      setErrorKind(
+        failure &&
+          typeof failure === 'object' &&
+          'kind' in failure &&
+          typeof failure.kind === 'string'
+          ? failure.kind
+          : 'validation_error',
+      );
       setError(
         failure instanceof Error
           ? failure.message
@@ -101,6 +156,7 @@ export function FooterRouteEditor({
       );
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
     }
   }
   return (
@@ -118,7 +174,7 @@ export function FooterRouteEditor({
         <fieldset
           key={groupIndex}
           className="grid gap-3 rounded-xl border border-white/10 p-4"
-          disabled={busy}
+          disabled={busy || disabled}
         >
           <legend>Grupo {groupIndex + 1}</legend>
           <label>
@@ -147,6 +203,49 @@ export function FooterRouteEditor({
                   }
                 />
               </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={link.isVisible !== false}
+                  onChange={(event) =>
+                    changeGroups((current) =>
+                      current.map((entry, index) =>
+                        index === groupIndex
+                          ? {
+                              ...entry,
+                              links: entry.links.map((item, pos) =>
+                                pos === linkIndex
+                                  ? { ...item, isVisible: event.target.checked }
+                                  : item,
+                              ),
+                            }
+                          : entry,
+                      ),
+                    )
+                  }
+                />
+                Enlace visible
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() =>
+                  changeGroups((current) =>
+                    current.map((entry, index) =>
+                      index === groupIndex
+                        ? {
+                            ...entry,
+                            links: entry.links.filter(
+                              (_, pos) => pos !== linkIndex,
+                            ),
+                          }
+                        : entry,
+                    ),
+                  )
+                }
+              >
+                Quitar enlace {linkIndex + 1}
+              </Button>
               <label>
                 Ruta interna
                 <input
@@ -158,17 +257,18 @@ export function FooterRouteEditor({
                     update(groupIndex, linkIndex, 'href', event.target.value)
                   }
                   onBlur={() => {
-                    if (link.href) void validate();
+                    if (link.href) void validate(false);
                   }}
                   aria-describedby="footer-route-feedback"
                 />
               </label>
             </div>
           ))}
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() =>
-              setGroups((current) =>
+              changeGroups((current) =>
                 current.map((entry, index) =>
                   index === groupIndex
                     ? {
@@ -184,32 +284,59 @@ export function FooterRouteEditor({
             }
           >
             Añadir enlace
-          </button>
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={groups.length === 1}
+            onClick={() =>
+              changeGroups((current) =>
+                current.filter((_, index) => index !== groupIndex),
+              )
+            }
+          >
+            Quitar grupo {groupIndex + 1}
+          </Button>
         </fieldset>
       ))}
       <div id="footer-route-feedback" aria-live="polite">
-        {error ? <p role="alert">{error}</p> : null}
+        {error ? (
+          <div role="alert" data-state={errorKind}>
+            <p>{error}</p>
+            {errorKind === 'auth_required' ? (
+              <a href="/admin/login" className="underline">
+                Iniciar sesión
+              </a>
+            ) : null}
+          </div>
+        ) : null}
         {notice ? <p role="status">{notice}</p> : null}
       </div>
       <div className="flex flex-wrap gap-4">
-        <button
+        <Button
           type="button"
-          disabled={busy}
+          variant="outline"
+          disabled={busy || disabled}
           onClick={() =>
-            setGroups((current) => [
+            changeGroups((current) => [
               ...current,
               { title: '', links: [{ label: '', href: '', isVisible: true }] },
             ])
           }
         >
           Añadir grupo
-        </button>
-        <button type="button" disabled={busy} onClick={() => void validate()}>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy || disabled}
+          onClick={() => void validate()}
+        >
           Validar destinos
-        </button>
-        <button type="submit" disabled={busy}>
+        </Button>
+        <Button type="submit" disabled={busy || disabled}>
           {busy ? 'Validando…' : 'Guardar borrador'}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -114,9 +114,17 @@ describe('smoke frontend base', () => {
 
   it('página legal renderiza header global, footer e índice', async () => {
     const PrivacyPage = (await import('@/app/politica-de-privacidad/page')).default;
+    const originalFetch = globalThis.fetch;
+    const publicLegalRead = vi.spyOn(globalThis, 'fetch').mockImplementation((input, options) =>
+      String(input).endsWith('/api/v1/content/legal/politica-de-privacidad')
+        ? Promise.resolve(new Response('{}', { status: 404, headers: { 'Content-Type': 'application/json' } }))
+        : originalFetch(input, options),
+    );
+    let legalPage;
+    try { legalPage = await PrivacyPage(); } finally { publicLegalRead.mockRestore(); }
     render(
       <CartProvider>
-        <PrivacyPage />
+        {legalPage}
       </CartProvider>,
     );
 

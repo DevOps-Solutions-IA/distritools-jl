@@ -1,8 +1,11 @@
-import { AdminSectionPage } from '@/components/admin/AdminSectionPage';
+import { ContentPage } from '@/features/admin/content/ContentPage';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Footer admin | DistriTools JL', robots: { index: false, follow: false } };
+export const metadata = {
+  title: 'Footer admin | DistriTools JL',
+  robots: { index: false, follow: false },
+};
 
-export default async function AdminFooterAliasPage() {
-  return AdminSectionPage({ moduleKey: 'contenido-footer' });
+export default async function Page() {
+  return ContentPage({ domain: 'footer' });
 }

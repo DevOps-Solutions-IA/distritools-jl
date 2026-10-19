@@ -3,6 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/infra/db/prisma/prisma.service';
 import {
   ContentRepository,
+  PublishedLegalDocumentRecord,
   CreateContentBlockRecord,
   UpdateContentBlockRecord,
 } from 'src/modules/content/domain/repositories/content.repository';
@@ -57,6 +58,21 @@ export class PrismaContentRepository implements ContentRepository {
         AND: [{ OR: [{ endsAt: null }, { endsAt: { gte: at } }] }],
       },
       orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async findPublishedLegal(pageKey: string): Promise<PublishedLegalDocumentRecord | null> {
+    return this.prisma.legalVersion.findFirst({
+      where: { pageKey, status: 'published', publishedAt: { not: null } },
+      orderBy: [{ version: 'desc' }, { id: 'desc' }],
+      select: {
+        pageKey: true,
+        slug: true,
+        title: true,
+        version: true,
+        content: true,
+        publishedAt: true,
+      },
     });
   }
 }
