@@ -8,7 +8,7 @@ describe('EX08 F1 page read permissions', () => {
     ['categorias', 'catalog.read'],
     ['precios', 'catalog.read'],
     ['inventario', 'inventory.read'],
-    ['rastreo', 'shipping.read'],
+    ['rastreo', 'tracking.read'],
     ['roles', 'permissions.read'],
   ])('matches %s entry GET permission %s', (key, permission) => {
     expect(adminModules.find((module) => module.key === key)?.permission).toBe(

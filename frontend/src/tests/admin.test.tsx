@@ -637,6 +637,7 @@ describe('admin platform', () => {
   it('envíos admin marca MOCK99 como mock local y no como guía real', async () => {
     render(await AdminShipmentsPage());
     await screen.findByRole('link', { name: 'Productos' });
+    await screen.findByText('Mock local/test activo');
 
     expect(screen.getByText('Mock local/test activo')).toBeInTheDocument();
     expect(screen.getByText('Mock local/test')).toBeInTheDocument();
