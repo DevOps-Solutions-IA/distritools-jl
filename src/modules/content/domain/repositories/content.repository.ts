@@ -17,12 +17,22 @@ export interface UpdateContentBlockRecord extends Partial<CreateContentBlockReco
   id: string;
 }
 
+export interface PublishedLegalDocumentRecord {
+  pageKey: string;
+  slug: string;
+  title: string;
+  version: number;
+  content: unknown;
+  publishedAt: Date | null;
+}
+
 export interface ContentRepository {
   create(data: CreateContentBlockRecord): Promise<ContentBlockState>;
   update(data: UpdateContentBlockRecord): Promise<ContentBlockState>;
   findById(id: string): Promise<ContentBlockState | null>;
   listAll(): Promise<ContentBlockState[]>;
   listVisible(placementKey?: string, at?: Date): Promise<ContentBlockState[]>;
+  findPublishedLegal(pageKey: string): Promise<PublishedLegalDocumentRecord | null>;
 }
 
 export const CONTENT_REPOSITORY = Symbol('CONTENT_REPOSITORY');

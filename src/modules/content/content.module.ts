@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from 'src/modules/auth/auth.module';
 import { CreateContentBlockUseCase } from 'src/modules/content/application/use-cases/create-content-block.use-case';
+import { GetPublishedLegalUseCase } from 'src/modules/content/application/use-cases/get-published-legal.use-case';
 import { ListAdminContentUseCase } from 'src/modules/content/application/use-cases/list-admin-content.use-case';
 import { ListPublicContentUseCase } from 'src/modules/content/application/use-cases/list-public-content.use-case';
 import { SetContentPublishedUseCase } from 'src/modules/content/application/use-cases/set-content-published.use-case';
@@ -10,13 +11,15 @@ import {
 } from 'src/modules/content/domain/repositories/content.repository';
 import { ContentPublicationService } from 'src/modules/content/domain/services/content-publication.service';
 import { ContentController } from 'src/modules/content/infrastructure/http/controllers/content.controller';
+import { PublicLegalController } from 'src/modules/content/infrastructure/http/controllers/public-legal.controller';
 import { PrismaContentRepository } from 'src/modules/content/infrastructure/repositories/prisma-content.repository';
 
 @Module({
   imports: [AuthModule],
-  controllers: [ContentController],
+  controllers: [ContentController, PublicLegalController],
   providers: [
     ContentPublicationService,
+    GetPublishedLegalUseCase,
     CreateContentBlockUseCase,
     UpdateContentBlockUseCase,
     SetContentPublishedUseCase,
