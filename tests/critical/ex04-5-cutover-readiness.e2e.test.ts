@@ -22,6 +22,7 @@ import { DomainEventCutoverReadinessService } from 'src/infra/events/domain-even
 import { DomainEventQueueReconciler } from 'src/infra/events/domain-event-queue-reconciler';
 import { createTestApp, loginAsAdmin } from 'tests/helpers/test-app';
 import { syntheticSecret } from 'tests/helpers/synthetic-secret';
+import { createProducerRedisOptions } from 'src/infra/queue/redis-role-connection-options';
 
 const EVENT_NAME = 'order.cancelled' as const;
 const CONSUMER = 'notifications.v1';
@@ -111,9 +112,7 @@ describe('EX-04.5 persisted routing and isolated cutover readiness', { concurren
     } });
     historicalHeldSnapshot = await snapshotHeld(historicalHeldId);
     restoreEnv = { app: process.env.APP_ENV, node: process.env.NODE_ENV, durable: process.env.EX045_TEST_DURABLE_ROUTING };
-    queue = new Queue(queueName, { connection: {
-      host: redisUrl.hostname, port: Number(redisUrl.port), db: 15, maxRetriesPerRequest: 1,
-    } });
+    queue = new Queue(queueName, { connection: createProducerRedisOptions(redisUrl.toString()) });
     redis = new Redis(redisUrl.toString(), { maxRetriesPerRequest: 1, enableOfflineQueue: false });
     outbox = new PrismaDomainEventOutboxRepository(prisma as never, (registry = new DomainEventHandlerRegistry()));
     inbox = new PrismaDomainEventInboxRepository(prisma as never);

@@ -199,7 +199,7 @@ export const adminModules: AdminModuleConfig[] = [
     title: 'Rastreo',
     href: '/admin/rastreo',
     description: 'Control operativo de búsqueda de pedidos y estado logístico.',
-    permission: 'shipping.read',
+    permission: 'tracking.read',
     status: 'GO_WITH_RISKS',
     primaryActions: ['Buscar pedido', 'Sincronizar provider', 'Ver eventos', 'Abrir rastreo público'],
     validations: ['No mostrar PII innecesaria', 'No inventar tracking', 'Estado desconocido no rompe'],
