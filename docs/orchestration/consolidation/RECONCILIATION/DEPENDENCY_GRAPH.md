@@ -1,18 +1,20 @@
 # ROOT-02 dependency graph and bounded integration order
 
+Current reconciliation: main `a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be`; LOG QA_LOCAL_PASS / PROMOTION_PENDING on sealed source1302. Historical snapshot below remains evidence; current status and exact certificate hashes are in the QA matrix. Original QA leases released; separate PR81 ownership and promotion gates remain. No certified local QA is rerun.
+
 Evidence snapshot: 2026-10-19 18:02:05 UTC, main `aa619fc9f9b2ff6fd1a3cdf69fa19c42a69774d5`. Read with [QA matrix](../INTEGRATION/QA_MATRIX.md). Static evidence lives at `/home/wundah/distritoolsjl-root02-evidence-20261019/B/RECONCILIATION_STATIC_SNAPSHOT.json`. This is a proposed integration map, not a lease, test result, merge authorization or action certification.
 
 ```mermaid
 flowchart TD
-  M[Live main aa619fc: official 49 / pending 22] --> Q[ROOT-01 frozen LOG31 plus Redis fixture: 32 paths]
+  M[Main after LEGAL24 a5ef8f0: official 49 / pending 22] --> Q[ROOT-01 frozen LOG31 plus Redis fixture: 32 paths]
   Q --> U[Completed backend383 / frontend771 / build / safety receipts]
-  Q --> C[ROOT-01 full critical and original E2E completion]
-  Q --> B[Owned heading and focus diagnosis]
-  B --> F[One fresh LOG18 plus7 browser certification]
-  U --> R[ROOT-01 challenger and director disposition]
+  Q --> C[Certified critical385 and original E2E90 PASS]
+  Q --> B[Single V2 harness certification PASS; historical failures retained]
+  B --> F[Certified original18 plus7 browser PASS; reuse evidence]
+  U --> R[LOG promotion pending specific security and governance disposition]
   C --> R
   F --> R
-  R --> LP[Bounded LOG product PR and exact seven checks]
+  R --> LP[Separate PR81 owner; current-head seven and director approval pending]
   LP --> LD[Separate LOG documentary transition and its seven checks]
   LD --> CL[New exclusive CONTROL executor lease from then-live main]
   A[Already merged audit projection and legacy count] --> CL
@@ -23,7 +25,7 @@ flowchart TD
   CD --> X[EX08 remains active until all required actions and workflows accepted]
 ```
 
-LOG and CONTROL acceptance cannot be inferred from documentary consolidation. Production release also depends on the independent security, governance, business/provider, legal and cutover fences in STATE. Subsequent director steering records LEGAL24 business content `USER_CONTENT_APPROVED2026-10-19` for unchanged internal consolidation through a separate ROOT-owned documentary PR; counsel review, missing corporate data/signatures, effectiveness and publication are still blocked. DRAFT/NO_PUBLICAR and unresolved B01–B13/T01–T08 remain.
+LOG and CONTROL acceptance cannot be inferred from documentary consolidation. Production release also depends on the independent security, governance, business/provider, legal and cutover fences in STATE. Director-authorized PR79 is merged at a5ef8f0 with LEGAL24 business content `USER_CONTENT_APPROVED2026-10-19`; counsel review, missing corporate data/signatures, effectiveness and publication are still blocked. DRAFT/NO_PUBLICAR and unresolved B01–B13/T01–T08 remain.
 
 ## What current main already supplies
 
@@ -59,8 +61,8 @@ The canonical CONTENT closure's term “CONTROL16” is a preserved planned comp
 
 | Unit | Dependency / scope fence | Next owner and required disposition |
 |---|---|---|
-| ROOT-01 local QA remediation | Existing LOG31 plus one test fixture; no product auth/parser/provider changes. | ROOT-01 retains ownership. Redis executor is frozen/released; browser owner finishes causal evidence only after ROOT-01 approval; challenger reviews completed full receipts. ROOT-02 must not duplicate. |
-| LOG product integration | Accepted local candidate only after complete critical/E2E/browser/security evidence. | ROOT-01 prepares bounded product review; director/orchestrator authorizes commit/PR/merge separately. Do not silently split/copy the live 32-path source while tests run. Whether fixture remains with LOG or gets an independent QA PR needs explicit frozen scope disposition and appropriate fresh gates. |
+| ROOT-01 local QA remediation | Existing LOG31 plus one test fixture; no product auth/parser/provider changes. | Original QA completed and all three leases released. Reuse sealed1302-source critical/E2E/browser PASS; ROOT-01 remains evidence custodian and the separate PR81 executor retains its branch. ROOT-02 does not duplicate QA or infer promotion. |
+| LOG product integration | Accepted local candidate only after complete critical/E2E/browser/security evidence. | PR81 is open under a separate executor. Reconcile its current HEAD against live main and obtain applicable LOG-specific security/governance disposition and explicit director merge approval. Do not split/copy its source or rerun already certified local QA. Whether fixture remains with LOG or gets an independent QA PR needs explicit frozen scope disposition and appropriate fresh gates. |
 | LOG documentary closure | Product merge accepted; separate run/user impact/STATE/action-matrix changes and independent exact seven. | Director/orchestrator. Grant only action rows supported by actual bounded acceptance, retain provider/business pending rows; no blanket LOG closure based on local PASS. |
 | CONTROL product composition | Then-current main after LOG closure, rehashed explicit CONTROL manifest; no backend audit/legacy/raw tracking reimplementation. | Director/orchestrator assigns a new named exclusive CONTROL executor and independent browser/challenger owners. Reuse old evidence only as history. Update USER_IMPACT_LOG; run exact gate matrix and real current-contract GUI acceptance. |
 | CONTROL documentary closure | Product merge, exact-head CI, independent challenger and director acceptance. | Director/orchestrator records at most the six supported actions A01–A03/A69–A71; exports support those actions without increasing total beyond declared inventory. Full42 remains NOT_TESTED unless separately proved. |
