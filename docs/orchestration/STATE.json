@@ -1056,5 +1056,134 @@
     ],
     "publication_authorized": false,
     "internal_documentation_incorporation": "Separate scope/security review required; not part of this transition"
-  }
+  },
+  "closure_obligations": [
+    {
+      "id": "ROOT02-CONSOLIDATION",
+      "owner": "ROOT-02",
+      "stage": "BASELINED",
+      "exit_condition": "Complete inventory disposition, independent review, seven exact-head checks, director merge and documentary transition",
+      "preservation_location": "docs/orchestration/consolidation",
+      "next_action": "Reconcile all inventory reports, challenge the diff, open a gated PR and wait for director merge approval"
+    },
+    {
+      "id": "EX08-LOG-RECOVERY",
+      "owner": "ROOT-01 existing LOG QA lease coordinator",
+      "stage": "BASELINED",
+      "exit_condition": "Full critical, original18 plus7 browser scenarios, security and independent acceptance before any LOG PR",
+      "preservation_location": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1",
+      "next_action": "Read current lease holder final receipts and handoff; never launch duplicate QA",
+      "blocker": {
+        "status": "BLOCKED_DECISION",
+        "condition": "Existing exclusive Redis/browser/challenger assignments and unfinished acceptance",
+        "evidence": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1",
+        "owner": "ROOT-01 existing LOG QA lease coordinator",
+        "next_action": "Read current lease holder final receipts and handoff; never launch duplicate QA",
+        "dependency": "ROOT-01 final accepted handoff and explicit lease release",
+        "preservation_location": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1"
+      }
+    },
+    {
+      "id": "EX08-CONTROL-RECOVERY",
+      "owner": "ROOT-02 / Integration and Quality Engineer",
+      "stage": "BASELINED",
+      "exit_condition": "Six declared actions independently verified with tracking.read preserved; exclude merged boundary functionality",
+      "preservation_location": "/home/wundah/distritoolsjl-ex08-control-oct11",
+      "next_action": "Reconcile CONTROL14 and separately preserved navigation correction before assigning isolated implementation",
+      "blocker": {
+        "status": "NOT_TESTED",
+        "condition": "Historical CONTROL scope has no current-main six-action acceptance",
+        "evidence": "/home/wundah/distritoolsjl-ex08-control-oct11",
+        "owner": "ROOT-02 / Integration and Quality Engineer",
+        "next_action": "Reconcile CONTROL14 and separately preserved navigation correction before assigning isolated implementation",
+        "dependency": "LOG sequencing and independently owned CONTROL implementation/QA",
+        "preservation_location": "/home/wundah/distritoolsjl-ex08-control-oct11"
+      }
+    },
+    {
+      "id": "ENVIA-DOCUMENTARY-RECOVERY",
+      "owner": "ROOT-02 / Evidence and Governance Engineer",
+      "stage": "BASELINED",
+      "exit_condition": "Reconciled blueprint and operational contracts in an independently reviewed documentary PR; provider implementation separate",
+      "preservation_location": "/home/wundah/distritoolsjl-envia-blueprint-20261015",
+      "next_action": "Resolve blueprint/source manifest counts and documentary ownership; preserve blocked provider dependencies",
+      "blocker": {
+        "status": "BLOCKED_PROVIDER",
+        "condition": "Provider authentication and sandbox execution are unauthorized",
+        "evidence": "/home/wundah/distritoolsjl-envia-blueprint-20261015",
+        "owner": "ROOT-02 / Evidence and Governance Engineer",
+        "next_action": "Resolve blueprint/source manifest counts and documentary ownership; preserve blocked provider dependencies",
+        "dependency": "Explicit provider/sandbox authorization and approved contracts",
+        "preservation_location": "/home/wundah/distritoolsjl-envia-blueprint-20261015"
+      }
+    },
+    {
+      "id": "LEGAL24-PRESERVATION",
+      "owner": "Legal counsel / business identity owner / ROOT-02",
+      "stage": "BASELINED",
+      "exit_condition": "24 files preserved with hashes and named human review dependencies; DRAFT / NO_PUBLICAR until human disposition",
+      "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL",
+      "next_action": "Consolidate unchanged USER_CONTENT_APPROVED2026-10-19 texts in a separate documentary PR; list missing identity/signature data and unresolved B01-B13",
+      "blocker": {
+        "status": "BLOCKED_DECISION",
+        "condition": "Business content approved by user2026-10-19; professional legal review, missing company data, effectiveness and publication authorization remain open",
+        "evidence": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL",
+        "owner": "Legal counsel / business identity owner / ROOT-02",
+        "next_action": "Consolidate unchanged USER_CONTENT_APPROVED2026-10-19 texts in a separate documentary PR; list missing identity/signature data and unresolved B01-B13",
+        "dependency": "Missing company constitution/NIT/address/responsibles/officialcontacts/signatures; counsel approval and separate publication authorization",
+        "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL"
+      }
+    },
+    {
+      "id": "PLATFORM-SEC-GOV-RECOVERY",
+      "owner": "ROOT-02 / repository administrator / Security",
+      "stage": "BASELINED",
+      "exit_condition": "Current proof and independent disposition for each platform, SEC and GOV obligation before release",
+      "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1",
+      "next_action": "Reconcile preparation only against current source and retain all canonical SEC/GOV/debt obligations",
+      "blocker": {
+        "status": "DEBT_DETECTED",
+        "condition": "Existing HIGH advisories, architecture debt and governance obligations remain open",
+        "evidence": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1",
+        "owner": "ROOT-02 / repository administrator / Security",
+        "next_action": "Reconcile preparation only against current source and retain all canonical SEC/GOV/debt obligations",
+        "dependency": "Scoped compatibility work, administrator review and release decisions",
+        "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1"
+      }
+    },
+    {
+      "id": "HISTORICAL-WORK-RECOVERY",
+      "owner": "ROOT-02 / Source Recovery Engineer",
+      "stage": "BASELINED",
+      "exit_condition": "Every discovered worktree, branch and artifact has preserved evidence and an explicit recovery/disposition action",
+      "preservation_location": "docs/orchestration/consolidation/INVENTORY",
+      "next_action": "Finish exact-content reconciliation for all unique dirty changes; do not infer cleanup eligibility from ancestry",
+      "blocker": {
+        "status": "NOT_TESTED",
+        "condition": "Inventory coverage does not establish semantic equivalence or full QA",
+        "evidence": "docs/orchestration/consolidation/INVENTORY",
+        "owner": "ROOT-02 / Source Recovery Engineer",
+        "next_action": "Finish exact-content reconciliation for all unique dirty changes; do not infer cleanup eligibility from ancestry",
+        "dependency": "Independent per-candidate reconciliation and approved integration scopes",
+        "preservation_location": "docs/orchestration/consolidation/INVENTORY"
+      }
+    },
+    {
+      "id": "STORAGE-RECOVERY-PROPOSAL",
+      "owner": "ROOT-02 / director",
+      "stage": "BASELINED",
+      "exit_condition": "Exact-path deletion manifest, independent recoverability validation and specific director approval before disposal",
+      "preservation_location": "docs/orchestration/consolidation/RETENTION",
+      "next_action": "Present measured opportunities and restoration limits; retain all assets pending specific approval",
+      "blocker": {
+        "status": "BLOCKED_DECISION",
+        "condition": "No deletion is authorized by this assignment",
+        "evidence": "docs/orchestration/consolidation/RETENTION",
+        "owner": "ROOT-02 / director",
+        "next_action": "Present measured opportunities and restoration limits; retain all assets pending specific approval",
+        "dependency": "Specific approved deletion manifest and verified authoritative recovery copies",
+        "preservation_location": "docs/orchestration/consolidation/RETENTION"
+      }
+    }
+  ]
 }
