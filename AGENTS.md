@@ -43,3 +43,11 @@ Every execution that changes API responses, admin behavior, storefront behavior,
 
 ## Context efficiency
 Do not re-audit the whole repository. Use docs/orchestration/STATE.json, git diff, targeted source files, the current execution record, and scripts/orchestration-context.js. Expand scope only when evidence proves it is necessary.
+
+## Lifecycle recovery and accountable closure
+- Every execution and local implementation must have an owner, exit condition, preservation location and next action in STATE.json `closure_obligations`. A draft also needs a disposition and follow-up owner; retained debt/providers keep named dependencies.
+- Preserve abandoned-session handoffs and dirty work before assigning a successor; active executor leases cannot be overridden. Preserve historical failures and distinguish local QA, GitHub integration and production readiness.
+- Follow CODEX_EXECUTION_PROTOCOL stages. Detailed ROOT-02 milestones are evidence requirements within those stages, not a replacement state machine. Never skip merge approval, exact-head CI, independent acceptance or documentary state transition.
+- PR evidence must be reproducible and tied to the full authorized diff and exact SHA. An implementer cannot independently accept their own change.
+- Cleanup requires an exact-path approved manifest and recoverability verification; merged history alone does not prove dirty worktrees disposable. ROOT-02 grants no deletion authority.
+- Run the orchestration lifecycle metadata gate with a verified integration base. It rejects missing ownership, removed obligations and invalid closure transitions; it does not certify external evidence or grant production readiness.
