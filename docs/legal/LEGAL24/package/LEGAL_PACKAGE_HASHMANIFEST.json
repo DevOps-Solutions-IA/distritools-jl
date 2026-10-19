@@ -1,0 +1,164 @@
+{
+  "docId": "LEGAL-MANIFEST",
+  "semanticVersion": "1.0.0-draft",
+  "status": "DRAFT",
+  "technicalStatus": "READY_FOR_COUNSEL_AND_BUSINESS_APPROVAL",
+  "preparedAt": "2026-10-19T04:37:59.635731+00:00",
+  "authorAgent": "ROOT (technical seal only)",
+  "reviewedAt": null,
+  "approvedAt": null,
+  "signedAt": null,
+  "effectiveAt": null,
+  "lawfulController": null,
+  "approverIdentity": null,
+  "signatoryIdentity": null,
+  "publication": "BLOCKED_DECISION / NO_PUBLICAR",
+  "counselCertification": "NOT_TESTED",
+  "packagePaths": 24,
+  "files": {
+    "01_PRIVACY_POLICY.md": {
+      "sha256": "e64b5b111812d94f63572505050f222f593afafd976a542c183b2d71096b2218",
+      "bytes": 9353
+    },
+    "02_PERSONAL_DATA_PROCESSING_POLICY.md": {
+      "sha256": "d73ce25a3af19a10496ee6b51f9348a221f0189ecc4ce711b58510f70beab718",
+      "bytes": 8865
+    },
+    "03_ECOMMERCE_TERMS_AND_CONDITIONS.md": {
+      "sha256": "634ca65c903453172a629b940fe709c32505195617ac1c52e9aa0f224f3e6c07",
+      "bytes": 9157
+    },
+    "04_SHIPPING_AND_DELIVERY_POLICY.md": {
+      "sha256": "7b59d2d1231062bb720d77a08c940242242176520e99926aa5e5c9076a26c0c3",
+      "bytes": 7602
+    },
+    "05_RETURNS_WITHDRAWAL_WARRANTIES.md": {
+      "sha256": "d747668022a362272d13dd60084f16aa2cb3d257088cc75ab0b45cf45b648718",
+      "bytes": 10818
+    },
+    "06_PRIVACY_NOTICE.md": {
+      "sha256": "72f3970b2329e6fc9a3214d4abda30f9ca3cc71e518210b7dbb08c08d5343368",
+      "bytes": 3251
+    },
+    "07_COOKIES_POLICY.md": {
+      "sha256": "14de3bc21eb2aac779aa739d62fa28d565a536d73d922a0a58da3930d2335784",
+      "bytes": 4726
+    },
+    "08_CUSTOMER_CONSENT_TEXTS.md": {
+      "sha256": "3134b940ba3e2a7a1f8e7e6e28ba103e6a612429b4fe2266d30a6227224a781c",
+      "bytes": 6098
+    },
+    "09_DATA_SUBJECT_REQUEST_PROCEDURE.md": {
+      "sha256": "6858b7609148c7af90067dfc37038e0eca594b118a0a438c83410b49aedd9a4e",
+      "bytes": 5207
+    },
+    "10_CONSUMER_CLAIMS_AND_REFUNDS.md": {
+      "sha256": "3a2ece25b7c40e6ea3f63d9dbb636f0aa462108a00284c404d28905b9c5ce2cb",
+      "bytes": 5871
+    },
+    "11_PROCESSORS_AND_DATA_FLOWS.md": {
+      "sha256": "f95437cb8b887ce1ba50ffcdef686d74a1fb4fb76e35a120bf2ceff16fe11847",
+      "bytes": 5298
+    },
+    "12_DATA_RETENTION_SCHEDULE.md": {
+      "sha256": "126b9badbf51d0a28676bb547c1f4bdfa39a5ed5f2d225d980a30fd948b7377b",
+      "bytes": 6006
+    },
+    "13_CHECKOUT_AND_COOKIES_CONSENT_AUDIT.md": {
+      "sha256": "51d6072bb315b7e598a27fad4ff24bc8d16c07786a2b4b861c62ed6a9a40e844",
+      "bytes": 6434
+    },
+    "14_CUSTOMER_RIGHTS_SUMMARY.md": {
+      "sha256": "c304494a41166dee3383ec9189c5adc0d8e062643d0da6c7cae50a64eb73f595",
+      "bytes": 4094
+    },
+    "DISTRITOOLS_JL_LEGAL_IDENTITY_REGISTRY.json": {
+      "sha256": "cb55a0dd2030817b2180ab15830e5ee6f9c62c5e76ad8455f74f0aa33bc61bcf",
+      "bytes": 20107
+    },
+    "FINAL_HANDOFF.md": {
+      "sha256": "7ea46e20036981c989b9ef5b6a84308198a763b213002110b272db230eed7641",
+      "bytes": 5287
+    },
+    "INDEPENDENT_LEGAL_CONSISTENCY_REVIEW.md": {
+      "sha256": "08ca5b1919b76dc5b682170b1bf79f2907515a20bb1d6c5c8855ccf23bf13540",
+      "bytes": 15100
+    },
+    "LEGAL_APPROVAL_AND_SIGNATURE_WORKFLOW.md": {
+      "sha256": "fbbdde57816def5dfce7d3fa49adfc047fa4e50275dddc7cf9feddc910b410e1",
+      "bytes": 5625
+    },
+    "LEGAL_BUSINESS_DECISIONS.md": {
+      "sha256": "5132d235ada754bf59489b6d9535cb724429cc5bbd5e59e5434cfeeebb3af1e4",
+      "bytes": 6277
+    },
+    "LEGAL_PUBLICATION_HANDOFF.md": {
+      "sha256": "c994e069aa2d47b75ed92eae2903fd51d03e44258d084a1c5fc045a698200f91",
+      "bytes": 5876
+    },
+    "LEGAL_SOURCE_AND_COMPLIANCE_MATRIX.md": {
+      "sha256": "bdf83b283e219aeb14070f875465a31a9679779323e4ba90724730b71c1c2fcc",
+      "bytes": 33251
+    },
+    "LEGAL_TECHNICAL_GAPS.md": {
+      "sha256": "eab204172f4a227bb2ccf006901c7d3f5e9498aaa8e84ad1094491556ad9a2ef",
+      "bytes": 5345
+    },
+    "LEGAL_VERSION_REGISTER.json": {
+      "sha256": "417787c23ad69c2355613a69ff072ce432139698ecd06e956db8fd13c415aeec",
+      "bytes": 37102
+    }
+  },
+  "excludes": [
+    "LEGAL_PACKAGE_HASHMANIFEST.json"
+  ],
+  "selfHashRule": "Self excluded; outer wave manifest and ROOT acceptance hash these exact manifest bytes",
+  "authorFilesFrozen": 22,
+  "authorManifest": {
+    "path": "../AUTHOR_SHA256.json",
+    "sha256": "adccf3392e293bcbf0e113289a91d917cc5b7e8797788e6aa3f5881335287655"
+  },
+  "independentTechnicalReview": {
+    "path": "INDEPENDENT_LEGAL_CONSISTENCY_REVIEW.md",
+    "sha256": "08ca5b1919b76dc5b682170b1bf79f2907515a20bb1d6c5c8855ccf23bf13540",
+    "reviewArtifactsManifest": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL_INDEPENDENT_REVIEW/REVIEW_HASHMANIFEST.json",
+    "reviewArtifactsManifestSHA256": "3638d83eb848516eea64256b59363be566a309bd1ca3b683c8aa7c24fab4db1b"
+  },
+  "authorRegisterReservedEntries": "Historical author-freeze metadata remains unchanged. This manifest resolves the two reserved technical outputs; no legal approval dates or identities are completed.",
+  "openLegalDecisions": [
+    "B01",
+    "B02",
+    "B03",
+    "B04",
+    "B05",
+    "B06",
+    "B07",
+    "B08",
+    "B09",
+    "B10",
+    "B11",
+    "B12",
+    "B13"
+  ],
+  "openTechnicalGaps": [
+    "T01",
+    "T02",
+    "T03",
+    "T04",
+    "T05",
+    "T06",
+    "T07",
+    "T08"
+  ],
+  "sourceCurrency": "NOT_VERIFIED exhaustively; R01 section7/2022 needs separately verified citation and full C192 judgment/current regulations require counsel B12. No waiver.",
+  "runtime": "NOT_TESTED",
+  "officialAdminActions": {
+    "verified": 42,
+    "pending": 29,
+    "total": 71,
+    "increment": 0
+  },
+  "productWrites": 0,
+  "integrationAuthorized": false,
+  "production": "NO-GO"
+}
