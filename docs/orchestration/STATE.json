@@ -91,7 +91,7 @@
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producci\u00f3n o inventar pol\u00edticas de negocio.",
       "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration. LEGACY auditcount P1 technicalcorrection productPR73 independently merged with379/374/90 and ownseven/source1246/treeequal;42/29 unchanged and no fullCONTROL/action certification. Prior IAM/projection debt/pending narratives are acceptance-time history, current resolution recorded in legacy_audit_count_validation; separate CI bootstrap pending. CI explicitPrisma generation productPR75 independently merged with current379unit and actualseven/source1249/treeequal;42/29unchanged. Original CI72 failure and unknown unique trigger preserved; dedicated infrastructure correction only. CONTENT productPR77 independently accepted and squash merged e8249f79 after seven exact9d3257eb/run39203533162 attempt1; new-main39204902568 ownseven also PASS. Seven CONTENT actions A50-A56 accepted; this documentary transition records49verified/22pending after its ownseven/director merge. The previous42/29 and unresolved external-merge authorization narrative are historical: the director receipt20261019 confirms the official product merge. LEGAL effectiveness remains unapproved.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "After this separate CONTENT documentary PR receives its own seven exact-head CI and director merge: read live main/STATE, confirm previous LOG/CONTROL owner disposition and assign new exclusive executor leases. Rehash preserved LOG30 and compose only its one-await seam while preserving all16 current IAM fixture lines; after LOG closure prepare CONTROL16 with the authorized tracking.read alignment, excluding already merged audit/legacy/tracking projections. Each composition needs actual gates, independent challenger and separate product/documentary seven-check PRs. Envia blueprint and operational multiagent materials form independent documentation queues, not provider implementation or an EX10 transition. LEGAL24 remains DRAFT/NO_PUBLICAR, human approval and T01-T08 backlog pending. Official49/22 takes effect only after this documentary merge; all42 full route workflows NOT_TESTED; EX08 ACTIVE; SEC/GOV/HIGH/business/providers/held/cutover/history and production NO-GO unchanged."
+      "next_action": "Reconcile PR80 with main after authorized LEGAL24 PR79, preserve USER_CONTENT_APPROVED/NO_PUBLICAR and49/71, obtain seven checks on the new exact HEAD and independent review, then wait for director final PR80 merge approval. LOG local QA is PASS on sealed1302-source input; reuse its certificate, do not repeat certified local tests. PR81 is a separate unmerged promotion scope requiring live-main reconciliation, applicable security/governance disposition, its own exact-head checks and specific director approval; no LOG acceptance or action increment here."
     }
   ],
   "provider_status": {
@@ -139,7 +139,7 @@
     "status": "MERGED",
     "result": "Director verified squash product45; seven A50-A56 accepted. This separate documentary PR records49/71 only after its own seven exact-head checks and director merge. No legal effectiveness or production GO."
   },
-  "next_action": "After this separate CONTENT documentary PR receives its own seven exact-head CI and director merge: read live main/STATE, confirm previous LOG/CONTROL owner disposition and assign new exclusive executor leases. Rehash preserved LOG30 and compose only its one-await seam while preserving all16 current IAM fixture lines; after LOG closure prepare CONTROL16 with the authorized tracking.read alignment, excluding already merged audit/legacy/tracking projections. Each composition needs actual gates, independent challenger and separate product/documentary seven-check PRs. Envia blueprint and operational multiagent materials form independent documentation queues, not provider implementation or an EX10 transition. LEGAL24 remains DRAFT/NO_PUBLICAR, human approval and T01-T08 backlog pending. Official49/22 takes effect only after this documentary merge; all42 full route workflows NOT_TESTED; EX08 ACTIVE; SEC/GOV/HIGH/business/providers/held/cutover/history and production NO-GO unchanged.",
+  "next_action": "Reconcile PR80 with main after authorized LEGAL24 PR79, preserve USER_CONTENT_APPROVED/NO_PUBLICAR and49/71, obtain seven checks on the new exact HEAD and independent review, then wait for director final PR80 merge approval. LOG local QA is PASS on sealed1302-source input; reuse its certificate, do not repeat certified local tests. PR81 is a separate unmerged promotion scope requiring live-main reconciliation, applicable security/governance disposition, its own exact-head checks and specific director approval; no LOG acceptance or action increment here.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -1065,5 +1065,193 @@
     },
     "missing_information": "docs/legal/LEGAL24/MISSING_INFORMATION.csv",
     "open_business_decisions": "docs/legal/LEGAL24/OPEN_BUSINESS_DECISIONS.csv"
+  },
+  "closure_obligations": [
+    {
+      "id": "ROOT02-CONSOLIDATION",
+      "owner": "ROOT-02",
+      "stage": "BASELINED",
+      "exit_condition": "Complete inventory disposition, independent review, seven exact-head checks, director merge and documentary transition",
+      "preservation_location": "docs/orchestration/consolidation",
+      "next_action": "Revalidate the revised PR80 against main a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be, obtain seven exact-head checks and independent challenge, then request specific final director merge approval"
+    },
+    {
+      "id": "EX08-LOG-RECOVERY",
+      "owner": "ROOT-02 (recovery record); ROOT-01 (LOG QA and PR81 custodian)",
+      "stage": "BASELINED",
+      "exit_condition": "Reuse certified full local QA; complete LOG-specific security/governance disposition, current-head CI and independent/director product acceptance plus documentary closure before LOG promotion is complete",
+      "preservation_location": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1",
+      "next_action": "Reuse sealed LOG local QA; coordinate with the separate PR81 owner for current-main reconciliation and obtain LOG-specific security/governance/director promotion acceptance without repeating certified local QA",
+      "blocker": {
+        "status": "BLOCKED_DECISION",
+        "condition": "Local QA PASS; promotion pending LOG-specific security/governance disposition and separate PR81 acceptance",
+        "evidence": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1/EX08_LOG_QA_REMEDIATION_HANDOFF_FOR_DIRECTOR.md",
+        "owner": "ROOT-02 (recovery record); ROOT-01 (LOG QA and PR81 custodian)",
+        "next_action": "Reuse sealed LOG local QA; coordinate with the separate PR81 owner for current-main reconciliation and obtain LOG-specific security/governance/director promotion acceptance without repeating certified local QA",
+        "dependency": "Applicable LOG security/governance decision, reconciled PR81 exact-head seven, independent acceptance and specific director merge approval",
+        "preservation_location": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1"
+      },
+      "local_qa_status": "PASS",
+      "promotion_status": "PROMOTION_PENDING",
+      "validation_record": "log_local_qa_validation",
+      "qa_blocker_resolution": {
+        "status": "PASS",
+        "owner": "ROOT-01 QA certificate custodian",
+        "evidence": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1/ROOT/OWNERSHIP_FINAL_RELEASE.json",
+        "disposition": "Original QA harness issues resolved in certified local attempt; original three QA leases released, all original failures retained; promotion blocker remains open"
+      }
+    },
+    {
+      "id": "EX08-CONTROL-RECOVERY",
+      "owner": "ROOT-02 / Integration and Quality Engineer",
+      "stage": "BASELINED",
+      "exit_condition": "Six declared actions independently verified with tracking.read preserved; exclude merged boundary functionality",
+      "preservation_location": "/home/wundah/distritoolsjl-ex08-control-oct11",
+      "next_action": "Reconcile CONTROL14 and separately preserved navigation correction before assigning isolated implementation",
+      "blocker": {
+        "status": "NOT_TESTED",
+        "condition": "Historical CONTROL scope has no current-main six-action acceptance",
+        "evidence": "/home/wundah/distritoolsjl-ex08-control-oct11",
+        "owner": "ROOT-02 / Integration and Quality Engineer",
+        "next_action": "Reconcile CONTROL14 and separately preserved navigation correction before assigning isolated implementation",
+        "dependency": "LOG sequencing and independently owned CONTROL implementation/QA",
+        "preservation_location": "/home/wundah/distritoolsjl-ex08-control-oct11"
+      }
+    },
+    {
+      "id": "ENVIA-DOCUMENTARY-RECOVERY",
+      "owner": "ROOT-02 / Evidence and Governance Engineer",
+      "stage": "BASELINED",
+      "exit_condition": "Reconciled blueprint and operational contracts in an independently reviewed documentary PR; provider implementation separate",
+      "preservation_location": "/home/wundah/distritoolsjl-envia-blueprint-20261015",
+      "next_action": "Resolve blueprint/source manifest counts and documentary ownership; preserve blocked provider dependencies",
+      "blocker": {
+        "status": "BLOCKED_PROVIDER",
+        "condition": "Provider authentication and sandbox execution are unauthorized",
+        "evidence": "/home/wundah/distritoolsjl-envia-blueprint-20261015",
+        "owner": "ROOT-02 / Evidence and Governance Engineer",
+        "next_action": "Resolve blueprint/source manifest counts and documentary ownership; preserve blocked provider dependencies",
+        "dependency": "Explicit provider/sandbox authorization and approved contracts",
+        "preservation_location": "/home/wundah/distritoolsjl-envia-blueprint-20261015"
+      }
+    },
+    {
+      "id": "LEGAL24-PRESERVATION",
+      "owner": "Legal counsel / business identity owner / ROOT-02",
+      "stage": "BASELINED",
+      "exit_condition": "24 files preserved with hashes and named human review dependencies; DRAFT / NO_PUBLICAR until human disposition",
+      "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL",
+      "next_action": "PR79 documentary integration is merged at a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be; retain24 unchanged texts/hashes and USER_CONTENT_APPROVED, supply missing corporate data and resolve professional/signature/effectiveness/publication dependencies",
+      "blocker": {
+        "status": "BLOCKED_DECISION",
+        "condition": "Business content approved by user2026-10-19; professional legal review, missing company data, effectiveness and publication authorization remain open",
+        "evidence": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL",
+        "owner": "Legal counsel / business identity owner / ROOT-02",
+        "next_action": "PR79 documentary integration is merged at a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be; retain24 unchanged texts/hashes and USER_CONTENT_APPROVED, supply missing corporate data and resolve professional/signature/effectiveness/publication dependencies",
+        "dependency": "Missing company constitution/NIT/address/responsibles/officialcontacts/signatures; counsel approval and separate publication authorization",
+        "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1/LEGAL"
+      }
+    },
+    {
+      "id": "PLATFORM-SEC-GOV-RECOVERY",
+      "owner": "ROOT-02 / repository administrator / Security",
+      "stage": "BASELINED",
+      "exit_condition": "Current proof and independent disposition for each platform, SEC and GOV obligation before release",
+      "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1",
+      "next_action": "Reconcile preparation only against current source and retain all canonical SEC/GOV/debt obligations",
+      "blocker": {
+        "status": "DEBT_DETECTED",
+        "condition": "Existing HIGH advisories, architecture debt and governance obligations remain open",
+        "evidence": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1",
+        "owner": "ROOT-02 / repository administrator / Security",
+        "next_action": "Reconcile preparation only against current source and retain all canonical SEC/GOV/debt obligations",
+        "dependency": "Scoped compatibility work, administrator review and release decisions",
+        "preservation_location": "/home/wundah/distritoolsjl-enterprise-wave-20261019-v1"
+      }
+    },
+    {
+      "id": "HISTORICAL-WORK-RECOVERY",
+      "owner": "ROOT-02 / Source Recovery Engineer",
+      "stage": "BASELINED",
+      "exit_condition": "Every discovered worktree, branch and artifact has preserved evidence and an explicit recovery/disposition action",
+      "preservation_location": "docs/orchestration/consolidation/INVENTORY",
+      "next_action": "Finish exact-content reconciliation for all unique dirty changes; do not infer cleanup eligibility from ancestry",
+      "blocker": {
+        "status": "NOT_TESTED",
+        "condition": "Inventory coverage does not establish semantic equivalence or full QA",
+        "evidence": "docs/orchestration/consolidation/INVENTORY",
+        "owner": "ROOT-02 / Source Recovery Engineer",
+        "next_action": "Finish exact-content reconciliation for all unique dirty changes; do not infer cleanup eligibility from ancestry",
+        "dependency": "Independent per-candidate reconciliation and approved integration scopes",
+        "preservation_location": "docs/orchestration/consolidation/INVENTORY"
+      }
+    },
+    {
+      "id": "STORAGE-RECOVERY-PROPOSAL",
+      "owner": "ROOT-02 / director",
+      "stage": "BASELINED",
+      "exit_condition": "Exact-path deletion manifest, independent recoverability validation and specific director approval before disposal",
+      "preservation_location": "docs/orchestration/consolidation/RETENTION",
+      "next_action": "Present measured opportunities and restoration limits; retain all assets pending specific approval",
+      "blocker": {
+        "status": "BLOCKED_DECISION",
+        "condition": "No deletion is authorized by this assignment",
+        "evidence": "docs/orchestration/consolidation/RETENTION",
+        "owner": "ROOT-02 / director",
+        "next_action": "Present measured opportunities and restoration limits; retain all assets pending specific approval",
+        "dependency": "Specific approved deletion manifest and verified authoritative recovery copies",
+        "preservation_location": "docs/orchestration/consolidation/RETENTION"
+      }
+    }
+  ],
+  "log_local_qa_validation": {
+    "status": "PASS",
+    "promotion_status": "PROMOTION_PENDING",
+    "promotion_evidence_status": "BLOCKED_DECISION",
+    "evidence_owner": "ROOT-01 LOG QA custodian; ROOT-02 independent documentary reconciliation",
+    "certified_base_sha": "aa619fc9f9b2ff6fd1a3cdf69fa19c42a69774d5",
+    "source_manifest": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1/ROOT/CERT_SOURCE.json",
+    "source_manifest_sha256": "14a5d3b572cd23228591b182fa633ec640bc162c6a40f79039de451e444178f0",
+    "source_files": 1302,
+    "candidate_changed_files": 32,
+    "handoff": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1/EX08_LOG_QA_REMEDIATION_HANDOFF_FOR_DIRECTOR.md",
+    "handoff_sha256": "384e535f741f9ffea58b1116ee96c243c9ce5699f44be0fb9cea2f77b1b56871",
+    "evidence_manifest": "/home/wundah/distritoolsjl-log-qa-remediation-20261019-v1/FINAL_HANDOFF_HASHMANIFEST.json",
+    "evidence_manifest_sha256": "a935e705d157fb7a6fb0e405b9b40a6f44bb8d7ce86ba689fb7efef09ba22ad1",
+    "sealed_artifacts_verified": 5228,
+    "backend_unit_security": 383,
+    "frontend_tests": 771,
+    "critical_files": 50,
+    "critical_tests": 385,
+    "original_e2e_files": 10,
+    "original_e2e_tests": 90,
+    "browser": {
+      "status": "PASS",
+      "original_scenarios": 18,
+      "additional_scenarios": 7,
+      "attempt": "62bcd4e133e8455592235acd4fcfe745",
+      "javascript_errors": 0,
+      "external_requests": 0
+    },
+    "other_local_gates": "Prisma13 migrations, backend/frontend typecheck/lint/build, Next build, safety42, environment4, readiness18 PASS in sealed certificates",
+    "historical_failures": "Original Redis/heading/focus/browser failures and diagnostic V1 FAIL retained; V2 harness binds the same ElementHandle and strict predicate. No historical S1 focus cause is inferred without telemetry.",
+    "owner_release": "Original three QA leases released; source1302/32 frozen. Concurrent PR81 remains owned by its separate executor.",
+    "observed_product_pr": 81,
+    "observed_product_pr_url": "https://github.com/DevOps-Solutions-IA/distritools-jl/pull/81",
+    "observed_product_head_sha": "6cdea9d7b08f319cd71a480e8cad518d7b0bac1e",
+    "head_qualification": "QA froze base aa619fc with uncommitted32 source paths. Earlier observed PR81 commit6cdea has the exact1302 certificate tree; later observed local a3df252 changes only LEGAL24 documents/STATE, retaining all32 LOG postimages. These are timestamped external-owner observations, not a claim that later heads are already certified or integrated.",
+    "promotion_blockers": [
+      "LOG-specific security/governance disposition remains required; do not extrapolate prior CONTENT acceptance",
+      "Global architecture FAIL167, strict-source inherited FAIL1, residual HIGH/SEC/GOV and original raw failures remain preserved",
+      "Reconcile PR81 with live main; require independent acceptance, its own seven exact-head checks, specific director merge approval and governed documentary transition"
+    ],
+    "independent_review": "docs/orchestration/consolidation/INTEGRATION/QA_MATRIX.md; read-only5228 artifacts and1302 sources, no QA rerun",
+    "local_qa_rerun_by_ROOT02": false,
+    "product_integrated_by_this_execution": false,
+    "admin_action_increment": 0,
+    "all_42_full_route_workflows": "NOT_TESTED",
+    "production": "NO-GO",
+    "concurrent_doc_only_head_observed": "a3df252cd902a3dcc62a184ce0c6600eb7230741",
+    "concurrent_observation_evidence": "/home/wundah/distritoolsjl-root02-director-pr79-pr80-20261019-v1/B/LOG_CONCURRENT_PR81_QUALIFICATION.json"
   }
 }
