@@ -1,0 +1,1240 @@
+{
+  "docId": "LEGAL-VERSIONS",
+  "publicSlug": null,
+  "semanticVersion": "1.0.0-draft",
+  "status": "DRAFT",
+  "authorAgent": "LEGAL-DOCS-01",
+  "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+  "reviewedAt": null,
+  "approvedAt": null,
+  "signedAt": null,
+  "effectiveAt": null,
+  "replacedAt": null,
+  "lawfulController": null,
+  "reviewerIdentity": null,
+  "approverIdentity": null,
+  "signatoryIdentity": null,
+  "previousVersion": null,
+  "supersedes": null,
+  "verifiedSources": [
+    "L01",
+    "L02",
+    "L03",
+    "L04",
+    "L05",
+    "L06",
+    "L07",
+    "L08",
+    "R01",
+    "R02",
+    "R03",
+    "J01",
+    "X01"
+  ],
+  "factsPending": [
+    "B01–B13",
+    "T01–T08",
+    "independent_review",
+    "ROOT_final_seal"
+  ],
+  "checksum": null,
+  "checksumReason": "Self hash stored only in ROOT external manifest; no recursive self hash",
+  "changeLog": [
+    {
+      "at": "2026-10-19T04:30:45.939240+00:00",
+      "label": "VERIFIED",
+      "change": "24-path register, 22 author outputs, 2 reserved ungenerated outputs"
+    }
+  ],
+  "entries": [
+    {
+      "path": "01_PRIVACY_POLICY.md",
+      "docId": "LEGAL-01",
+      "publicSlug": "politica-de-privacidad",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L03",
+        "L07",
+        "L08",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B07",
+        "B08",
+        "B09",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "e64b5b111812d94f63572505050f222f593afafd976a542c183b2d71096b2218",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "02_PERSONAL_DATA_PROCESSING_POLICY.md",
+      "docId": "LEGAL-02",
+      "publicSlug": "tratamiento-de-datos",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L03",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B07",
+        "B08",
+        "B09",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "d73ce25a3af19a10496ee6b51f9348a221f0189ecc4ce711b58510f70beab718",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "03_ECOMMERCE_TERMS_AND_CONDITIONS.md",
+      "docId": "LEGAL-03",
+      "publicSlug": "terminos-y-condiciones",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L02",
+        "L04",
+        "L05",
+        "L06",
+        "R02"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B10",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "634ca65c903453172a629b940fe709c32505195617ac1c52e9aa0f224f3e6c07",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "04_SHIPPING_AND_DELIVERY_POLICY.md",
+      "docId": "LEGAL-04",
+      "publicSlug": "politica-de-envios",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "R01",
+        "R02"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B05",
+        "B06",
+        "B08",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "7b59d2d1231062bb720d77a08c940242242176520e99926aa5e5c9076a26c0c3",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "05_RETURNS_WITHDRAWAL_WARRANTIES.md",
+      "docId": "LEGAL-05",
+      "publicSlug": "cambios-devoluciones-y-garantias",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "J01",
+        "L01",
+        "L02",
+        "L04",
+        "L06",
+        "R02"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B05",
+        "B11",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "d747668022a362272d13dd60084f16aa2cb3d257088cc75ab0b45cf45b648718",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "06_PRIVACY_NOTICE.md",
+      "docId": "LEGAL-06",
+      "publicSlug": "aviso-de-privacidad",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L03",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "72f3970b2329e6fc9a3214d4abda30f9ca3cc71e518210b7dbb08c08d5343368",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "07_COOKIES_POLICY.md",
+      "docId": "LEGAL-07",
+      "publicSlug": "politica-de-cookies",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L03",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B07",
+        "B08",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "14de3bc21eb2aac779aa739d62fa28d565a536d73d922a0a58da3930d2335784",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "08_CUSTOMER_CONSENT_TEXTS.md",
+      "docId": "LEGAL-08",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L02",
+        "L03",
+        "L05",
+        "L08",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B07",
+        "B08",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "3134b940ba3e2a7a1f8e7e6e28ba103e6a612429b4fe2266d30a6227224a781c",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "09_DATA_SUBJECT_REQUEST_PROCEDURE.md",
+      "docId": "LEGAL-09",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L03",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "6858b7609148c7af90067dfc37038e0eca594b118a0a438c83410b49aedd9a4e",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "10_CONSUMER_CLAIMS_AND_REFUNDS.md",
+      "docId": "LEGAL-10",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "J01",
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "L06",
+        "R02"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B05",
+        "B11",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "3a2ece25b7c40e6ea3f63d9dbb636f0aa462108a00284c404d28905b9c5ce2cb",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "11_PROCESSORS_AND_DATA_FLOWS.md",
+      "docId": "LEGAL-11",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L03",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B08",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "f95437cb8b887ce1ba50ffcdef686d74a1fb4fb76e35a120bf2ceff16fe11847",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "12_DATA_RETENTION_SCHEDULE.md",
+      "docId": "LEGAL-12",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L02",
+        "L03",
+        "L07",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B07",
+        "B08",
+        "B09",
+        "B10",
+        "B11",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "126b9badbf51d0a28676bb547c1f4bdfa39a5ed5f2d225d980a30fd948b7377b",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "13_CHECKOUT_AND_COOKIES_CONSENT_AUDIT.md",
+      "docId": "LEGAL-13",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B07",
+        "B09",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "51d6072bb315b7e598a27fad4ff24bc8d16c07786a2b4b861c62ed6a9a40e844",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "14_CUSTOMER_RIGHTS_SUMMARY.md",
+      "docId": "LEGAL-14",
+      "publicSlug": "resumen-de-derechos",
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "J01",
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "L06",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "c304494a41166dee3383ec9189c5adc0d8e062643d0da6c7cae50a64eb73f595",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "DISTRITOOLS_JL_LEGAL_IDENTITY_REGISTRY.json",
+      "docId": "LEGAL-IDENTITY",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / asesor jurídico",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L02",
+        "L03",
+        "R01"
+      ],
+      "factsPending": [
+        "pendingEntityType",
+        "definitiveLegalName",
+        "entityType",
+        "NIT",
+        "chamberOfCommerceRegistration",
+        "registrationCertificate",
+        "registeredCity",
+        "registeredOffice",
+        "verifiedMainAddress",
+        "legalJurisdiction",
+        "legalRepresentative",
+        "legalSignatoryName",
+        "legalSignatoryPosition",
+        "legalSignatoryAuthority",
+        "lawfulSellerIdentity",
+        "lawfulControllerIdentity",
+        "processorIdentity",
+        "counselName",
+        "counselProfessionalRegistration",
+        "reviewerIdentity",
+        "authorizedApproverIdentity",
+        "verifiedNotificationEmail",
+        "privacyEmail",
+        "privacyRightsAddress",
+        "judicialNotificationAddress",
+        "PQRChannels",
+        "consumerServicesEmail",
+        "consumerServicesAddress",
+        "verifiedPhone",
+        "privacyAreaOrPerson",
+        "warrantyServiceOwner",
+        "returnAddress",
+        "taxStatus",
+        "RUTVerification",
+        "invoiceData",
+        "electronicInvoiceAuthorization",
+        "reviewedAt",
+        "approvedAt",
+        "signedAt",
+        "effectiveFrom",
+        "effectiveAt",
+        "validVersion",
+        "approvalEvidenceHashes",
+        "signatureEvidenceHashes"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "cb55a0dd2030817b2180ab15830e5ee6f9c62c5e76ad8455f74f0aa33bc61bcf",
+      "checksumScope": "full file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Central nullable registry generated"
+        }
+      ]
+    },
+    {
+      "path": "FINAL_HANDOFF.md",
+      "docId": "LEGAL-HANDOFF",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "7ea46e20036981c989b9ef5b6a84308198a763b213002110b272db230eed7641",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "INDEPENDENT_LEGAL_CONSISTENCY_REVIEW.md",
+      "docId": "LEGAL-INDEPENDENT",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "PENDING_ROOT_FINAL_SEAL",
+      "preparedAt": null,
+      "authorAgent": "ROOT / different independent reviewer",
+      "owner": "ROOT / different independent reviewer",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [],
+      "factsPending": [
+        "independent_review",
+        "ROOT_final_seal"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": null,
+      "checksumReason": "Not generated by author; generated at final seal after author release",
+      "changeLog": []
+    },
+    {
+      "path": "LEGAL_APPROVAL_AND_SIGNATURE_WORKFLOW.md",
+      "docId": "LEGAL-APPROVAL",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "L05",
+        "R01",
+        "R02",
+        "R03"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B06",
+        "B11",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "fbbdde57816def5dfce7d3fa49adfc047fa4e50275dddc7cf9feddc910b410e1",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "LEGAL_BUSINESS_DECISIONS.md",
+      "docId": "LEGAL-BUSINESS",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L01",
+        "L02",
+        "L03"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B05",
+        "B06",
+        "B07",
+        "B08",
+        "B09",
+        "B10",
+        "B11",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "5132d235ada754bf59489b6d9535cb724429cc5bbd5e59e5434cfeeebb3af1e4",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "LEGAL_PACKAGE_HASHMANIFEST.json",
+      "docId": "LEGAL-MANIFEST",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "PENDING_ROOT_FINAL_SEAL",
+      "preparedAt": null,
+      "authorAgent": "ROOT",
+      "owner": "ROOT",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [],
+      "factsPending": [
+        "independent_review",
+        "ROOT_final_seal"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": null,
+      "checksumReason": "Generated at final seal; manifest must exclude itself, not assert recursive hash",
+      "changeLog": []
+    },
+    {
+      "path": "LEGAL_PUBLICATION_HANDOFF.md",
+      "docId": "LEGAL-PUBLICATION",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "L02",
+        "L03",
+        "L05",
+        "R01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B07",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "c994e069aa2d47b75ed92eae2903fd51d03e44258d084a1c5fc045a698200f91",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "LEGAL_SOURCE_AND_COMPLIANCE_MATRIX.md",
+      "docId": "LEGAL-SOURCES",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [
+        "J01",
+        "L01",
+        "L02",
+        "L03",
+        "L04",
+        "L05",
+        "L06",
+        "L07",
+        "L08",
+        "R01",
+        "R02",
+        "R03",
+        "X01"
+      ],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B05",
+        "B10",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "bdf83b283e219aeb14070f875465a31a9679779323e4ba90724730b71c1c2fcc",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "LEGAL_TECHNICAL_GAPS.md",
+      "docId": "LEGAL-GAPS",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "Dirección / área de privacidad y servicio al consumidor",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [],
+      "factsPending": [
+        "B01",
+        "B02",
+        "B03",
+        "B04",
+        "B07",
+        "B12",
+        "B13"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": "eab204172f4a227bb2ccf006901c7d3f5e9498aaa8e84ad1094491556ad9a2ef",
+      "checksumScope": "full UTF-8 file bytes",
+      "changeLog": [
+        {
+          "at": "2026-10-19T04:30:45.939240+00:00",
+          "label": "VERIFIED",
+          "change": "Original draft generated"
+        }
+      ]
+    },
+    {
+      "path": "LEGAL_VERSION_REGISTER.json",
+      "docId": "LEGAL-VERSIONS",
+      "publicSlug": null,
+      "semanticVersion": "1.0.0-draft",
+      "status": "DRAFT",
+      "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+      "authorAgent": "LEGAL-DOCS-01",
+      "owner": "LEGAL-DOCS-01",
+      "reviewedAt": null,
+      "approvedAt": null,
+      "signedAt": null,
+      "effectiveAt": null,
+      "replacedAt": null,
+      "lawfulController": null,
+      "reviewerIdentity": null,
+      "approverIdentity": null,
+      "signatoryIdentity": null,
+      "sources": [],
+      "factsPending": [
+        "independent_review",
+        "ROOT_final_seal"
+      ],
+      "previousVersion": null,
+      "supersedes": null,
+      "sha256": null,
+      "checksumReason": "Self hash excluded to prevent recursive hashing; ROOT external manifest hashes these exact bytes",
+      "changeLog": []
+    }
+  ],
+  "sourceRegistry": {
+    "L01": {
+      "law": "Ley 1480 de 2011",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_1480_2011.html",
+      "asset": "S13",
+      "articles": "2–5,7–16,23–30,42–43",
+      "scope": "consumidor/destinatario final, garantía, información y cláusulas abusivas",
+      "vigency": "Texto consultado; entrada general seis meses tras promulgación art84; notas de compilación al15oct2026"
+    },
+    "L02": {
+      "law": "Ley 1480 de 2011, segunda página",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_1480_2011_pr001.html",
+      "asset": "S14",
+      "articles": "47,50,51,58(5)",
+      "scope": "retracto, ecommerce, reversión y reclamación directa; usar texto modificado por Ley2439",
+      "vigency": "Texto consolidado consultado al19oct2026; anotaciones visibles y ley modificatoria separadas"
+    },
+    "L03": {
+      "law": "Ley Estatutaria 1581 de 2012",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_1581_2012.html",
+      "asset": "S15",
+      "articles": "2–18,25–26",
+      "scope": "tratamiento de datos de personas naturales, derechos, deberes y transferencias",
+      "vigency": "Texto consultado al19oct2026; no certificación exhaustiva de jurisprudencia por este autor"
+    },
+    "L04": {
+      "law": "Ley 2439 de 2024",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_2439_2024.html",
+      "asset": "S11",
+      "articles": "2–5,9",
+      "scope": "15calendario retracto; reformaart50b/g/h; preferencia medio devolución; otras reformas no habilitan crédito",
+      "vigency": "DO52975 19dic2024/art9; b/g/h transición4meses desde publicación; J01 condiciona alcance art3"
+    },
+    "L05": {
+      "law": "Ley 527 de 1999",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0527_1999.html",
+      "asset": "S16",
+      "articles": "5–15,28,46",
+      "scope": "mensajes de datos, integridad, prueba, conservación y firma conforme acto",
+      "vigency": "Texto consultado al19oct2026; no equivalencia universal de checksum a firma"
+    },
+    "L06": {
+      "law": "Decreto 587 de 2016 / D1074 capítulo51",
+      "url": "https://sedeelectronica.sic.gov.co/sites/default/files/normatividad/Decreto_587_2016.pdf",
+      "asset": "S25",
+      "articles": "2.2.2.51.1–14;art2",
+      "scope": "reversión electrónica, proveedor/emisor enColombia,5hábiles queja/aviso y15hábiles ejecución",
+      "vigency": "Texto decreto obtenido; vigencia6meses tras publicación11abr2016; búsqueda2025/2026 no certifica ausencia de reforma; B12 bloquea publicación"
+    },
+    "L07": {
+      "law": "Ley 962 de 2005",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_0962_2005.html",
+      "asset": "S19",
+      "articles": "28",
+      "scope": "10años libros/papeles desde último asiento/documento/comprobante con reproducción exacta; no retención universalPII",
+      "vigency": "Texto consultado al19oct2026; retenciones especiales tributarias por B10"
+    },
+    "L08": {
+      "law": "Ley 2300 de 2023",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/ley_2300_2023.html",
+      "asset": "S20",
+      "articles": "2–5,8,10",
+      "scope": "contactos comerciales/cobranza según supuesto, canales y privacidad; no habilita campañas",
+      "vigency": "Texto consultado, art10 tresmeses desde promulgación; RNE/implementación actual por validar antes de campañas"
+    },
+    "R01": {
+      "law": "Decreto1074/2015 capítulo25, texto oficial MinCIT",
+      "url": "https://www.mincit.gov.co/ministerio/normograma-sig/procesos-misionales/desarrollo-empresarial/decreto/decreto-1074-de-2015-2.aspx",
+      "asset": "S27",
+      "articles": "2.2.2.25.1.3; .2.1–.2.9; .3.1–.3.5; .4.1–.4.4; .5.1–.5.2; .6.1–.6.2",
+      "scope": "definiciones, autorización, conservación, políticas/aviso, derechos, transmisión y responsabilidad demostrada",
+      "vigency": "PDF original2015 verificado; NO es consolidación2026. Secc7 añadidaD255/2022 identificada en fuenteoficial indexada; texto consolidado posterior no obtenido. B12 revisiónactual pendiente"
+    },
+    "R02": {
+      "law": "Decreto1074/2015 capítulo32 (compilaD735/2013)",
+      "url": "https://www.mincit.gov.co/ministerio/normograma-sig/procesos-misionales/desarrollo-empresarial/decreto/decreto-1074-de-2015-2.aspx",
+      "asset": "S27",
+      "articles": "2.2.2.32.2.1–.2.9; .3.2,.3.5; .5.1,.6.1–.6.2",
+      "scope": "solicitud/decisión/soluciones/transporte y plazos muebles ordinarios; verificar reglasSIC especiales por categoría",
+      "vigency": "PDF2015 verificado. D735art8→.32.2.7,art9→.32.2.8,art10→.32.2.9; no norma de inmuebles usada como regla de herramientas; actualizaciónB12 pendiente"
+    },
+    "R03": {
+      "law": "Decreto1074/2015 capítulo47 (compilaD2364/2012)",
+      "url": "https://www.mincit.gov.co/ministerio/normograma-sig/procesos-misionales/desarrollo-empresarial/decreto/decreto-1074-de-2015-2.aspx",
+      "asset": "S27",
+      "articles": "2.2.2.47.1–.47.8",
+      "scope": "firma electrónica, identificación/intención, confiabilidad y acuerdos; no firma ya ejecutada",
+      "vigency": "PDF2015 verificado; aplicabilidad y régimen actual al acto requieren B12/B13"
+    },
+    "J01": {
+      "law": "Sentencia C-192/26, Comunicado22/24jun2026",
+      "url": "http://www.secretariasenado.gov.co/senado/basedoc/c-192_2026.html",
+      "asset": "S28",
+      "articles": "apartado2Decisión; art3Ley2439 /47Ley1480",
+      "scope": "15calendario reembolso retracto uniforme a todas modalidades art47; no crea retracto universal",
+      "vigency": "VERIFIED comunicado alojadooficial; sentenciaíntegra NOT_VERIFIED. No se amplían excepciones ni efectos temporales inferidos"
+    },
+    "X01": {
+      "law": "Proyecto MinCIT23sep2025 reversión",
+      "url": "https://www.mincit.gov.co/normatividad/proyectos-de-normatividad/proyectos-de-decreto-2025/23-09-2025-pd-reversion-de-pagos.aspx",
+      "asset": "S07",
+      "articles": "proyecto sin número ni firma de expedición",
+      "scope": "solo alerta de seguimiento, NO fundamento obligatorio ni adopción de nuevosplazos",
+      "vigency": "VERIFIED proyecto; promulgaciónposterior NOT_VERIFIED / B12"
+    }
+  },
+  "rootSealRule": "Author file hashes frozen; independent review and manifest generated later by ROOT. Manifest excludes itself; register self entry stays null with reason; final manifest records register and review hashes. No legal approval implied."
+}

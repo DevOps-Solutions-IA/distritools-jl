@@ -1043,7 +1043,7 @@
   },
   "legal_documentation_status": {
     "status": "DRAFT / NO_PUBLICAR",
-    "human_review": "PENDING counsel/business; no effective legal policy publication",
+    "human_review": "PENDING professional counsel; business content approved2026-10-19, corporate identity/signature/effectiveness data remain missing",
     "technical_backlog": [
       "T01",
       "T02",
@@ -1055,6 +1055,15 @@
       "T08"
     ],
     "publication_authorized": false,
-    "internal_documentation_incorporation": "Separate scope/security review required; not part of this transition"
+    "internal_documentation_incorporation": "LEGAL24 documentary consolidation only; original texts/hashes preserved; runtime publication and technical backlog unchanged",
+    "business_content_approval": {
+      "status": "USER_CONTENT_APPROVED",
+      "date": "2026-10-19",
+      "decision_type": "USER_DECISION",
+      "evidence": "docs/legal/LEGAL24/BUSINESS_CONTENT_APPROVAL.json",
+      "scope": "24 unchanged original files; text approval only"
+    },
+    "missing_information": "docs/legal/LEGAL24/MISSING_INFORMATION.csv",
+    "open_business_decisions": "docs/legal/LEGAL24/OPEN_BUSINESS_DECISIONS.csv"
   }
 }

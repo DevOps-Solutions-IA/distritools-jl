@@ -1,0 +1,452 @@
+{
+  "docId": "LEGAL-IDENTITY",
+  "publicSlug": null,
+  "semanticVersion": "1.0.0-draft",
+  "status": "DRAFT",
+  "formalizationStatus": "PENDING_FORMALIZATION",
+  "commercialDisplayName": "DistriTools JL",
+  "companyRegistered": false,
+  "companyRegisteredEvidence": {
+    "label": "USER_DECISION",
+    "source": "Maestro verificado secciones02 y12.1; autoridad de tarea"
+  },
+  "authorAgent": "LEGAL-DOCS-01",
+  "preparedAt": "2026-10-19T04:30:45.939240+00:00",
+  "reviewedAt": null,
+  "reviewerIdentity": null,
+  "approverIdentity": null,
+  "signatoryIdentity": null,
+  "approvedAt": null,
+  "signedAt": null,
+  "effectiveAt": null,
+  "replacedAt": null,
+  "effectiveFrom": null,
+  "validVersion": null,
+  "lawfulController": null,
+  "language": "es-CO",
+  "locale": "es-CO",
+  "plannedOperationalCity": {
+    "value": "Cali, Colombia",
+    "label": "USER_DECISION",
+    "isRegisteredOrReturnAddress": false
+  },
+  "fields": {
+    "pendingEntityType": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "definitiveLegalName": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "entityType": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "NIT": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "chamberOfCommerceRegistration": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "registrationCertificate": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "registeredCity": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "registeredOffice": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "verifiedMainAddress": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "legalJurisdiction": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "legalRepresentative": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "legalSignatoryName": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "legalSignatoryPosition": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "legalSignatoryAuthority": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "lawfulSellerIdentity": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "lawfulControllerIdentity": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "processorIdentity": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "counselName": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "counselProfessionalRegistration": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "reviewerIdentity": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "authorizedApproverIdentity": {
+      "value": null,
+      "status": "PENDING_FORMALIZATION",
+      "owner": "Dirección / asesor jurídico",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "verifiedNotificationEmail": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "privacyEmail": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "privacyRightsAddress": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "judicialNotificationAddress": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "PQRChannels": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "consumerServicesEmail": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "consumerServicesAddress": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "verifiedPhone": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "privacyAreaOrPerson": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "warrantyServiceOwner": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "returnAddress": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Operaciones / atención",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "taxStatus": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Contabilidad / Dirección",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "RUTVerification": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Contabilidad / Dirección",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "invoiceData": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Contabilidad / Dirección",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "electronicInvoiceAuthorization": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Contabilidad / Dirección",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "reviewedAt": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "approvedAt": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "signedAt": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "effectiveFrom": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "effectiveAt": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "validVersion": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "approvalEvidenceHashes": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    },
+    "signatureEvidenceHashes": {
+      "value": null,
+      "status": "PENDING_BUSINESS_APPROVAL",
+      "owner": "Dirección / firmante real",
+      "validationMethod": "Identificación y facultad con soporte oficial; comprobación humana y prueba de canal/operación según campo",
+      "sourceOfTruth": "Documento real validado y decisión humana; actualmente ausente",
+      "evidence": null
+    }
+  },
+  "prototypeContactsStatus": "UNVERIFIED_CONTACT",
+  "publicationStatus": "BLOCKED_HUMAN_APPROVAL",
+  "previousVersion": null,
+  "supersedes": null,
+  "verifiedSources": [
+    "L01",
+    "L02",
+    "L03",
+    "R01"
+  ],
+  "factsPending": [
+    "pendingEntityType",
+    "definitiveLegalName",
+    "entityType",
+    "NIT",
+    "chamberOfCommerceRegistration",
+    "registrationCertificate",
+    "registeredCity",
+    "registeredOffice",
+    "verifiedMainAddress",
+    "legalJurisdiction",
+    "legalRepresentative",
+    "legalSignatoryName",
+    "legalSignatoryPosition",
+    "legalSignatoryAuthority",
+    "lawfulSellerIdentity",
+    "lawfulControllerIdentity",
+    "processorIdentity",
+    "counselName",
+    "counselProfessionalRegistration",
+    "reviewerIdentity",
+    "authorizedApproverIdentity",
+    "verifiedNotificationEmail",
+    "privacyEmail",
+    "privacyRightsAddress",
+    "judicialNotificationAddress",
+    "PQRChannels",
+    "consumerServicesEmail",
+    "consumerServicesAddress",
+    "verifiedPhone",
+    "privacyAreaOrPerson",
+    "warrantyServiceOwner",
+    "returnAddress",
+    "taxStatus",
+    "RUTVerification",
+    "invoiceData",
+    "electronicInvoiceAuthorization",
+    "reviewedAt",
+    "approvedAt",
+    "signedAt",
+    "effectiveFrom",
+    "effectiveAt",
+    "validVersion",
+    "approvalEvidenceHashes",
+    "signatureEvidenceHashes"
+  ],
+  "changeLog": [
+    {
+      "at": "2026-10-19T04:30:45.939240+00:00",
+      "label": "VERIFIED",
+      "change": "Creación de registro único; ninguna identidad, aprobación o firma inventada"
+    }
+  ],
+  "checksum": null,
+  "checksumReason": "Archivo completo en manifiesto externo de ROOT; no hash recursivo en sí mismo"
+}
