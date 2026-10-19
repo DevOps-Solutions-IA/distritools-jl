@@ -91,7 +91,7 @@
       "hard_stop": "No acciones ficticias, providers falsos ni readiness sin prueba; sin exponer PII, relajar RBAC/2FA, escribir en producci\u00f3n o inventar pol\u00edticas de negocio.",
       "prior": "F0 product+documentary closure completed. F1/F2/SESSION product PR #51 merged at 220d5f726abdbc9ade64aca39a9dafd050cbce8c after seven exact-head CI38097274208 on 459b76c0669af81531ba9e63c2309b2a1acb2658,behind0,scope61,independent ROOT gates and challenger no introducedP0/P1/P2. All71 full domain action workflows remain NOT_TESTED; parentEX08 active. CAT producto57 merged36c6ee31 despu\u00e9s de siete44a4f5e;13acciones A04-A16 verificadas,58 restantes pendientes. La captura anterior71NOT_TESTED es hist\u00f3rica; EX08padreACTIVE. SESSION recovery productPR59 mergedac002cc after seven exact5ec9/run38133193706; bounded session recovery, no additional declared domain action certification. Audit projection productPR61 merged after exactseven, bounded two existing audit.read gates only; no additional declared action certified. INV productPR63 integrated with nine A17-A25 verified; total22CAT+INV/49pending, EX08ACTIVE. Tracking event boundary productPR65 integrated safe3fields/latest100/orderdate-id; no extra declared actions;22/49 unchanged. SALE productPR67 integrated bounded5actions; aggregate27/44 after documentary closure. IAM14 permission policy USER_DECISION approved, own composition pending. CRM technical-boundary productPR69 verified4actions/31total after separate documentaryseven; A31/A34 remainBLOCKED_DECISION unfulfilled, fullCRMnotclosed. IAM technical-boundary productPR71 merged/fresh exactsevenattempt2;11eligibleactions recorded only after separate documentaryseven; total42/29; A59realsecrets blockedunfulfilled/fullIAMnotclosed; inheritedLEGACY counterP1 awaits separatecurrentmain correctiveintegration. LEGACY auditcount P1 technicalcorrection productPR73 independently merged with379/374/90 and ownseven/source1246/treeequal;42/29 unchanged and no fullCONTROL/action certification. Prior IAM/projection debt/pending narratives are acceptance-time history, current resolution recorded in legacy_audit_count_validation; separate CI bootstrap pending. CI explicitPrisma generation productPR75 independently merged with current379unit and actualseven/source1249/treeequal;42/29unchanged. Original CI72 failure and unknown unique trigger preserved; dedicated infrastructure correction only. CONTENT productPR77 independently accepted and squash merged e8249f79 after seven exact9d3257eb/run39203533162 attempt1; new-main39204902568 ownseven also PASS. Seven CONTENT actions A50-A56 accepted; this documentary transition records49verified/22pending after its ownseven/director merge. The previous42/29 and unresolved external-merge authorization narrative are historical: the director receipt20261019 confirms the official product merge. LEGAL effectiveness remains unapproved.",
       "runbook": "docs/orchestration/runs/EX-08-admin-ux-plan.md",
-      "next_action": "Reconcile PR80 with main after authorized LEGAL24 PR79, preserve USER_CONTENT_APPROVED/NO_PUBLICAR and49/71, obtain seven checks on the new exact HEAD and independent review, then wait for director final PR80 merge approval. LOG local QA is PASS on sealed1302-source input; reuse its certificate, do not repeat certified local tests. PR81 is a separate unmerged promotion scope requiring live-main reconciliation, applicable security/governance disposition, its own exact-head checks and specific director approval; no LOG acceptance or action increment here."
+      "next_action": "PR80 documentary integration is merged at ebbf77ed04fd03fdc2529628f54214acda514888. Review the single governed merge-receipt transition separately; do not repeat PR80 integration or CONTENT/LEGAL24 closure. Reuse certified LOG local QA and coordinate only with the separate PR81 owner for LOG-specific security/governance/current-head/director promotion acceptance. Then reconcile CONTROL six actions while preserving tracking.read. Envia/Operational documentation, professional legal/data/signature/effectiveness/publication, SEC/GOV/business/provider/cutover and exact-path cleanup approvals remain separate dependencies. Official49/71,22pending/all42 full workflows NOT_TESTED; EX08 and ROOT02 remain ACTIVE; production NO-GO and NO_PUBLICAR."
     }
   ],
   "provider_status": {
@@ -139,7 +139,7 @@
     "status": "MERGED",
     "result": "Director verified squash product45; seven A50-A56 accepted. This separate documentary PR records49/71 only after its own seven exact-head checks and director merge. No legal effectiveness or production GO."
   },
-  "next_action": "Reconcile PR80 with main after authorized LEGAL24 PR79, preserve USER_CONTENT_APPROVED/NO_PUBLICAR and49/71, obtain seven checks on the new exact HEAD and independent review, then wait for director final PR80 merge approval. LOG local QA is PASS on sealed1302-source input; reuse its certificate, do not repeat certified local tests. PR81 is a separate unmerged promotion scope requiring live-main reconciliation, applicable security/governance disposition, its own exact-head checks and specific director approval; no LOG acceptance or action increment here.",
+  "next_action": "PR80 documentary integration is merged at ebbf77ed04fd03fdc2529628f54214acda514888. Review the single governed merge-receipt transition separately; do not repeat PR80 integration or CONTENT/LEGAL24 closure. Reuse certified LOG local QA and coordinate only with the separate PR81 owner for LOG-specific security/governance/current-head/director promotion acceptance. Then reconcile CONTROL six actions while preserving tracking.read. Envia/Operational documentation, professional legal/data/signature/effectiveness/publication, SEC/GOV/business/provider/cutover and exact-path cleanup approvals remain separate dependencies. Official49/71,22pending/all42 full workflows NOT_TESTED; EX08 and ROOT02 remain ACTIVE; production NO-GO and NO_PUBLICAR.",
   "security_obligations": [
     {
       "id": "SEC-PRISMA-HIGH-001",
@@ -1073,7 +1073,7 @@
       "stage": "BASELINED",
       "exit_condition": "Complete inventory disposition, independent review, seven exact-head checks, director merge and documentary transition",
       "preservation_location": "docs/orchestration/consolidation",
-      "next_action": "Revalidate the revised PR80 against main a5ef8f0d25fe00a7c0782bc5cd76dd4f2ec899be, obtain seven exact-head checks and independent challenge, then request specific final director merge approval"
+      "next_action": "PR80 merge verified; review its single documentary receipt update with own exact-head seven and separate director approval. Continue named recovery obligations; do not close the parent or duplicate integration."
     },
     {
       "id": "EX08-LOG-RECOVERY",
@@ -1253,5 +1253,30 @@
     "production": "NO-GO",
     "concurrent_doc_only_head_observed": "a3df252cd902a3dcc62a184ce0c6600eb7230741",
     "concurrent_observation_evidence": "/home/wundah/distritoolsjl-root02-director-pr79-pr80-20261019-v1/B/LOG_CONCURRENT_PR81_QUALIFICATION.json"
+  },
+  "consolidation_documentary_validation": {
+    "id": "ROOT02-PR80-MERGE-20261019",
+    "status": "PR80_MERGED_AND_VERIFIED",
+    "pr": 80,
+    "source_head_sha": "5cbc8f7212719d11b165cebd7b50c652bd4a523b",
+    "merge_sha": "ebbf77ed04fd03fdc2529628f54214acda514888",
+    "merged_at": "2026-10-19T19:17:58Z",
+    "merge_method": "squash",
+    "scope_files": 26,
+    "premerge_workflow_run": 39305777161,
+    "premerge_workflow_attempt": 1,
+    "seven_exact_head_checks": "PASS",
+    "new_main_workflow_run": 39309806432,
+    "new_main_workflow_attempt": 1,
+    "new_main_seven_exact_head_checks": "PASS",
+    "director_approval": "Explicit DIRECTOR APPROVAL \u2014 MERGE PR #80, 2026-10-19; applies only to PR80",
+    "independent_acceptance": "B/PREMERGE_REVIEW.json plus prior exact-head B/PR80_EXACT_HEAD_FINAL_REVIEW.json in retained evidence",
+    "report": "docs/orchestration/consolidation/INTEGRATION/PR80_MERGE_VERIFICATION.md",
+    "evidence_root": "/home/wundah/distritoolsjl-root02-pr80-merge-20261019-v1",
+    "documentary_transition": "This narrowly scoped receipt update requires its own seven exact-head checks, independent acceptance and separate director merge approval; no additional merge authorized",
+    "parent_consolidation_status": "ACTIVE",
+    "administrative_increment": 0,
+    "legal_publication": "NO_PUBLICAR",
+    "production": "NO-GO"
   }
 }
