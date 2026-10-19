@@ -365,8 +365,8 @@ export class GetAdminDashboardUseCase {
         orders: recentOrders.map((order) => ({
           orderNumber: order.orderNumber,
           status: order.status,
-          paymentStatus: order.payments[0]?.status ?? 'pending',
-          shippingStatus: order.shipments[0]?.status ?? 'pending_provider',
+          paymentStatus: order.payments[0]?.status ?? 'NO_DATA',
+          shippingStatus: order.shipments[0]?.status ?? 'NO_DATA',
           total: financialAllowed ? this.money(Number(order.grandTotal)) : 'NO_PERMISSION',
           createdAt: order.createdAt.toISOString(),
           href: `/admin/pedidos?search=${encodeURIComponent(order.orderNumber)}`,
@@ -571,9 +571,9 @@ export class GetAdminDashboardUseCase {
       process.env.NINETY_NINE_ENVIOS_AUTH_PASSWORD &&
       process.env.NINETY_NINE_ENVIOS_DEFAULT_BRANCH_CODE,
     );
-    const emailReady = process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' &&
+    const emailConfigured = process.env.NOTIFICATIONS_REAL_PROVIDER_ENABLED === 'true' &&
       Boolean(process.env.SMTP_HOST || process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY);
-    const paymentsReady = process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true';
+    const paymentsConfigured = process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true';
 
     return [
       this.module('dashboard', 'Dashboard', 'READY', [], '/admin/dashboard'),
@@ -581,10 +581,10 @@ export class GetAdminDashboardUseCase {
       this.module('catalog', 'Catálogo', 'GO_WITH_RISKS', ['Precios avanzados y contenido parcial.'], '/admin/productos'),
       this.module('inventory', 'Inventario', 'READY', [], '/admin/inventario'),
       this.module('orders', 'Pedidos', 'READY', [], '/admin/pedidos'),
-      this.module('payments', 'Pagos', paymentsReady ? 'READY' : 'BLOCKED_PROVIDER', paymentsReady ? [] : ['Falta proveedor real de pagos/PSE.'], '/admin/pagos'),
+      this.module('payments', 'Pagos', 'BLOCKED_PROVIDER', [paymentsConfigured ? 'Configuración declarada; operación del proveedor no verificada.' : 'Falta proveedor real de pagos/PSE.'], '/admin/pagos'),
       this.module('shipping', 'Envíos', has99Credentials && shippingProvider === '99envios' ? 'GO_WITH_RISKS' : shippingProvider === 'mock_99envios' ? 'MOCK_ONLY' : 'BLOCKED_PROVIDER', has99Credentials && shippingProvider === '99envios' ? ['Pendiente validación real completa de salida.'] : ['Faltan credenciales reales/sandbox de 99 Envíos.'], '/admin/envios'),
       this.module('tracking', 'Rastreo', 'GO_WITH_RISKS', ['Tracking interno operativo; tracking externo directo no documentado.'], '/admin/rastreo'),
-      this.module('notifications', 'Notificaciones', emailReady ? 'READY' : 'BLOCKED_PROVIDER', emailReady ? [] : ['Email productivo pendiente; local/test no es producción.'], '/admin/notificaciones'),
+      this.module('notifications', 'Notificaciones', 'BLOCKED_PROVIDER', [emailConfigured ? 'Configuración declarada; operación de notificaciones no verificada.' : 'Email productivo pendiente; local/test no es producción.'], '/admin/notificaciones'),
       this.module('settings', 'Configuración', appEnv === 'production' && !authDisabled && stableDomainConfigured ? 'GO_WITH_RISKS' : 'BLOCKED_CONFIGURATION', ['Dominio estable, providers y auth producción deben quedar verdes.'], '/admin/configuracion'),
       this.module('security', 'Seguridad', authDisabled && appEnv === 'production' ? 'NO_GO' : 'READY', authDisabled && appEnv === 'production' ? ['ADMIN_AUTH_DISABLED no puede estar activo en producción.'] : [], '/admin/roles'),
     ];
@@ -645,7 +645,7 @@ export class GetAdminDashboardUseCase {
     }
 
     this.pushAlert(alerts, input.ordersWithoutGuide, 'warning', 'Envíos', 'pedidos sin guía', 'Ver pedidos sin guía', '/admin/envios', input.nowIso);
-    this.pushAlert(alerts, input.pendingPayments + input.codPendingReconciliation, 'warning', 'Pagos', 'pagos pendientes por conciliar', 'Ver pagos', '/admin/pagos', input.nowIso);
+    this.pushAlert(alerts, input.pendingPayments, 'warning', 'Pagos', 'pagos pendientes por conciliar', 'Ver pagos', '/admin/pagos', input.nowIso);
     this.pushAlert(alerts, input.outOfStockProducts, 'critical', 'Inventario', 'productos sin stock', 'Ver inventario', '/admin/inventario?filter=out_of_stock', input.nowIso);
     this.pushAlert(alerts, input.lowStockProducts, 'warning', 'Inventario', 'productos con bajo stock', 'Ver bajo stock', '/admin/inventario?filter=low_stock', input.nowIso);
     this.pushAlert(alerts, input.failedNotifications, 'warning', 'Notificaciones', 'notificaciones fallidas', 'Ver fallidas', '/admin/notificaciones?status=failed', input.nowIso);
@@ -723,7 +723,8 @@ export class GetAdminDashboardUseCase {
   }
 
   private paymentProviderStatus() {
-    return process.env.PAYMENTS_REAL_PROVIDER_ENABLED === 'true' ? 'READY' : 'BLOCKED_PROVIDER';
+    // Configuration alone does not prove an authenticated, accepted provider operation.
+    return 'BLOCKED_PROVIDER';
   }
 
   private shippingProviderStatus() {

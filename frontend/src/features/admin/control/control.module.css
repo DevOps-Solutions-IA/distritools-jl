@@ -1,0 +1,13 @@
+.root {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.root :where(section, div, a, span, p, label, input, select, button, nav) {
+  min-width: 0;
+}
+@media (max-width: 639px) {
+  .root [class*='justify-between'] {
+    flex-wrap: wrap;
+  }
+}
